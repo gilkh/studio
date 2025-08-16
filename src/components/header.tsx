@@ -75,47 +75,6 @@ export function AppHeader() {
       </div>
 
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-         {/* Mobile Navigation */}
-        <Sheet>
-            <SheetTrigger asChild>
-                <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 lg:hidden"
-                >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <nav className="grid gap-6 text-lg font-medium mt-10">
-                    <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
-                        <Logo className="h-6 w-6 text-primary" />
-                        <span>EventEase</span>
-                    </Link>
-                    {links.map(({ href, label, icon: Icon, badge }) => (
-                    <Link
-                        key={href}
-                        href={href}
-                        className={cn(
-                            'flex items-center gap-4 px-2.5 transition-colors hover:text-primary',
-                             pathname === href ? 'text-primary' : 'text-muted-foreground'
-                        )}
-                        >
-                        <Icon className="h-5 w-5" />
-                        {label}
-                        {badge && badge > 0 && (
-                            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                                {badge}
-                            </Badge>
-                        )}
-                    </Link>
-                    ))}
-                </nav>
-            </SheetContent>
-        </Sheet>
-        
         {loggedIn ? (
         <>
             <Sheet>

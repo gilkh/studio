@@ -10,11 +10,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, PlusCircle, Trash2, Edit, Save, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader, PlusCircle, Trash2, Edit, Save, Check as CheckIcon } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import type { EventTask, GenerateEventPlanInput } from '@/lib/types';
+import type { EventTask } from '@/lib/types';
 import { generateTimeline } from '@/lib/timeline-generator';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -100,18 +102,15 @@ export default function EventPlannerPage() {
     setEditedTaskLabel('');
   };
 
-  const handleMoveTask = (index: number, direction: 'up' | 'down') => {
-    if (!timeline) return;
-    const newTimeline = [...timeline];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newTimeline.length) return;
+  const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
+  const totalTasks = timeline?.length || 0;
+  const progress = totalTasks > 0 ? (completedTasksCount / totalTasks) * 100 : 0;
 
-    [newTimeline[index], newTimeline[targetIndex]] = [newTimeline[targetIndex], newTimeline[index]];
-    setTimeline(newTimeline);
-  };
-
-  const completedTasks = timeline?.filter(t => t.completed).length || 0;
-  const progress = timeline ? (completedTasks / timeline.length) * 100 : 0;
+  const priorityColors = {
+      High: 'bg-red-500',
+      Medium: 'bg-yellow-500',
+      Low: 'bg-green-500',
+  }
 
   return (
     <div className="space-y-8">
@@ -225,66 +224,88 @@ export default function EventPlannerPage() {
                         </Button>
                     </div>
                 </div>
+                 <div className="mt-4 space-y-2">
+                    <Label>Progress</Label>
+                    <Progress value={progress} className="h-3" />
+                    <p className="text-sm text-muted-foreground">{completedTasksCount} of {totalTasks} tasks completed</p>
+                </div>
             </CardHeader>
             <CardContent>
-                <div className="space-y-6 relative">
-                    {/* The "snake" line */}
-                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border -z-10"></div>
-                    
+                <div className="relative">
+                    {/* The timeline line */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-0.5 bg-gray-300 hidden md:block"></div>
+                     <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-300 md:hidden"></div>
+
                     {timeline.map((task, index) => (
-                        <div key={task.id} className="flex items-start gap-4 pl-12 relative group">
-                            <div className="absolute left-0 top-1.5 flex items-center">
-                               <div className="h-6 w-6 rounded-full bg-background border-2 border-primary flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-primary"></div>
-                               </div>
+                        <div key={task.id} className="relative md:grid md:grid-cols-2 md:gap-x-12 items-start my-8 group">
+                            <div className="md:col-start-1 md:col-end-2 md:pr-8 md:text-right">
+                                {/* Date for Desktop - alternating */}
+                                <p className={cn(
+                                    'font-semibold text-primary hidden md:block',
+                                    index % 2 === 1 && 'md:text-left md:pl-8'
+                                )}>{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
                             </div>
+                            
+                            {/* Connector dot and line */}
+                            <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background hidden md:block"></div>
+                            <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background md:hidden"></div>
 
-                            <div className="flex-grow bg-muted/50 p-4 rounded-lg">
-                                <div className="flex items-center gap-4">
-                                     <Checkbox 
-                                        id={`task-${task.id}`}
-                                        checked={task.completed}
-                                        onCheckedChange={() => handleTaskCheck(task.id)}
-                                        className="h-5 w-5"
-                                    />
-                                    {editingTaskId === task.id ? (
-                                        <Input 
-                                            value={editedTaskLabel}
-                                            onChange={(e) => setEditedTaskLabel(e.target.value)}
-                                            className="flex-grow"
+                            <div className={cn(
+                                "md:col-start-2 md:col-end-3",
+                                index % 2 === 1 && 'md:col-start-1 md:col-end-2 md:row-start-1'
+                            )}>
+                                 {/* Date for Mobile */}
+                                <p className="font-semibold text-primary mb-2 md:hidden">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
+                                
+                                <div className={cn(
+                                    "relative w-full md:w-[300px] bg-card border rounded-lg shadow-md p-4 space-y-2 ml-0 md:ml-0 group-hover:shadow-lg transition-shadow",
+                                    task.completed && 'bg-muted/60',
+                                    index % 2 === 0 ? 'md:ml-auto' : 'md:mr-auto'
+                                )}>
+                                    <Badge className={cn(
+                                        "absolute top-2 right-2 text-white", 
+                                        priorityColors[task.priority],
+                                        task.completed && 'opacity-50'
+                                    )}>{task.priority}</Badge>
+                                    
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox 
+                                            id={`task-${task.id}`}
+                                            checked={task.completed}
+                                            onCheckedChange={() => handleTaskCheck(task.id)}
+                                            className="h-5 w-5 mt-0.5"
                                         />
-                                    ) : (
-                                        <Label htmlFor={`task-${task.id}`} className={`flex-grow text-base ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                            {task.task}
-                                        </Label>
-                                    )}
-
-                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {editingTaskId === task.id ? (
-                                            <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600">
+                                        
+                                        <div className="flex-1">
+                                             {editingTaskId === task.id ? (
+                                                <Input 
+                                                    value={editedTaskLabel}
+                                                    onChange={(e) => setEditedTaskLabel(e.target.value)}
+                                                    className="flex-grow text-base"
+                                                />
+                                            ) : (
+                                                <h4 className={cn("font-semibold", task.completed && 'line-through text-muted-foreground')}>
+                                                    {task.task}
+                                                </h4>
+                                            )}
+                                            <p className="text-sm text-muted-foreground">${task.estimatedCost.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         {editingTaskId === task.id ? (
+                                            <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600">
                                                 <Save className="h-4 w-4" />
                                             </Button>
                                         ) : (
-                                            <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8">
+                                            <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-7 w-7">
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                         )}
-                                        <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-8 w-8 text-destructive">
+                                        <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-destructive">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
-                                        <Separator orientation="vertical" className="h-6"/>
-                                        <Button size="icon" variant="ghost" onClick={() => handleMoveTask(index, 'up')} disabled={index === 0} className="h-8 w-8">
-                                            <ArrowUp className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleMoveTask(index, 'down')} disabled={index === timeline.length - 1} className="h-8 w-8">
-                                            <ArrowDown className="h-4 w-4" />
-                                        </Button>
                                     </div>
-                                </div>
-                                <div className="pl-9 mt-2 flex items-center gap-6 text-sm text-muted-foreground">
-                                    <p><strong>Deadline:</strong> {new Date(task.deadline).toLocaleDateString()}</p>
-                                    <p><strong>Priority:</strong> {task.priority}</p>
-                                    <p><strong>Cost:</strong> ${task.estimatedCost.toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -296,3 +317,5 @@ export default function EventPlannerPage() {
     </div>
   );
 }
+
+    

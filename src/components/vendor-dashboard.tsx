@@ -70,8 +70,8 @@ export function VendorDashboard() {
             <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <CardTitle>Your Services & Offers</CardTitle>
-                    <CardDescription>A quick look at your current listings.</CardDescription>
+                    <CardTitle>Your Listings</CardTitle>
+                    <CardDescription>A quick look at your current services and offers.</CardDescription>
                 </div>
                 <Link href="/vendor/manage-services">
                   <Button variant="outline">

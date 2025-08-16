@@ -1,3 +1,4 @@
+
 'use client';
 
 import { services, offers, servicesAndOffers } from '@/lib/placeholder-data';
@@ -15,8 +16,8 @@ export function ClientDashboard() {
 
   return (
     <div className="space-y-8">
-      <Card className="overflow-hidden">
-        <CardHeader className="p-4 sm:p-6">
+      <Card className="overflow-hidden shadow-lg border-primary/20">
+        <CardHeader className="bg-gradient-to-br from-primary/10 to-transparent p-4 sm:p-6">
             <CardTitle className="text-2xl sm:text-3xl font-bold">Explore Event Services</CardTitle>
             <CardDescription>Find the perfect professional for your event.</CardDescription>
         </CardHeader>

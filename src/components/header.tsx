@@ -11,53 +11,111 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { MessageSquare, User, LogOut, Menu, Search } from 'lucide-react';
+import { MessageSquare, User, LogOut, Menu, Home, Compass, Calendar, PenTool, Briefcase, Users, Settings } from 'lucide-react';
 import { MessagingPanel } from './messaging-panel';
 import Link from 'next/link';
-import { Input } from './ui/input';
-import { ClientSidebar } from './client-sidebar';
-import { VendorSidebar } from './vendor-sidebar';
 import { usePathname } from 'next/navigation';
+import { Logo } from './logo';
+import { cn } from '@/lib/utils';
+import { Badge } from './ui/badge';
+import { quoteRequests } from '@/lib/placeholder-data';
+
+
+const clientLinks = [
+  { href: '/client/home', label: 'Home', icon: Home },
+  { href: '/client/explore', label: 'Explore', icon: Compass },
+  { href: '/client/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/client/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/client/event-planner', label: 'Planner', icon: PenTool },
+];
+
+const vendorLinks = [
+  { href: '/vendor/home', label: 'Home', icon: Home },
+  { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
+  { href: '/vendor/client-requests', label: 'Requests', icon: Users, badge: quoteRequests.filter(q => q.status === 'pending').length },
+  { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare },
+];
+
 
 export function AppHeader() {
   const loggedIn = true; // Mock state
   const pathname = usePathname();
   const isVendor = pathname.startsWith('/vendor');
+  const links = isVendor ? vendorLinks : clientLinks;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <div className="lg:hidden">
-            <Sheet>
-                <SheetTrigger asChild>
-                    <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    >
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Toggle navigation menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="p-0 flex flex-col">
-                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                   { isVendor ? <VendorSidebar /> : <ClientSidebar /> }
-                </SheetContent>
-            </Sheet>
-        </div>
+      <div className="flex items-center gap-6">
+        <Link href={isVendor ? "/vendor/home" : "/client/home"} className="flex items-center gap-2 font-semibold">
+            <Logo className="h-6 w-6 text-primary" />
+            <span className="hidden sm:inline-block">EventEase</span>
+        </Link>
+        
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-4">
+            {links.map(({ href, label, badge }) => (
+            <Link
+                key={href}
+                href={href}
+                className={cn(
+                'flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary',
+                pathname === href ? 'text-primary' : 'text-muted-foreground'
+                )}
+            >
+                {label}
+                 {badge && badge > 0 && (
+                    <Badge className="h-5 w-5 shrink-0 justify-center rounded-full p-1 text-xs">
+                        {badge}
+                    </Badge>
+                )}
+            </Link>
+            ))}
+        </nav>
+      </div>
 
-        <div className="w-full flex-1">
-             <form>
-                <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search services..."
-                    className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                />
-                </div>
-            </form>
-        </div>
-
+      <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
+         {/* Mobile Navigation */}
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 lg:hidden"
+                >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <nav className="grid gap-6 text-lg font-medium mt-10">
+                    <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
+                        <Logo className="h-6 w-6 text-primary" />
+                        <span>EventEase</span>
+                    </Link>
+                    {links.map(({ href, label, icon: Icon, badge }) => (
+                    <Link
+                        key={href}
+                        href={href}
+                        className={cn(
+                            'flex items-center gap-4 px-2.5 transition-colors hover:text-primary',
+                             pathname === href ? 'text-primary' : 'text-muted-foreground'
+                        )}
+                        >
+                        <Icon className="h-5 w-5" />
+                        {label}
+                        {badge && badge > 0 && (
+                            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                                {badge}
+                            </Badge>
+                        )}
+                    </Link>
+                    ))}
+                </nav>
+            </SheetContent>
+        </Sheet>
+        
         {loggedIn ? (
         <>
             <Sheet>
@@ -97,9 +155,15 @@ export function AppHeader() {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>My Bookings</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href={isVendor ? "/vendor/profile" : "/client/profile"}>Profile</Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href={isVendor ? "/vendor/bookings" : "/client/bookings"}>My Bookings</Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href={isVendor ? "/vendor/settings" : "/client/settings"}>Settings</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                  <Link href="/login">
                     <DropdownMenuItem>
@@ -115,6 +179,7 @@ export function AppHeader() {
                 <Button>Sign In</Button>
             </Link>
         )}
+      </div>
     </header>
   );
 }

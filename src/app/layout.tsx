@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'TradeCraft',
-  description: 'A platform for clients and vendors to connect and trade services.',
+  title: 'EventEase - Find Event Services',
+  description: 'Your one-stop marketplace to find and book services for your next event.',
 };
 
 export default function RootLayout({

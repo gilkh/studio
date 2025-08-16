@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tradecraft.app',
-  appName: 'TradeCraft',
+  appId: 'com.eventease.app',
+  appName: 'EventEase',
   webDir: 'out',
   server: {
     // This is required for hot-reloading in local development

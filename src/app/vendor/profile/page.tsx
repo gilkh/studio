@@ -7,10 +7,130 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star } from 'lucide-react';
+import { Camera, Star, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { getVendorProfile, updateVendorProfile } from '@/lib/services';
+import type { VendorProfile } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
+// Mock vendor ID for demonstration. In a real app, this would come from auth.
+const MOCK_VENDOR_ID = 'vendor123';
+
+const profileFormSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  category: z.string().min(1, "Category is required"),
+  tagline: z.string().min(1, "Tagline is required"),
+  description: z.string().min(1, "Description is required"),
+  email: z.string().email(),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+});
 
 export default function VendorProfilePage() {
+    const { toast } = useToast();
+    const [vendor, setVendor] = useState<VendorProfile | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const form = useForm<z.infer<typeof profileFormSchema>>({
+        resolver: zodResolver(profileFormSchema),
+        defaultValues: {
+            businessName: '',
+            category: '',
+            tagline: '',
+            description: '',
+            email: '',
+            phone: '',
+        },
+    });
+
+    useEffect(() => {
+        async function fetchVendor() {
+            try {
+                const vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
+                if (vendorProfile) {
+                    setVendor(vendorProfile);
+                    form.reset(vendorProfile);
+                } else {
+                    // If no profile, create one with mock data for the demo
+                    const newVendor = { 
+                        businessName: 'Timeless Snaps', 
+                        category: 'Photography', 
+                        tagline: 'Creative Wedding & Portrait Photography',
+                        description: 'Capturing your special moments with artistry and passion. We offer a range of packages including full-day coverage, engagement shoots, and custom-designed printed albums to make your memories last a lifetime.',
+                        email: 'contact@timeless-snaps.com',
+                        phone: '(555) 123-4567',
+                        ownerId: 'user123'
+                    };
+                    await updateVendorProfile(MOCK_VENDOR_ID, newVendor);
+                    setVendor({ id: MOCK_VENDOR_ID, createdAt: new Date(), ...newVendor });
+                    form.reset(newVendor);
+                }
+            } catch (error) {
+                console.error("Failed to fetch vendor profile:", error);
+                toast({
+                    title: "Error",
+                    description: "Could not load your profile. Please try again later.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchVendor();
+    }, [form, toast]);
+
+
+    async function onSubmit(values: z.infer<typeof profileFormSchema>) {
+        try {
+            await updateVendorProfile(MOCK_VENDOR_ID, values);
+            setVendor(prev => prev ? { ...prev, ...values } : null);
+            toast({
+                title: "Profile Updated",
+                description: "Your business information has been saved successfully.",
+            });
+        } catch (error) {
+            console.error("Failed to update profile:", error);
+            toast({
+                title: "Update Failed",
+                description: "Could not save your changes. Please try again.",
+                variant: "destructive",
+            });
+        }
+    }
+    
+    if (isLoading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                </CardHeader>
+                <CardContent className="space-y-8">
+                     <div className="flex flex-col sm:flex-row items-start gap-6">
+                        <Skeleton className="h-32 w-32 rounded-full" />
+                        <div className="flex-grow space-y-2">
+                            <Skeleton className="h-8 w-1/2" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/4" />
+                        </div>
+                    </div>
+                     <div className="space-y-6 max-w-4xl">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-10 w-full" /></div>
+                            <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-10 w-full" /></div>
+                        </div>
+                        <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-10 w-full" /></div>
+                        <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-24 w-full" /></div>
+                     </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
   return (
      <Card>
         <CardHeader>
@@ -21,8 +141,8 @@ export default function VendorProfilePage() {
             <div className="flex flex-col sm:flex-row items-start gap-6">
                 <div className="relative flex-shrink-0">
                     <Avatar className="h-32 w-32 border-4 border-primary/50">
-                        <AvatarImage src="https://i.pravatar.cc/150?u=timeless" alt="User" data-ai-hint="company logo" />
-                        <AvatarFallback>TS</AvatarFallback>
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`} alt={vendor?.businessName} data-ai-hint="company logo" />
+                        <AvatarFallback>{vendor?.businessName?.substring(0, 2)}</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">
                         <Camera className="h-4 w-4"/>
@@ -30,8 +150,8 @@ export default function VendorProfilePage() {
                     </Button>
                 </div>
                 <div className="flex-grow">
-                    <h2 className="text-3xl font-bold">Timeless Snaps</h2>
-                    <p className="text-muted-foreground">Creative Wedding & Portrait Photography</p>
+                    <h2 className="text-3xl font-bold">{vendor?.businessName}</h2>
+                    <p className="text-muted-foreground">{vendor?.tagline}</p>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
                         <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                         <span className="font-bold text-base">5.0</span>
@@ -40,54 +160,99 @@ export default function VendorProfilePage() {
                 </div>
             </div>
 
-            <form className="space-y-6 max-w-4xl">
-                 <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="businessName">Business Name</Label>
-                        <Input id="businessName" defaultValue="Timeless Snaps" />
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="businessName"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Business Name</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Category</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a category" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Catering">Catering</SelectItem>
+                                            <SelectItem value="Photography">Photography</SelectItem>
+                                            <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
+                                            <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
+                                            <SelectItem value="Venue">Venue</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="category">Category</Label>
-                         <Select name="category" defaultValue="Photography">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Catering">Catering</SelectItem>
-                                <SelectItem value="Photography">Photography</SelectItem>
-                                <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
-                                <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
-                                <SelectItem value="Venue">Venue</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="tagline">Tagline / Short Description</Label>
-                    <Input id="tagline" defaultValue="Creative Wedding & Portrait Photography" />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="description">Full Business Description</Label>
-                    <Textarea
-                        id="description"
-                        rows={6}
-                        defaultValue="Capturing your special moments with artistry and passion. We offer a range of packages including full-day coverage, engagement shoots, and custom-designed printed albums to make your memories last a lifetime."
+                    <FormField
+                        control={form.control}
+                        name="tagline"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Tagline / Short Description</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
-                </div>
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Public Email Address</Label>
-                        <Input id="email" type="email" defaultValue="contact@timeless-snaps.com" />
+                    <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Full Business Description</FormLabel>
+                                <FormControl><Textarea rows={6} {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <div className="grid md:grid-cols-2 gap-6">
+                         <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Public Email Address</FormLabel>
+                                    <FormControl><Input type="email" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Public Phone Number</FormLabel>
+                                    <FormControl><Input type="tel" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="phone">Public Phone Number</Label>
-                        <Input id="phone" type="tel" defaultValue="(555) 123-4567" />
+                    <div className="flex justify-end">
+                        <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+                           {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                           Save All Changes
+                        </Button>
                     </div>
-                </div>
-                <div className="flex justify-end">
-                    <Button size="lg">Save All Changes</Button>
-                </div>
-            </form>
+                </form>
+            </Form>
         </CardContent>
     </Card>
   )

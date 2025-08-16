@@ -1,3 +1,4 @@
+
 import type { Service, QuoteRequest, Booking, Message, Offer, ServiceOrOffer } from '@/lib/types';
 
 export const services: Service[] = [
@@ -139,3 +140,5 @@ export const messages: Message[] = [
         timestamp: '2 days ago',
     }
 ]
+// This will be handled by services now
+// export const savedTimelines: SavedTimeline[] = [];

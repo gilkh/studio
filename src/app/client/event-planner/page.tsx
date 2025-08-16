@@ -19,6 +19,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { saveTimeline, getSavedTimelines, updateTimeline } from '@/lib/services';
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -28,38 +29,47 @@ const formSchema = z.object({
   budget: z.coerce.number().min(1, 'Budget is required'),
 });
 
+// Mock user ID for demonstration. In a real app, this would come from auth.
+const MOCK_USER_ID = 'user123';
+
 function EventPlannerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [timeline, setTimeline] = useState<EventTask[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [eventName, setEventName] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editedTaskLabel, setEditedTaskLabel] = useState('');
-  const [savedTimelines, setSavedTimelines] = useState<SavedTimeline[]>([]);
   const [timelineId, setTimelineId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-        const storedTimelines = localStorage.getItem('savedEventTimelines');
-        if (storedTimelines) {
-            const parsedTimelines = JSON.parse(storedTimelines);
-            setSavedTimelines(parsedTimelines);
+    const timelineIdToLoad = searchParams.get('timelineId');
+    if (timelineIdToLoad) {
+        const loadTimeline = async () => {
+            setIsLoading(true);
+            try {
+                // In a real app we would check if the user owns this timeline
+                const timelines = await getSavedTimelines(MOCK_USER_ID);
+                const timelineToLoad = timelines.find(t => t.id === timelineIdToLoad);
 
-            const timelineIdToLoad = searchParams.get('timelineId');
-            if (timelineIdToLoad) {
-                const timelineToLoad = parsedTimelines.find((t: SavedTimeline) => t.id === timelineIdToLoad);
                 if (timelineToLoad) {
                     handleLoadTimeline(timelineToLoad);
-                    // Remove the query param from URL after loading
-                    router.replace('/client/event-planner', { scroll: false });
+                } else {
+                    toast({ title: "Error", description: "Timeline not found.", variant: "destructive" });
                 }
+                 // Remove the query param from URL after loading
+                router.replace('/client/event-planner', { scroll: false });
+            } catch (error) {
+                console.error("Could not load timeline from Firestore", error);
+                toast({ title: "Error", description: "Could not load the timeline.", variant: "destructive" });
+            } finally {
+                setIsLoading(false);
             }
-        }
-    } catch (error) {
-        console.error("Could not load saved timelines from localStorage", error);
+        };
+        loadTimeline();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router]);
@@ -131,27 +141,44 @@ function EventPlannerContent() {
     setEditedTaskLabel('');
   };
 
-  const handleSaveTimeline = () => {
+  const handleSaveTimeline = async () => {
     if (!timeline) return;
+    setIsSaving(true);
 
-    const id = timelineId || `timeline-${Date.now()}`;
-    const newSavedTimeline: SavedTimeline = {
-      id,
-      name: eventName,
-      tasks: timeline,
-      lastModified: new Date().toISOString(),
-    };
-
-    const updatedSavedTimelines = savedTimelines.filter(st => st.id !== id);
-    const newTimelines = [...updatedSavedTimelines, newSavedTimeline];
-    
-    setSavedTimelines(newTimelines);
-    setTimelineId(id); // Keep track of the current timeline's ID
-    localStorage.setItem('savedEventTimelines', JSON.stringify(newTimelines));
-    toast({
-        title: 'Timeline Saved!',
-        description: `Your event plan "${eventName}" has been saved.`,
-    });
+    try {
+        if (timelineId) {
+            // Update existing timeline
+            const timelineToUpdate: SavedTimeline = {
+                id: timelineId,
+                name: eventName,
+                tasks: timeline,
+                lastModified: new Date().toISOString(),
+            };
+            await updateTimeline(MOCK_USER_ID, timelineId, timelineToUpdate);
+            toast({
+                title: 'Timeline Updated!',
+                description: `Your event plan "${eventName}" has been saved.`,
+            });
+        } else {
+            // Create new timeline
+            const newSavedTimeline: Omit<SavedTimeline, 'id'> = {
+                name: eventName,
+                tasks: timeline,
+                lastModified: new Date().toISOString(),
+            };
+            const newId = await saveTimeline(MOCK_USER_ID, newSavedTimeline);
+            setTimelineId(newId);
+            toast({
+                title: 'Timeline Saved!',
+                description: `Your event plan "${eventName}" has been saved.`,
+            });
+        }
+    } catch (error) {
+        console.error("Failed to save timeline:", error);
+        toast({ title: "Error", description: "Could not save the timeline.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
   };
   
   const handleLoadTimeline = (timelineToLoad: SavedTimeline) => {
@@ -277,9 +304,9 @@ function EventPlannerContent() {
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Task
                         </Button>
-                        <Button onClick={handleSaveTimeline}>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Timeline
+                        <Button onClick={handleSaveTimeline} disabled={isSaving}>
+                            {isSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            {isSaving ? 'Saving...' : timelineId ? 'Save Changes' : 'Save Timeline'}
                         </Button>
                     </div>
                 </div>

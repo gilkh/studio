@@ -7,35 +7,58 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
-import { FileCheck, Trash2, ArrowLeft } from 'lucide-react';
+import { FileCheck, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { getSavedTimelines, deleteTimeline } from '@/lib/services';
+import { Skeleton } from '@/components/ui/skeleton';
+
+
+// Mock user ID for demonstration. In a real app, this would come from auth.
+const MOCK_USER_ID = 'user123';
 
 export default function SavedTimelinesPage() {
     const [savedTimelines, setSavedTimelines] = useState<SavedTimeline[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
     const router = useRouter();
 
     useEffect(() => {
-        try {
-            const storedTimelines = localStorage.getItem('savedEventTimelines');
-            if (storedTimelines) {
-                setSavedTimelines(JSON.parse(storedTimelines));
+        async function fetchTimelines() {
+            try {
+                const timelines = await getSavedTimelines(MOCK_USER_ID);
+                setSavedTimelines(timelines);
+            } catch (error) {
+                console.error("Could not load saved timelines from Firestore", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load saved timelines.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error("Could not load saved timelines from localStorage", error);
         }
-    }, []);
+        fetchTimelines();
+    }, [toast]);
 
-    const handleDeleteSavedTimeline = (id: string) => {
-        const newTimelines = savedTimelines.filter(st => st.id !== id);
-        setSavedTimelines(newTimelines);
-        localStorage.setItem('savedEventTimelines', JSON.stringify(newTimelines));
-        toast({
-            title: 'Timeline Deleted',
-            description: 'The saved timeline has been removed.',
-        });
+    const handleDeleteSavedTimeline = async (id: string) => {
+        try {
+            await deleteTimeline(MOCK_USER_ID, id);
+            setSavedTimelines(prev => prev.filter(st => st.id !== id));
+            toast({
+                title: 'Timeline Deleted',
+                description: 'The saved timeline has been removed.',
+            });
+        } catch (error) {
+             console.error("Could not delete timeline from Firestore", error);
+            toast({
+                title: "Error",
+                description: "Failed to delete the timeline.",
+                variant: "destructive",
+            });
+        }
     }
 
     const handleLoadTimeline = (id: string) => {
@@ -62,7 +85,13 @@ export default function SavedTimelinesPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {savedTimelines.length > 0 ? (
+                        {isLoading ? (
+                            <div className="space-y-3">
+                                <Skeleton className="h-24 w-full rounded-lg" />
+                                <Skeleton className="h-24 w-full rounded-lg" />
+                                <Skeleton className="h-24 w-full rounded-lg" />
+                            </div>
+                        ) : savedTimelines.length > 0 ? (
                             <ul className="space-y-3">
                             {savedTimelines.sort((a,b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()).map(st => {
                                 const savedProgress = st.tasks.length > 0 ? (st.tasks.filter(t => t.completed).length / st.tasks.length) * 100 : 0;

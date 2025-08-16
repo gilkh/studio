@@ -1,5 +1,4 @@
 
-
 export type ServiceType = 'service' | 'offer';
 
 export interface BaseService {
@@ -78,4 +77,26 @@ export interface SavedTimeline {
     name: string;
     tasks: EventTask[];
     lastModified: string;
+}
+
+// Firestore-specific types
+export interface UserProfile {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    createdAt: Date;
+}
+
+export interface VendorProfile {
+    id: string;
+    businessName: string;
+    category: string;
+    tagline: string;
+    description: string;
+    email: string;
+    phone: string;
+    ownerId: string;
+    createdAt: Date;
 }

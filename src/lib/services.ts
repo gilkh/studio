@@ -125,9 +125,17 @@ export async function createOrUpdateVendorProfile(vendorId: string, data: Partia
 
 // Timeline Services
 export async function getSavedTimelines(userId: string): Promise<SavedTimeline[]> {
-    const q = query(collection(db, `users/${userId}/timelines`));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedTimeline));
+    try {
+        const q = query(collection(db, `users/${userId}/timelines`));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedTimeline));
+    } catch(e) {
+         console.error(`Firebase error getting saved timelines:`, e);
+        if ((e as any).code === 'unavailable') {
+            return []; // Return empty array if offline
+        }
+        throw e;
+    }
 }
 
 export async function saveTimeline(userId: string, timeline: Omit<SavedTimeline, 'id'>): Promise<string> {
@@ -299,4 +307,3 @@ export async function toggleSavedItem(userId: string, itemId: string) {
         });
     }
 }
-

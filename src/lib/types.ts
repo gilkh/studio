@@ -1,5 +1,8 @@
-export interface Service {
+export type ServiceType = 'service' | 'offer';
+
+export interface BaseService {
   id: string;
+  type: ServiceType;
   vendorName: string;
   vendorAvatar: string;
   title: string;
@@ -7,10 +10,23 @@ export interface Service {
   category: string;
   rating: number;
   reviewCount: number;
-  price: number;
-  availability: string;
   image: string;
 }
+
+export interface Service extends BaseService {
+  type: 'service';
+  price?: never; // Services don't have a fixed price, they require a quote
+  availability?: never;
+}
+
+export interface Offer extends BaseService {
+    type: 'offer';
+    price: number; // Offers have a fixed price
+    availability: string;
+}
+
+export type ServiceOrOffer = Service | Offer;
+
 
 export interface QuoteRequest {
   id: string;

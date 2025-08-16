@@ -49,7 +49,7 @@ export function AppHeader() {
       <div className="flex items-center gap-6">
         <Link href={isVendor ? "/vendor/home" : "/client/home"} className="flex items-center gap-2 font-semibold">
             <Logo className="h-6 w-6 text-primary" />
-            <span className="hidden sm:inline-block">EventEase</span>
+            <span className="hidden sm:inline-block">TradeCraft</span>
         </Link>
         
         {/* Desktop Navigation */}
@@ -124,12 +124,12 @@ export function AppHeader() {
                     <Link href={isVendor ? "/vendor/settings" : "/client/settings"}>Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                 <Link href="/login">
-                    <DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href="/login">
                         <LogOut className="mr-2 h-4 w-4" />
                         Log out
-                    </DropdownMenuItem>
-                </Link>
+                    </Link>
+                </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </>

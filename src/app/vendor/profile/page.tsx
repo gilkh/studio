@@ -66,7 +66,10 @@ export default function VendorProfilePage() {
         async function fetchVendor() {
             try {
                 let vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
-                if (!vendorProfile) {
+                if (vendorProfile) {
+                    setVendor(vendorProfile);
+                    form.reset(vendorProfile);
+                } else {
                     // If no profile, create one with mock data for the demo
                     const newVendor = { 
                         businessName: 'Timeless Snaps', 
@@ -79,10 +82,10 @@ export default function VendorProfilePage() {
                     };
                     await createOrUpdateVendorProfile(MOCK_VENDOR_ID, newVendor);
                     vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
-                }
-                if (vendorProfile) {
-                    setVendor(vendorProfile);
-                    form.reset(vendorProfile);
+                    if (vendorProfile) {
+                        setVendor(vendorProfile);
+                        form.reset(vendorProfile);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch vendor profile:", error);

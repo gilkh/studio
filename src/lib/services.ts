@@ -1,5 +1,6 @@
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer } from './types';
 
@@ -55,11 +56,12 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     return null;
 }
 
-export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id'>>) {
+export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'createdAt'>>) {
     const docRef = doc(db, 'users', userId);
     // Use setDoc with merge:true to either create a new doc or update an existing one.
     // This avoids the race condition of reading (getDoc) before the client is online.
-    await setDoc(docRef, { ...data, createdAt: serverTimestamp(), savedItemIds: [] }, { merge: true });
+    const initialData = data.firstName ? {} : { savedItemIds: [] };
+    await setDoc(docRef, { ...data, createdAt: serverTimestamp(), ...initialData }, { merge: true });
 }
 
 
@@ -78,7 +80,7 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
     return null;
 }
 
-export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<Omit<VendorProfile, 'id'>>) {
+export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<Omit<VendorProfile, 'id' | 'createdAt'>>) {
     const docRef = doc(db, 'vendors', vendorId);
      // Use setDoc with merge:true to either create a new doc or update an existing one.
     await setDoc(docRef, { ...data, createdAt: serverTimestamp(), portfolio: [] }, { merge: true });
@@ -205,18 +207,25 @@ export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
 
 export async function toggleSavedItem(userId: string, itemId: string) {
     const userRef = doc(db, 'users', userId);
-    const user = await getUserProfile(userId);
-    const currentSaved = user?.savedItemIds || [];
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        // Create the user profile if it doesn't exist, and save the item.
+        await createOrUpdateUserProfile(userId, { savedItemIds: [itemId] });
+        return;
+    }
+    
+    const currentSaved = userSnap.data()?.savedItemIds || [];
 
     if (currentSaved.includes(itemId)) {
-        // Remove item
+        // Atomically remove the item from the array
         await updateDoc(userRef, {
-            savedItemIds: currentSaved.filter(id => id !== itemId)
+            savedItemIds: arrayRemove(itemId)
         });
     } else {
-        // Add item
+        // Atomically add the new item to the array
         await updateDoc(userRef, {
-            savedItemIds: [...currentSaved, itemId]
+            savedItemIds: arrayUnion(itemId)
         });
     }
 }

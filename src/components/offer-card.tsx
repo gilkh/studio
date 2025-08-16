@@ -26,14 +26,19 @@ export function OfferCard({ offer, role }: OfferCardProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if item is saved
-    if (role === 'client') {
-      getUserProfile(MOCK_USER_ID).then(profile => {
-        if (profile?.savedItemIds?.includes(offer.id)) {
-          setIsSaved(true);
+    async function checkSavedStatus() {
+        if (role === 'client') {
+            try {
+                const profile = await getUserProfile(MOCK_USER_ID);
+                if (profile?.savedItemIds?.includes(offer.id)) {
+                    setIsSaved(true);
+                }
+            } catch (error) {
+                console.warn("Could not check saved status. User profile might not exist yet.", error);
+            }
         }
-      })
     }
+    checkSavedStatus();
   }, [offer.id, role]);
 
   const handleSaveToggle = async () => {

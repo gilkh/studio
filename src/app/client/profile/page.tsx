@@ -45,15 +45,18 @@ export default function ClientProfilePage() {
     async function fetchUser() {
       try {
         let userProfile = await getUserProfile(MOCK_USER_ID);
-        if (!userProfile) {
-            // If no profile, create one with mock data for the demo
-            const newUser = { id: MOCK_USER_ID, firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '(123) 456-7890' };
-            await createOrUpdateUserProfile(MOCK_USER_ID, newUser);
-            userProfile = await getUserProfile(MOCK_USER_ID);
-        }
         if (userProfile) {
             setUser(userProfile);
             form.reset(userProfile);
+        } else {
+          // If no profile, create one with mock data for the demo
+          const newUser = { id: MOCK_USER_ID, firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '(123) 456-7890' };
+          await createOrUpdateUserProfile(MOCK_USER_ID, newUser);
+          userProfile = await getUserProfile(MOCK_USER_ID);
+          if (userProfile) {
+            setUser(userProfile);
+            form.reset(userProfile);
+          }
         }
 
       } catch (error) {

@@ -15,12 +15,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { createNewUser } from '@/lib/services';
-import { Loader2 } from 'lucide-react';
+import { Camera, Loader2, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from 'react';
 
 const signupFormSchema = z.object({
   accountType: z.enum(['client', 'vendor'], {
     required_error: "You need to select an account type.",
   }),
+  profilePicture: z.any().optional(),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   businessName: z.string().optional(),
@@ -40,6 +43,7 @@ const signupFormSchema = z.object({
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof signupFormSchema>>({
     resolver: zodResolver(signupFormSchema),
@@ -54,6 +58,8 @@ export default function SignupPage() {
   });
 
   const accountType = form.watch('accountType');
+  const firstName = form.watch('firstName');
+  const lastName = form.watch('lastName');
 
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
     form.clearErrors();
@@ -129,6 +135,44 @@ export default function SignupPage() {
                                     </FormItem>
                                 )}
                                 />
+                            
+                             <FormField
+                                control={form.control}
+                                name="profilePicture"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-col items-center">
+                                    <FormLabel>Profile Picture (Optional)</FormLabel>
+                                    <FormControl>
+                                    <div className="relative mt-2">
+                                        <Avatar className="h-24 w-24 border-2 border-primary/50">
+                                            <AvatarImage src={avatarPreview || undefined} alt="Avatar preview" />
+                                            <AvatarFallback>
+                                                {firstName && lastName ? `${firstName.charAt(0)}${lastName.charAt(0)}` : <User />}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <label htmlFor="picture-upload" className="absolute -bottom-2 -right-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-background hover:bg-accent">
+                                            <Camera className="h-4 w-4" />
+                                            <Input 
+                                                id="picture-upload"
+                                                type="file"
+                                                className="sr-only"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setAvatarPreview(URL.createObjectURL(file));
+                                                        field.onChange(file);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+                                    </FormControl>
+                                    <FormMessage className="mt-2" />
+                                </FormItem>
+                                )}
+                            />
+
 
                             <div className="grid grid-cols-2 gap-4">
                                 <FormField

@@ -5,20 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, PlusCircle, Trash2, Edit, Save, List, X, FileCheck, CheckCircle } from 'lucide-react';
+import { Loader, PlusCircle, Trash2, Edit, Save, List } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { EventTask, SavedTimeline } from '@/lib/types';
 import { generateTimeline } from '@/lib/timeline-generator';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -28,7 +28,10 @@ const formSchema = z.object({
   budget: z.coerce.number().min(1, 'Budget is required'),
 });
 
-export default function EventPlannerPage() {
+function EventPlannerContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [timeline, setTimeline] = useState<EventTask[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [eventName, setEventName] = useState('');
@@ -42,12 +45,24 @@ export default function EventPlannerPage() {
     try {
         const storedTimelines = localStorage.getItem('savedEventTimelines');
         if (storedTimelines) {
-            setSavedTimelines(JSON.parse(storedTimelines));
+            const parsedTimelines = JSON.parse(storedTimelines);
+            setSavedTimelines(parsedTimelines);
+
+            const timelineIdToLoad = searchParams.get('timelineId');
+            if (timelineIdToLoad) {
+                const timelineToLoad = parsedTimelines.find((t: SavedTimeline) => t.id === timelineIdToLoad);
+                if (timelineToLoad) {
+                    handleLoadTimeline(timelineToLoad);
+                    // Remove the query param from URL after loading
+                    router.replace('/client/event-planner', { scroll: false });
+                }
+            }
         }
     } catch (error) {
         console.error("Could not load saved timelines from localStorage", error);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -136,11 +151,6 @@ export default function EventPlannerPage() {
     toast({
         title: 'Timeline Saved!',
         description: `Your event plan "${eventName}" has been saved.`,
-        action: (
-          <div className="p-1 rounded-full bg-green-500 text-white">
-            <CheckCircle className="h-5 w-5" />
-          </div>
-        )
     });
   };
   
@@ -148,16 +158,6 @@ export default function EventPlannerPage() {
     setTimeline(timelineToLoad.tasks);
     setEventName(timelineToLoad.name);
     setTimelineId(timelineToLoad.id);
-  }
-
-  const handleDeleteSavedTimeline = (id: string) => {
-      const newTimelines = savedTimelines.filter(st => st.id !== id);
-      setSavedTimelines(newTimelines);
-      localStorage.setItem('savedEventTimelines', JSON.stringify(newTimelines));
-      toast({
-          title: 'Timeline Deleted',
-          description: 'The saved timeline has been removed.',
-      });
   }
 
   const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
@@ -246,57 +246,11 @@ export default function EventPlannerPage() {
                     {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isLoading ? 'Generating Plan...' : 'Generate New Plan'}
                 </Button>
-
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="lg">
-                            <List className="mr-2 h-4 w-4" /> View Saved Timelines
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl">
-                        <DialogHeader>
-                            <DialogTitle>My Saved Timelines</DialogTitle>
-                            <DialogDescription>
-                                Load a previously saved event plan or delete ones you no longer need.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="max-h-[60vh] overflow-y-auto p-1">
-                            {savedTimelines.length > 0 ? (
-                                <ul className="space-y-3">
-                                {savedTimelines.sort((a,b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()).map(st => {
-                                    const savedProgress = st.tasks.length > 0 ? (st.tasks.filter(t => t.completed).length / st.tasks.length) * 100 : 0;
-                                    return (
-                                        <li key={st.id} className="p-4 border rounded-lg flex items-center justify-between gap-4 group">
-                                            <div className="flex-grow">
-                                                <p className="font-semibold">{st.name}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Last updated: {format(new Date(st.lastModified), "PPP p")}
-                                                </p>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <Progress value={savedProgress} className="h-2 w-32" />
-                                                    <span className="text-xs text-muted-foreground">{Math.round(savedProgress)}%</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2 items-center">
-                                                <DialogClose asChild>
-                                                    <Button onClick={() => handleLoadTimeline(st)}>
-                                                        <FileCheck className="mr-2 h-4 w-4"/> Load
-                                                    </Button>
-                                                </DialogClose>
-                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteSavedTimeline(st.id)} className="text-destructive opacity-0 group-hover:opacity-100">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                            ) : (
-                                <p className="text-center text-muted-foreground py-8">You have no saved timelines yet.</p>
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <Link href="/client/event-planner/saved">
+                    <Button variant="outline" size="lg" asChild>
+                       <a><List className="mr-2 h-4 w-4" /> View My Timelines</a>
+                    </Button>
+                </Link>
               </div>
             </form>
           </Form>
@@ -416,4 +370,13 @@ export default function EventPlannerPage() {
       )}
     </div>
   );
+}
+
+
+export default function EventPlannerPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <EventPlannerContent />
+        </Suspense>
+    )
 }

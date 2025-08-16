@@ -106,11 +106,11 @@ export default function EventPlannerPage() {
   const totalTasks = timeline?.length || 0;
   const progress = totalTasks > 0 ? (completedTasksCount / totalTasks) * 100 : 0;
 
-  const priorityColors = {
-      High: 'bg-red-500',
-      Medium: 'bg-yellow-500',
-      Low: 'bg-green-500',
-  }
+  const priorityColors: { [key in EventTask['priority']]: string } = {
+    High: 'bg-red-500/90 border-red-600/50',
+    Medium: 'bg-yellow-500/90 border-yellow-600/50',
+    Low: 'bg-green-500/90 border-green-600/50',
+  };
 
   return (
     <div className="space-y-8">
@@ -231,80 +231,81 @@ export default function EventPlannerPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="relative">
+                <div className="relative mt-8">
                     {/* The timeline line */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-0.5 bg-gray-300 hidden md:block"></div>
-                     <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-300 md:hidden"></div>
-
+                    <div className="absolute left-6 top-0 h-full w-0.5 bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div>
+                    
                     {timeline.map((task, index) => (
-                        <div key={task.id} className="relative md:grid md:grid-cols-2 md:gap-x-12 items-start my-8 group">
-                            <div className="md:col-start-1 md:col-end-2 md:pr-8 md:text-right">
-                                {/* Date for Desktop - alternating */}
-                                <p className={cn(
-                                    'font-semibold text-primary hidden md:block',
-                                    index % 2 === 1 && 'md:text-left md:pl-8'
-                                )}>{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
-                            </div>
-                            
-                            {/* Connector dot and line */}
-                            <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background hidden md:block"></div>
-                            <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background md:hidden"></div>
-
-                            <div className={cn(
-                                "md:col-start-2 md:col-end-3",
-                                index % 2 === 1 && 'md:col-start-1 md:col-end-2 md:row-start-1'
-                            )}>
-                                 {/* Date for Mobile */}
-                                <p className="font-semibold text-primary mb-2 md:hidden">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
-                                
+                        <div key={task.id} className="relative mb-8 group">
+                            <div className="flex md:grid md:grid-cols-2 items-center">
+                                {/* Desktop: Date on the left for even, right for odd */}
                                 <div className={cn(
-                                    "relative w-full md:w-[300px] bg-card border rounded-lg shadow-md p-4 space-y-2 ml-0 md:ml-0 group-hover:shadow-lg transition-shadow",
-                                    task.completed && 'bg-muted/60',
-                                    index % 2 === 0 ? 'md:ml-auto' : 'md:mr-auto'
+                                    "hidden md:flex",
+                                    index % 2 === 0 ? 'justify-end pr-8' : 'justify-start pl-8 col-start-2'
                                 )}>
-                                    <Badge className={cn(
-                                        "absolute top-2 right-2 text-white", 
-                                        priorityColors[task.priority],
-                                        task.completed && 'opacity-50'
-                                    )}>{task.priority}</Badge>
+                                    <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
+                                </div>
+
+                                {/* Connector dot */}
+                                <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background md:left-1/2"></div>
+
+                                {/* Task Card */}
+                                <div className={cn(
+                                    "relative ml-12 md:ml-0 md:w-[300px] lg:w-[400px]",
+                                    index % 2 === 0 ? 'md:col-start-2 md:pl-8' : 'md:col-start-1 md:text-right md:pr-8'
+                                )}>
+                                     {/* Mobile: Date above card */}
+                                    <p className="font-semibold text-primary mb-1 md:hidden">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
                                     
-                                    <div className="flex items-start gap-3">
-                                        <Checkbox 
-                                            id={`task-${task.id}`}
-                                            checked={task.completed}
-                                            onCheckedChange={() => handleTaskCheck(task.id)}
-                                            className="h-5 w-5 mt-0.5"
-                                        />
+                                    <div className={cn(
+                                        "bg-card border rounded-lg shadow-md p-4 space-y-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+                                        task.completed && 'bg-muted/60 opacity-80'
+                                    )}>
+                                        <Badge className={cn(
+                                            "absolute top-2 right-2 text-white text-xs border", 
+                                            priorityColors[task.priority],
+                                            task.completed && 'opacity-60'
+                                        )}>{task.priority}</Badge>
                                         
-                                        <div className="flex-1">
-                                             {editingTaskId === task.id ? (
-                                                <Input 
-                                                    value={editedTaskLabel}
-                                                    onChange={(e) => setEditedTaskLabel(e.target.value)}
-                                                    className="flex-grow text-base"
-                                                />
-                                            ) : (
-                                                <h4 className={cn("font-semibold", task.completed && 'line-through text-muted-foreground')}>
-                                                    {task.task}
-                                                </h4>
-                                            )}
-                                            <p className="text-sm text-muted-foreground">${task.estimatedCost.toLocaleString()}</p>
+                                        <div className="flex items-start gap-3">
+                                            <Checkbox 
+                                                id={`task-${task.id}`}
+                                                checked={task.completed}
+                                                onCheckedChange={() => handleTaskCheck(task.id)}
+                                                className="h-5 w-5 mt-1"
+                                            />
+                                            
+                                            <div className="flex-1">
+                                                 {editingTaskId === task.id ? (
+                                                    <Input 
+                                                        value={editedTaskLabel}
+                                                        onChange={(e) => setEditedTaskLabel(e.target.value)}
+                                                        className="flex-grow text-base h-8"
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveTask(task.id)}
+                                                    />
+                                                ) : (
+                                                    <h4 className={cn("font-semibold", task.completed && 'line-through text-muted-foreground')}>
+                                                        {task.task}
+                                                    </h4>
+                                                )}
+                                                <p className="text-sm text-muted-foreground">${task.estimatedCost.toLocaleString()}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                         {editingTaskId === task.id ? (
-                                            <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600">
-                                                <Save className="h-4 w-4" />
+                                        
+                                        <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                             {editingTaskId === task.id ? (
+                                                <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600 hover:bg-green-100 hover:text-green-700">
+                                                    <Save className="h-4 w-4" />
+                                                </Button>
+                                            ) : (
+                                                <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-7 w-7">
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-destructive hover:bg-red-100">
+                                                <Trash2 className="h-4 w-4" />
                                             </Button>
-                                        ) : (
-                                            <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-7 w-7">
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                        <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-destructive">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -317,5 +318,3 @@ export default function EventPlannerPage() {
     </div>
   );
 }
-
-    

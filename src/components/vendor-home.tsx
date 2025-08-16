@@ -8,14 +8,14 @@ import { Users, Briefcase, CalendarClock, MessageSquare, PlusCircle } from 'luci
 import { Badge } from './ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState } from 'react';
-import type { Booking, QuoteRequest, ServiceOrOffer } from '@/lib/types';
-import { getBookingsForVendor, getVendorQuoteRequests, getServicesAndOffers } from '@/lib/services';
+import type { Booking, QuoteRequest, ServiceOrOffer, VendorProfile } from '@/lib/types';
+import { getBookingsForVendor, getVendorQuoteRequests, getServicesAndOffers, getVendorProfile } from '@/lib/services';
 import { Skeleton } from './ui/skeleton';
-
-// Mock vendor ID
-const MOCK_VENDOR_ID = 'vendor123';
+import { useAuth } from '@/hooks/use-auth';
 
 export function VendorHome() {
+  const { userId: vendorId, isLoading: isAuthLoading } = useAuth();
+  const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const [listings, setListings] = useState<ServiceOrOffer[]>([]);
   const [pendingRequests, setPendingRequests] = useState<QuoteRequest[]>([]);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
@@ -23,14 +23,20 @@ export function VendorHome() {
 
   useEffect(() => {
     async function loadDashboardData() {
+        if (!vendorId) {
+            if (!isAuthLoading) setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
-            const [allListings, requests, bookings] = await Promise.all([
+            const [profile, allListings, requests, bookings] = await Promise.all([
+                getVendorProfile(vendorId),
                 getServicesAndOffers(),
-                getVendorQuoteRequests(MOCK_VENDOR_ID),
-                getBookingsForVendor(MOCK_VENDOR_ID),
+                getVendorQuoteRequests(vendorId),
+                getBookingsForVendor(vendorId),
             ]);
-            setListings(allListings.filter(l => l.vendorId === MOCK_VENDOR_ID));
+            setVendorProfile(profile);
+            setListings(allListings.filter(l => l.vendorId === vendorId));
             setPendingRequests(requests.filter(r => r.status === 'pending'));
             setUpcomingBookings(bookings.filter(b => b.date >= new Date()).slice(0,2));
         } catch (error) {
@@ -40,13 +46,14 @@ export function VendorHome() {
         }
     }
     loadDashboardData();
-  }, []);
+  }, [vendorId, isAuthLoading]);
 
   const recentActivity = [
       { type: 'request', data: pendingRequests[0], time: new Date(new Date().setDate(new Date().getDate() - 1)) },
       { type: 'booking', data: upcomingBookings[0], time: new Date(new Date().setDate(new Date().getDate() - 2)) },
   ].filter(activity => activity.data).sort((a, b) => b.time.getTime() - a.time.getTime());
 
+  const pageIsLoading = isLoading || isAuthLoading;
 
   return (
     <div className="space-y-8">
@@ -54,7 +61,9 @@ export function VendorHome() {
             <CardHeader>
                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
-                        <CardTitle className="text-3xl font-bold">Welcome, Timeless Snaps!</CardTitle>
+                        <CardTitle className="text-3xl font-bold">
+                             {pageIsLoading ? <Skeleton className="h-9 w-64" /> : `Welcome, ${vendorProfile?.businessName || 'Vendor'}!`}
+                        </CardTitle>
                         <CardDescription className="mt-2 text-lg">Here's what's happening with your business today.</CardDescription>
                     </div>
                     <Link href="/vendor/manage-services">
@@ -76,7 +85,7 @@ export function VendorHome() {
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{listings.length}</div>}
+              {pageIsLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{listings.length}</div>}
               <p className="text-xs text-muted-foreground">
                 {listings.filter(l => l.type === 'service').length} Services, {listings.filter(l => l.type === 'offer').length} Offers
               </p>
@@ -90,7 +99,7 @@ export function VendorHome() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">+{pendingRequests.length}</div>}
+              {pageIsLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">+{pendingRequests.length}</div>}
                <Link href="/vendor/client-requests">
                 <p className="text-xs text-muted-foreground underline hover:text-primary">
                     New quote requests from clients
@@ -104,7 +113,7 @@ export function VendorHome() {
               <CalendarClock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{upcomingBookings.length}</div>}
+              {pageIsLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{upcomingBookings.length}</div>}
               <Link href="/vendor/bookings">
                 <p className="text-xs text-muted-foreground underline hover:text-primary">
                     Confirmed and scheduled events
@@ -122,7 +131,7 @@ export function VendorHome() {
                         <CardDescription>A summary of your latest notifications and tasks.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {isLoading ? (
+                        {pageIsLoading ? (
                             <div className="space-y-4">
                                 <Skeleton className="h-12 w-full" />
                                 <Skeleton className="h-12 w-full" />
@@ -163,7 +172,7 @@ export function VendorHome() {
                          <CardDescription>Your next two events.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {isLoading ? (
+                        {pageIsLoading ? (
                             <div className="space-y-3">
                                 <Skeleton className="h-16 w-full" />
                                 <Skeleton className="h-16 w-full" />

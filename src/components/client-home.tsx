@@ -8,14 +8,14 @@ import { OfferCard } from './offer-card';
 import Link from 'next/link';
 import { Calendar, Compass, Heart, PartyPopper } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Booking, ServiceOrOffer } from '@/lib/types';
-import { getBookingsForUser, getSavedItems, getServicesAndOffers } from '@/lib/services';
+import type { Booking, ServiceOrOffer, UserProfile } from '@/lib/types';
+import { getBookingsForUser, getSavedItems, getServicesAndOffers, getUserProfile } from '@/lib/services';
 import { Skeleton } from './ui/skeleton';
-
-// Mock user ID
-const MOCK_USER_ID = 'user123';
+import { useAuth } from '@/hooks/use-auth';
 
 export function ClientHome() {
+    const { userId, isLoading: isAuthLoading } = useAuth();
+    const [user, setUser] = useState<UserProfile | null>(null);
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
     const [savedItems, setSavedItems] = useState<ServiceOrOffer[]>([]);
     const [featuredItems, setFeaturedItems] = useState<ServiceOrOffer[]>([]);
@@ -23,13 +23,20 @@ export function ClientHome() {
 
     useEffect(() => {
         async function loadDashboardData() {
+            if (!userId) {
+                if (!isAuthLoading) setIsLoading(false);
+                return;
+            };
+
             setIsLoading(true);
             try {
-                const [bookings, saved, allItems] = await Promise.all([
-                    getBookingsForUser(MOCK_USER_ID),
-                    getSavedItems(MOCK_USER_ID),
+                const [userProfile, bookings, saved, allItems] = await Promise.all([
+                    getUserProfile(userId),
+                    getBookingsForUser(userId),
+                    getSavedItems(userId),
                     getServicesAndOffers(),
                 ]);
+                setUser(userProfile)
                 setUpcomingBookings(bookings.filter(b => b.date >= new Date()));
                 setSavedItems(saved);
                 setFeaturedItems(allItems.slice(0, 4)); // Show first 4 as featured
@@ -40,10 +47,11 @@ export function ClientHome() {
             }
         }
         loadDashboardData();
-    }, []);
+    }, [userId, isAuthLoading]);
     
     const specialOffers = featuredItems.filter(i => i.type === 'offer').slice(0, 2);
     const featuredServices = featuredItems.filter(i => i.type === 'service').slice(0, 2);
+    const pageIsLoading = isLoading || isAuthLoading;
 
     return (
         <div className="space-y-8">
@@ -51,7 +59,9 @@ export function ClientHome() {
                 <CardHeader>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div>
-                            <CardTitle className="text-3xl font-bold">Welcome back, John!</CardTitle>
+                            <CardTitle className="text-3xl font-bold">
+                                {pageIsLoading ? <Skeleton className="h-9 w-64" /> : `Welcome back, ${user?.firstName || 'User'}!`}
+                            </CardTitle>
                             <CardDescription className="mt-2 text-lg">Let's start planning your next amazing event.</CardDescription>
                         </div>
                         <Link href="/client/event-planner">
@@ -73,7 +83,7 @@ export function ClientHome() {
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{upcomingBookings.length}</div>}
+                    {pageIsLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{upcomingBookings.length}</div>}
                     <Link href="/client/bookings">
                         <p className="text-xs text-muted-foreground underline hover:text-primary">
                             View your calendar
@@ -89,7 +99,7 @@ export function ClientHome() {
                     <Heart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                     {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{savedItems.length}</div>}
+                     {pageIsLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{savedItems.length}</div>}
                     <Link href="/client/saved">
                         <p className="text-xs text-muted-foreground underline hover:text-primary">
                             View your favorites
@@ -120,7 +130,7 @@ export function ClientHome() {
                     <h2 className="text-2xl font-bold">Special Offers</h2>
                     <p className="text-muted-foreground">Don't miss these limited-time deals.</p>
                 </div>
-                 {isLoading ? (
+                 {pageIsLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Skeleton className="h-96 w-full" />
                         <Skeleton className="h-96 w-full" />
@@ -139,7 +149,7 @@ export function ClientHome() {
                     <h2 className="text-2xl font-bold">Featured Services</h2>
                     <p className="text-muted-foreground">Top-rated professionals to make your event unforgettable.</p>
                 </div>
-                 {isLoading ? (
+                 {pageIsLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Skeleton className="h-96 w-full" />
                         <Skeleton className="h-96 w-full" />

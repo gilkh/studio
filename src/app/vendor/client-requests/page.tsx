@@ -10,18 +10,22 @@ import type { QuoteRequest } from '@/lib/types';
 import { Check, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const MOCK_VENDOR_ID = 'vendor123';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ClientRequestsPage() {
+    const { userId, isLoading: isAuthLoading } = useAuth();
     const [requests, setRequests] = useState<QuoteRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         async function loadRequests() {
+            if (!userId) {
+                if (!isAuthLoading) setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             try {
-                const quoteRequests = await getVendorQuoteRequests(MOCK_VENDOR_ID);
+                const quoteRequests = await getVendorQuoteRequests(userId);
                 setRequests(quoteRequests);
             } catch (error) {
                 console.error("Failed to load quote requests:", error);
@@ -30,7 +34,9 @@ export default function ClientRequestsPage() {
             }
         }
         loadRequests();
-    }, []);
+    }, [userId, isAuthLoading]);
+
+    const pageIsLoading = isLoading || isAuthLoading;
 
   return (
      <Card>
@@ -50,7 +56,7 @@ export default function ClientRequestsPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {isLoading ? (
+                {pageIsLoading ? (
                     [...Array(3)].map((_, i) => (
                         <TableRow key={i}>
                             <TableCell><Skeleton className="h-10 w-24" /></TableCell>

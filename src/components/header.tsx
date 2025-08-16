@@ -14,14 +14,15 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { MessageSquare, User, LogOut, Menu, Home, Compass, Calendar, PenTool, Briefcase, Users, Settings } from 'lucide-react';
 import { MessagingPanel } from './messaging-panel';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { useEffect, useState } from 'react';
-import { getVendorQuoteRequests } from '@/lib/services';
+import { getVendorQuoteRequests, getUserProfile } from '@/lib/services';
+import { useAuth, logout } from '@/hooks/use-auth';
+import type { UserProfile } from '@/lib/types';
 
-const MOCK_VENDOR_ID = 'vendor123';
 
 const clientLinks = [
   { href: '/client/home', label: 'Home', icon: Home },
@@ -41,20 +42,35 @@ const vendorLinks = [
 
 
 export function AppHeader() {
-  const loggedIn = true; // Mock state
+  const { userId, role, isLoading } = useAuth();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const router = useRouter();
   const pathname = usePathname();
   const [pendingRequests, setPendingRequests] = useState(0);
-  const isVendor = pathname.startsWith('/vendor');
+  
+  const isVendor = role === 'vendor';
+  const links = isVendor ? vendorLinks : clientLinks;
 
   useEffect(() => {
-    if (isVendor) {
-      getVendorQuoteRequests(MOCK_VENDOR_ID).then(requests => {
-        setPendingRequests(requests.filter(q => q.status === 'pending').length);
-      })
-    }
-  }, [isVendor]);
+    async function fetchData() {
+        if (!userId) return;
 
-  const links = isVendor ? vendorLinks : clientLinks;
+        if (isVendor) {
+            getVendorQuoteRequests(userId).then(requests => {
+                setPendingRequests(requests.filter(q => q.status === 'pending').length);
+            });
+        }
+        
+        const profile = await getUserProfile(userId);
+        setUserProfile(profile);
+    }
+    fetchData();
+  }, [userId, isVendor]);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -88,7 +104,7 @@ export function AppHeader() {
       </div>
 
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        {loggedIn ? (
+        {!isLoading && userId ? (
         <>
             <Sheet>
                 <SheetTrigger asChild>
@@ -110,7 +126,7 @@ export function AppHeader() {
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=profile" alt="User" />
+                    <AvatarImage src={`https://i.pravatar.cc/150?u=${userId}`} alt="User" />
                     <AvatarFallback>
                         <User className="h-5 w-5" />
                     </AvatarFallback>
@@ -120,9 +136,9 @@ export function AppHeader() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">John Doe</p>
+                    <p className="text-sm font-medium leading-none">{userProfile?.firstName} {userProfile?.lastName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                        john.doe@example.com
+                        {userProfile?.email}
                     </p>
                     </div>
                 </DropdownMenuLabel>
@@ -137,11 +153,9 @@ export function AppHeader() {
                     <Link href={isVendor ? "/vendor/settings" : "/client/settings"}>Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                 <DropdownMenuItem asChild>
-                    <Link href="/login">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Log out
-                    </Link>
+                 <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
                 </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

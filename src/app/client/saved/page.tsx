@@ -5,30 +5,35 @@ import { useEffect, useState } from 'react';
 import { OfferCard } from '@/components/offer-card';
 import { ServiceCard } from '@/components/service-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { servicesAndOffers as placeholderData } from '@/lib/placeholder-data';
 import type { ServiceOrOffer } from '@/lib/types';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
+import { getSavedItems } from '@/lib/services';
 
 export default function SavedItemsPage() {
+    const { userId, isLoading: isAuthLoading } = useAuth();
     const [savedItems, setSavedItems] = useState<ServiceOrOffer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // In a real app, we would fetch the user's saved item IDs from their profile
-        // and then fetch the details for each of those items from the 'services' and 'offers' collections.
-        // For this prototype, we'll just show the first few items from placeholder data.
         const fetchSavedItems = async () => {
+            if (!userId) {
+                if (!isAuthLoading) setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-            setSavedItems(placeholderData.slice(0, 3));
+            const items = await getSavedItems(userId);
+            setSavedItems(items);
             setIsLoading(false);
         };
 
         fetchSavedItems();
-    }, []);
+    }, [userId, isAuthLoading]);
+
+    const pageIsLoading = isLoading || isAuthLoading;
 
     return (
         <div className="space-y-8">
@@ -49,7 +54,7 @@ export default function SavedItemsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
+                    {pageIsLoading ? (
                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full rounded-xl" />)}
                          </div>

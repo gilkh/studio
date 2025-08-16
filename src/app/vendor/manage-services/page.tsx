@@ -11,19 +11,23 @@ import { useEffect, useState } from 'react';
 import type { ServiceOrOffer, Service, Offer } from '@/lib/types';
 import { getServicesAndOffers } from '@/lib/services';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const MOCK_VENDOR_ID = 'vendor123';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ManageServicesPage() {
+    const { userId, isLoading: isAuthLoading } = useAuth();
     const [myListings, setMyListings] = useState<ServiceOrOffer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         async function loadListings() {
+            if (!userId) {
+                if (!isAuthLoading) setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             try {
                 const allItems = await getServicesAndOffers();
-                setMyListings(allItems.filter(item => item.vendorId === MOCK_VENDOR_ID));
+                setMyListings(allItems.filter(item => item.vendorId === userId));
             } catch (error) {
                 console.error("Failed to load listings", error);
             } finally {
@@ -31,10 +35,12 @@ export default function ManageServicesPage() {
             }
         }
         loadListings();
-    }, []);
+    }, [userId, isAuthLoading]);
 
     const myOffers = myListings.filter(item => item.type === 'offer') as Offer[];
     const myServices = myListings.filter(item => item.type === 'service') as Service[];
+
+    const pageIsLoading = isLoading || isAuthLoading;
 
     const renderSkeletons = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,7 +79,7 @@ export default function ManageServicesPage() {
                     <TabsTrigger value="services">Services ({myServices.length})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="offers">
-                    {isLoading ? renderSkeletons() : (
+                    {pageIsLoading ? renderSkeletons() : (
                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {myOffers.map((offer) => (
                                 <OfferCard key={offer.id} offer={offer} role="vendor" />
@@ -90,7 +96,7 @@ export default function ManageServicesPage() {
                     )}
                 </TabsContent>
                 <TabsContent value="services">
-                    {isLoading ? renderSkeletons() : (
+                    {pageIsLoading ? renderSkeletons() : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {myServices.map((service) => (
                                 <ServiceCard key={service.id} service={service} role="vendor" />

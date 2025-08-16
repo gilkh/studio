@@ -15,11 +15,12 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { ServiceOrOffer, Service, Offer } from '@/lib/types';
+import type { ServiceOrOffer, Service, Offer, VendorProfile } from '@/lib/types';
 import { Checkbox } from './ui/checkbox';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { DollarSign, Loader2 } from 'lucide-react';
-import { createServiceOrOffer } from '@/lib/services';
+import { createServiceOrOffer, getVendorProfile } from '@/lib/services';
+import { useAuth } from '@/hooks/use-auth';
 
 interface ManageServiceDialogProps {
   children: React.ReactNode;
@@ -27,16 +28,32 @@ interface ManageServiceDialogProps {
 }
 
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const MOCK_VENDOR_ID = 'vendor123';
 
 export function ManageServiceDialog({ children, service }: ManageServiceDialogProps) {
+  const { userId: vendorId } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [type, setType] = React.useState<string>(service?.type || 'offer');
   const [isSaving, setIsSaving] = React.useState(false);
+  const [vendorProfile, setVendorProfile] = React.useState<VendorProfile | null>(null);
+
+  React.useEffect(() => {
+    async function loadVendor() {
+        if (vendorId) {
+            const profile = await getVendorProfile(vendorId);
+            setVendorProfile(profile);
+        }
+    }
+    loadVendor();
+  }, [vendorId]);
+
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!vendorId || !vendorProfile) {
+        toast({ title: "Error", description: "You must be logged in as a vendor.", variant: "destructive" });
+        return;
+    }
     setIsSaving(true);
     const formData = new FormData(event.currentTarget);
     const title = formData.get('title') as string;
@@ -44,35 +61,31 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     const description = formData.get('description') as string;
 
     try {
+        const baseData = {
+            title,
+            category,
+            description,
+            vendorId,
+            vendorName: vendorProfile.businessName,
+            vendorAvatar: `https://i.pravatar.cc/150?u=${vendorId}`,
+            rating: 0,
+            reviewCount: 0,
+            image: 'https://placehold.co/600x400.png'
+        }
+
         if (type === 'offer') {
             const price = parseFloat(formData.get('price') as string);
             const offerData: Omit<Offer, 'id'> = {
+                ...baseData,
                 type: 'offer',
-                title,
-                category,
-                description,
                 price,
                 availability: 'Mon-Fri, 9am-5pm', // Mock availability
-                vendorId: MOCK_VENDOR_ID,
-                vendorName: 'Timeless Snaps', // Mock data
-                vendorAvatar: `https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`, // Mock
-                rating: 0,
-                reviewCount: 0,
-                image: 'https://placehold.co/600x400.png'
             }
             await createServiceOrOffer(offerData);
         } else {
             const serviceData: Omit<Service, 'id'> = {
+                ...baseData,
                 type: 'service',
-                title,
-                category,
-                description,
-                vendorId: MOCK_VENDOR_ID,
-                vendorName: 'Timeless Snaps', // Mock data
-                vendorAvatar: `https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`, // Mock
-                rating: 0,
-                reviewCount: 0,
-                image: 'https://placehold.co/600x400.png'
             }
             await createServiceOrOffer(serviceData);
         }

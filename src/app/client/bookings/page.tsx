@@ -2,21 +2,25 @@
 'use client';
 import { CalendarView } from '@/components/calendar-view';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/use-auth';
 import { getBookingsForUser } from '@/lib/services';
 import type { Booking } from '@/lib/types';
 import { useEffect, useState } from 'react';
 
-const MOCK_USER_ID = 'user123';
-
 export default function ClientBookingsPage() {
+  const { userId, isLoading: isAuthLoading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadBookings() {
+        if (!userId) {
+          if (!isAuthLoading) setIsLoading(false);
+          return;
+        };
         setIsLoading(true);
         try {
-            const userBookings = await getBookingsForUser(MOCK_USER_ID);
+            const userBookings = await getBookingsForUser(userId);
             setBookings(userBookings);
         } catch(error) {
             console.error("Failed to load bookings", error);
@@ -25,7 +29,7 @@ export default function ClientBookingsPage() {
         }
     }
     loadBookings();
-  }, []);
+  }, [userId, isAuthLoading]);
 
   return (
     <div>
@@ -35,7 +39,7 @@ export default function ClientBookingsPage() {
                 <CardDescription>An overview of all your scheduled events and appointments.</CardDescription>
             </CardHeader>
         </Card>
-        <CalendarView bookings={bookings} isLoading={isLoading} />
+        <CalendarView bookings={bookings} isLoading={isLoading || isAuthLoading} />
     </div>
   )
 }

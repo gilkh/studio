@@ -14,24 +14,35 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Service } from '@/lib/types';
-import { createQuoteRequest } from '@/lib/services';
+import type { Service, UserProfile } from '@/lib/types';
+import { createQuoteRequest, getUserProfile } from '@/lib/services';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface QuoteRequestDialogProps {
   children: React.ReactNode;
   service: Service;
 }
 
-const MOCK_USER_ID = 'user123'; // In a real app, this would come from auth
-
 export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProps) {
+  const { userId } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
+  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
+
+  React.useEffect(() => {
+    if (userId) {
+        getUserProfile(userId).then(setUserProfile);
+    }
+  }, [userId])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!userId || !userProfile) {
+        toast({ title: "Not Logged In", description: "You must be logged in to request a quote.", variant: "destructive" });
+        return;
+    }
     setIsSending(true);
 
     const formData = new FormData(event.currentTarget);
@@ -40,9 +51,9 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
 
     try {
         await createQuoteRequest({
-            clientId: MOCK_USER_ID,
-            clientName: 'John Doe', // Mock data, get from user profile in real app
-            clientAvatar: `https://i.pravatar.cc/150?u=${MOCK_USER_ID}`, // Mock
+            clientId: userId,
+            clientName: `${userProfile.firstName} ${userProfile.lastName}`,
+            clientAvatar: `https://i.pravatar.cc/150?u=${userId}`,
             vendorId: service.vendorId,
             serviceId: service.id,
             serviceTitle: service.title,

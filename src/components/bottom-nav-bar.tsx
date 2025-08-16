@@ -7,8 +7,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { useEffect, useState } from 'react';
 import { getVendorQuoteRequests } from '@/lib/services';
-
-const MOCK_VENDOR_ID = 'vendor123';
+import { useAuth } from '@/hooks/use-auth';
 
 const clientLinks = [
   { href: '/client/home', label: 'Home', icon: Home },
@@ -27,16 +26,17 @@ const vendorLinks = [
 
 export function BottomNavBar() {
   const pathname = usePathname();
+  const { userId, role } = useAuth();
   const [pendingRequests, setPendingRequests] = useState(0);
-  const isVendor = pathname.startsWith('/vendor');
+  const isVendor = role === 'vendor';
   
   useEffect(() => {
-    if (isVendor) {
-      getVendorQuoteRequests(MOCK_VENDOR_ID).then(requests => {
+    if (isVendor && userId) {
+      getVendorQuoteRequests(userId).then(requests => {
         setPendingRequests(requests.filter(q => q.status === 'pending').length);
       })
     }
-  }, [isVendor]);
+  }, [isVendor, userId]);
 
   const links = isVendor ? vendorLinks : clientLinks;
 

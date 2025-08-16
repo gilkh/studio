@@ -19,9 +19,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
-// Mock vendor ID for demonstration. In a real app, this would come from auth.
-const MOCK_VENDOR_ID = 'vendor123';
 
 const profileFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
@@ -47,6 +47,7 @@ const mockReviews = [
 
 export default function VendorProfilePage() {
     const { toast } = useToast();
+    const { userId: vendorId, isLoading: isAuthLoading } = useAuth();
     const [vendor, setVendor] = useState<VendorProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -64,28 +65,16 @@ export default function VendorProfilePage() {
 
     useEffect(() => {
         async function fetchVendor() {
+            if (!vendorId) {
+                if (!isAuthLoading) setIsLoading(false);
+                return;
+            }
+            setIsLoading(true);
             try {
-                let vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
+                let vendorProfile = await getVendorProfile(vendorId);
                 if (vendorProfile) {
                     setVendor(vendorProfile);
                     form.reset(vendorProfile);
-                } else {
-                    // If no profile, create one with mock data for the demo
-                    const newVendor = { 
-                        businessName: 'Timeless Snaps', 
-                        category: 'Photography', 
-                        tagline: 'Creative Wedding & Portrait Photography',
-                        description: 'Capturing your special moments with artistry and passion. We offer a range of packages including full-day coverage, engagement shoots, and custom-designed printed albums to make your memories last a lifetime.',
-                        email: 'contact@timeless-snaps.com',
-                        phone: '(555) 123-4567',
-                        ownerId: MOCK_VENDOR_ID
-                    };
-                    await createOrUpdateVendorProfile(MOCK_VENDOR_ID, newVendor);
-                    vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
-                    if (vendorProfile) {
-                        setVendor(vendorProfile);
-                        form.reset(vendorProfile);
-                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch vendor profile:", error);
@@ -99,12 +88,13 @@ export default function VendorProfilePage() {
             }
         }
         fetchVendor();
-    }, [form, toast]);
+    }, [vendorId, isAuthLoading, form, toast]);
 
 
     async function onSubmit(values: z.infer<typeof profileFormSchema>) {
+        if (!vendorId) return;
         try {
-            await createOrUpdateVendorProfile(MOCK_VENDOR_ID, values);
+            await createOrUpdateVendorProfile(vendorId, values);
             setVendor(prev => prev ? { ...prev, ...values } : null);
             toast({
                 title: "Profile Updated",
@@ -120,7 +110,7 @@ export default function VendorProfilePage() {
         }
     }
     
-    if (isLoading) {
+    if (isLoading || isAuthLoading) {
         return (
             <Card>
                 <CardHeader>
@@ -149,6 +139,22 @@ export default function VendorProfilePage() {
         )
     }
 
+    if (!vendor) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Profile Not Found</CardTitle>
+                <CardDescription>We couldn't load your profile data. You may need to log in.</CardDescription>
+            </CardHeader>
+             <CardContent>
+                <Link href="/login">
+                    <Button>Go to Login</Button>
+                </Link>
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
      <div className="space-y-8">
         <Card>
@@ -160,7 +166,7 @@ export default function VendorProfilePage() {
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                     <div className="relative flex-shrink-0">
                         <Avatar className="h-32 w-32 border-4 border-primary/50">
-                            <AvatarImage src={`https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`} alt={vendor?.businessName} data-ai-hint="company logo" />
+                            <AvatarImage src={`https://i.pravatar.cc/150?u=${vendorId}`} alt={vendor?.businessName} data-ai-hint="company logo" />
                             <AvatarFallback>{vendor?.businessName?.substring(0, 2)}</AvatarFallback>
                         </Avatar>
                         <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">

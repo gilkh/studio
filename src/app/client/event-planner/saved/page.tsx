@@ -13,12 +13,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { getSavedTimelines, deleteTimeline } from '@/lib/services';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
 
-
-// Mock user ID for demonstration. In a real app, this would come from auth.
-const MOCK_USER_ID = 'user123';
 
 export default function SavedTimelinesPage() {
+    const { userId, isLoading: isAuthLoading } = useAuth();
     const [savedTimelines, setSavedTimelines] = useState<SavedTimeline[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
@@ -26,8 +25,12 @@ export default function SavedTimelinesPage() {
 
     useEffect(() => {
         async function fetchTimelines() {
+            if (!userId) {
+                if(!isAuthLoading) setIsLoading(false);
+                return;
+            }
             try {
-                const timelines = await getSavedTimelines(MOCK_USER_ID);
+                const timelines = await getSavedTimelines(userId);
                 setSavedTimelines(timelines);
             } catch (error) {
                 console.error("Could not load saved timelines from Firestore", error);
@@ -41,11 +44,12 @@ export default function SavedTimelinesPage() {
             }
         }
         fetchTimelines();
-    }, [toast]);
+    }, [userId, isAuthLoading, toast]);
 
     const handleDeleteSavedTimeline = async (id: string) => {
+        if (!userId) return;
         try {
-            await deleteTimeline(MOCK_USER_ID, id);
+            await deleteTimeline(userId, id);
             setSavedTimelines(prev => prev.filter(st => st.id !== id));
             toast({
                 title: 'Timeline Deleted',
@@ -64,6 +68,8 @@ export default function SavedTimelinesPage() {
     const handleLoadTimeline = (id: string) => {
         router.push(`/client/event-planner?timelineId=${id}`);
     }
+
+    const pageIsLoading = isLoading || isAuthLoading;
 
     return (
         <div className="space-y-8 max-w-4xl mx-auto">
@@ -85,7 +91,7 @@ export default function SavedTimelinesPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {isLoading ? (
+                        {pageIsLoading ? (
                             <div className="space-y-3">
                                 <Skeleton className="h-24 w-full rounded-lg" />
                                 <Skeleton className="h-24 w-full rounded-lg" />

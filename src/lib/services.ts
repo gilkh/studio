@@ -5,8 +5,8 @@ import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer } from './types';
 
 // Mock user ID for prototype. In a real app, this would be the actual logged-in user's ID.
-const MOCK_USER_ID = 'user123';
-const MOCK_VENDOR_ID = 'vendor123';
+export const MOCK_USER_ID = 'user123';
+export const MOCK_VENDOR_ID = 'vendor123';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -58,30 +58,35 @@ export async function createNewUser(data: {
 
 
 // In a real app, this would also verify password. For now, it just finds a user by email.
-export async function signInUser(email: string): Promise<'client' | 'vendor' | null> {
+export async function signInUser(email: string): Promise<{ role: 'client' | 'vendor'; userId: string } | null> {
     try {
         // Check if it's a vendor first
         const vendorQuery = query(collection(db, 'vendors'), where('email', '==', email));
         const vendorSnapshot = await getDocs(vendorQuery);
         if (!vendorSnapshot.empty) {
-            return 'vendor';
+            return { role: 'vendor', userId: vendorSnapshot.docs[0].id };
         }
 
         // If not a vendor, check if it's a client
         const userQuery = query(collection(db, 'users'), where('email', '==', email));
         const userSnapshot = await getDocs(userQuery);
         if (!userSnapshot.empty) {
-            // Need to make sure this user isn't also a vendor
-            const vendorCheck = await getDoc(doc(db, 'vendors', userSnapshot.docs[0].id));
-            if (!vendorCheck.exists()) {
-                return 'client';
-            }
+             const userId = userSnapshot.docs[0].id;
+             // Need to make sure this user isn't also a vendor
+             const vendorCheck = await getDoc(doc(db, 'vendors', userId));
+             if (!vendorCheck.exists()) {
+                 return { role: 'client', userId };
+             }
         }
     } catch (e) {
         if ((e as any).code === 'unavailable') {
             console.warn("Firestore is offline, cannot sign in.");
+            // For prototype, let's allow mock login
+            if (email.startsWith('vendor')) return { role: 'vendor', userId: MOCK_VENDOR_ID };
+            if (email.startsWith('client')) return { role: 'client', userId: MOCK_USER_ID };
             return null;
         }
+        console.error("Sign in error:", e);
         throw e;
     }
     
@@ -91,6 +96,7 @@ export async function signInUser(email: string): Promise<'client' | 'vendor' | n
 
 // User Profile Services
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+    if (!userId) return null;
     try {
         const docRef = doc(db, 'users', userId);
         const docSnap = await getDoc(docRef);
@@ -115,6 +121,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 }
 
 export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'createdAt'>>) {
+    if (!userId) return;
     const docRef = doc(db, 'users', userId);
     // Use setDoc with merge:true to either create a new doc or update an existing one.
     // This avoids the race condition of reading (getDoc) before the client is online.
@@ -123,6 +130,7 @@ export async function createOrUpdateUserProfile(userId: string, data: Partial<Om
 
 
 export async function getVendorProfile(vendorId: string): Promise<VendorProfile | null> {
+    if (!vendorId) return null;
     try {
         const docRef = doc(db, 'vendors', vendorId);
         const docSnap = await getDoc(docRef);
@@ -146,13 +154,15 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
 }
 
 export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<Omit<VendorProfile, 'id' | 'createdAt'>>) {
-    const docRef = doc(db, 'vendors', vendorId);
+    if (!vendorId) return;
+     const docRef = doc(db, 'vendors', vendorId);
      // Use setDoc with merge:true to either create a new doc or update an existing one.
     await setDoc(docRef, { ...data, createdAt: serverTimestamp() }, { merge: true });
 }
 
 // Timeline Services
 export async function getSavedTimelines(userId: string): Promise<SavedTimeline[]> {
+    if (!userId) return [];
     try {
         const q = query(collection(db, `users/${userId}/timelines`));
         const querySnapshot = await getDocs(q);
@@ -227,6 +237,7 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'cre
 }
 
 export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteRequest[]> {
+     if (!vendorId) return [];
      const q = query(collection(db, 'quoteRequests'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
     try {
         const querySnapshot = await getDocs(q);
@@ -254,6 +265,7 @@ export async function createBooking(booking: Omit<Booking, 'id'>) {
 }
 
 export const getBookingsForUser = async(userId: string) => {
+    if (!userId) return [];
     const q = query(collection(db, "bookings"), where("clientId", "==", userId));
     try {
         const querySnapshot = await getDocs(q);
@@ -274,6 +286,7 @@ export const getBookingsForUser = async(userId: string) => {
     }
 }
 export const getBookingsForVendor = async(vendorId: string) => {
+    if (!vendorId) return [];
     const q = query(collection(db, "bookings"), where("vendorId", "==", vendorId));
     try {
         const querySnapshot = await getDocs(q);
@@ -297,6 +310,7 @@ export const getBookingsForVendor = async(vendorId: string) => {
 
 // Saved Items
 export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
+    if (!userId) return [];
     const user = await getUserProfile(userId);
     if (!user || !user.savedItemIds || user.savedItemIds.length === 0) {
         return [];
@@ -311,6 +325,7 @@ export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
 }
 
 export async function toggleSavedItem(userId: string, itemId: string) {
+    if (!userId) return;
     const userRef = doc(db, 'users', userId);
     
     const userProfile = await getUserProfile(userId);

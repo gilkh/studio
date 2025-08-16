@@ -18,15 +18,15 @@ import { Calendar } from './ui/calendar';
 import { Clock, CreditCard, Loader2, Lock } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { createBooking } from '@/lib/services';
+import { useAuth } from '@/hooks/use-auth';
 
 interface BookOfferDialogProps {
   children: React.ReactNode;
   offer: Offer;
 }
 
-const MOCK_USER_ID = 'user123'; // In a real app, this would come from auth
-
 export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
+  const { userId } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(new Date());
@@ -35,6 +35,10 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!userId) {
+        toast({ title: "Not Logged In", description: "You must be logged in to book an offer.", variant: "destructive" });
+        return;
+    }
     if (step === 1) {
         setStep(2);
     } else {
@@ -52,7 +56,7 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
             await createBooking({
                 title: offer.title,
                 with: name,
-                clientId: MOCK_USER_ID,
+                clientId: userId,
                 vendorId: offer.vendorId,
                 date: date,
                 time: time,

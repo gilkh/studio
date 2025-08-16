@@ -15,9 +15,8 @@ import { getUserProfile, createOrUpdateUserProfile } from '@/lib/services';
 import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
-// Mock user ID for demonstration. In a real app, this would come from auth.
-const MOCK_USER_ID = 'user123';
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -28,6 +27,7 @@ const profileFormSchema = z.object({
 
 export default function ClientProfilePage() {
   const { toast } = useToast();
+  const { userId, isLoading: isAuthLoading } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,20 +43,17 @@ export default function ClientProfilePage() {
 
   useEffect(() => {
     async function fetchUser() {
+      if (!userId) {
+          if(!isAuthLoading) setIsLoading(false);
+          return;
+      };
+      
+      setIsLoading(true);
       try {
-        let userProfile = await getUserProfile(MOCK_USER_ID);
+        let userProfile = await getUserProfile(userId);
         if (userProfile) {
             setUser(userProfile);
             form.reset(userProfile);
-        } else {
-          // If no profile, create one with mock data for the demo
-          const newUser = { id: MOCK_USER_ID, firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '(123) 456-7890' };
-          await createOrUpdateUserProfile(MOCK_USER_ID, newUser);
-          userProfile = await getUserProfile(MOCK_USER_ID);
-          if (userProfile) {
-            setUser(userProfile);
-            form.reset(userProfile);
-          }
         }
 
       } catch (error) {
@@ -71,12 +68,13 @@ export default function ClientProfilePage() {
       }
     }
     fetchUser();
-  }, [form, toast]);
+  }, [userId, isAuthLoading, form, toast]);
 
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
+    if (!userId) return;
     try {
-      await createOrUpdateUserProfile(MOCK_USER_ID, values);
+      await createOrUpdateUserProfile(userId, values);
       setUser(prev => prev ? { ...prev, ...values } : null);
       toast({
         title: "Profile Updated",
@@ -92,7 +90,7 @@ export default function ClientProfilePage() {
     }
   }
   
-  if (isLoading) {
+  if (isLoading || isAuthLoading) {
     return (
         <Card>
             <CardHeader>
@@ -118,6 +116,22 @@ export default function ClientProfilePage() {
     )
   }
 
+  if (!user) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Profile Not Found</CardTitle>
+                <CardDescription>We couldn't load your profile data. You may need to log in.</CardDescription>
+            </CardHeader>
+             <CardContent>
+                <Link href="/login">
+                    <Button>Go to Login</Button>
+                </Link>
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
      <Card>
         <CardHeader>
@@ -128,7 +142,7 @@ export default function ClientProfilePage() {
             <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative">
                     <Avatar className="h-24 w-24 border-2 border-primary">
-                        <AvatarImage src={`https://i.pravatar.cc/150?u=${MOCK_USER_ID}`} alt={user?.firstName} data-ai-hint="user avatar" />
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${userId}`} alt={user?.firstName} data-ai-hint="user avatar" />
                         <AvatarFallback>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">

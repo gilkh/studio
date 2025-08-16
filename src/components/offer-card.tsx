@@ -12,24 +12,24 @@ import { BookOfferDialog } from './book-offer-dialog';
 import { useEffect, useState } from 'react';
 import { getUserProfile, toggleSavedItem } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 interface OfferCardProps {
   offer: Offer;
   role: 'client' | 'vendor';
 }
 
-const MOCK_USER_ID = 'user123';
-
 export function OfferCard({ offer, role }: OfferCardProps) {
+  const { userId } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     async function checkSavedStatus() {
-        if (role === 'client') {
+        if (role === 'client' && userId) {
             try {
-                const profile = await getUserProfile(MOCK_USER_ID);
+                const profile = await getUserProfile(userId);
                 if (profile?.savedItemIds?.includes(offer.id)) {
                     setIsSaved(true);
                 }
@@ -39,13 +39,13 @@ export function OfferCard({ offer, role }: OfferCardProps) {
         }
     }
     checkSavedStatus();
-  }, [offer.id, role]);
+  }, [offer.id, role, userId]);
 
   const handleSaveToggle = async () => {
-    if (role !== 'client') return;
+    if (role !== 'client' || !userId) return;
     setIsSaving(true);
     try {
-        await toggleSavedItem(MOCK_USER_ID, offer.id);
+        await toggleSavedItem(userId, offer.id);
         setIsSaved(!isSaved);
          toast({
             title: isSaved ? 'Item Unsaved' : 'Item Saved!',

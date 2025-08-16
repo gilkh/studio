@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { signInUser } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
+import { logout } from '@/hooks/use-auth';
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
@@ -33,22 +34,26 @@ export default function LoginPage() {
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
+    // Clear any previous session
+    logout();
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string; // In a real app, you'd use the password
 
     try {
-        // This is a mock sign-in. In a real app, this would involve a server call.
-        // For the prototype, we'll determine the role by a simple email pattern.
-        const userRole = await signInUser(email);
+        const result = await signInUser(email);
 
-        if (userRole) {
+        if (result) {
+            // Save user info to localStorage to simulate a session
+            localStorage.setItem('userId', result.userId);
+            localStorage.setItem('role', result.role);
+
             toast({
                 title: 'Sign In Successful!',
                 description: `Welcome back! Redirecting to your dashboard...`,
             });
-            if (userRole === 'client') {
+            if (result.role === 'client') {
                 router.push('/client/home');
             } else {
                 router.push('/vendor/home');

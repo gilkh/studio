@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { saveTimeline, getSavedTimelines, updateTimeline } from '@/lib/services';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -29,10 +30,8 @@ const formSchema = z.object({
   budget: z.coerce.number().min(1, 'Budget is required'),
 });
 
-// Mock user ID for demonstration. In a real app, this would come from auth.
-const MOCK_USER_ID = 'user123';
-
 function EventPlannerContent() {
+  const { userId } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -47,12 +46,12 @@ function EventPlannerContent() {
 
   useEffect(() => {
     const timelineIdToLoad = searchParams.get('timelineId');
-    if (timelineIdToLoad) {
+    if (timelineIdToLoad && userId) {
         const loadTimeline = async () => {
             setIsLoading(true);
             try {
                 // In a real app we would check if the user owns this timeline
-                const timelines = await getSavedTimelines(MOCK_USER_ID);
+                const timelines = await getSavedTimelines(userId);
                 const timelineToLoad = timelines.find(t => t.id === timelineIdToLoad);
 
                 if (timelineToLoad) {
@@ -72,7 +71,7 @@ function EventPlannerContent() {
         loadTimeline();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, router]);
+  }, [searchParams, router, userId]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -142,7 +141,7 @@ function EventPlannerContent() {
   };
 
   const handleSaveTimeline = async () => {
-    if (!timeline) return;
+    if (!timeline || !userId) return;
     setIsSaving(true);
 
     try {
@@ -154,7 +153,7 @@ function EventPlannerContent() {
                 tasks: timeline,
                 lastModified: new Date().toISOString(),
             };
-            await updateTimeline(MOCK_USER_ID, timelineId, timelineToUpdate);
+            await updateTimeline(userId, timelineId, timelineToUpdate);
             toast({
                 title: 'Timeline Updated!',
                 description: `Your event plan "${eventName}" has been saved.`,
@@ -166,7 +165,7 @@ function EventPlannerContent() {
                 tasks: timeline,
                 lastModified: new Date().toISOString(),
             };
-            const newId = await saveTimeline(MOCK_USER_ID, newSavedTimeline);
+            const newId = await saveTimeline(userId, newSavedTimeline);
             setTimelineId(newId);
             toast({
                 title: 'Timeline Saved!',
@@ -304,7 +303,7 @@ function EventPlannerContent() {
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Task
                         </Button>
-                        <Button onClick={handleSaveTimeline} disabled={isSaving} className="flex-1 sm:flex-none">
+                        <Button onClick={handleSaveTimeline} disabled={isSaving || !userId} className="flex-1 sm:flex-none">
                             {isSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             {isSaving ? 'Saving...' : timelineId ? 'Save Changes' : 'Save Timeline'}
                         </Button>

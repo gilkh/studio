@@ -17,7 +17,6 @@ export async function createNewUser(data: {
 }) {
     // In a real app, this would use Firebase Auth to create a user and get a UID.
     // For this prototype, we'll use the email as the unique ID, as auth is not implemented.
-    // The previous implementation had a bug where it tried to read before the client was online.
     // This new implementation only performs a write, which is safely queued by the SDK.
     
     const userId = data.email; 

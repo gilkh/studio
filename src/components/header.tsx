@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MessageSquare, User, LogOut, Menu, Search } from 'lucide-react';
 import { MessagingPanel } from './messaging-panel';
 import Link from 'next/link';
@@ -39,6 +39,7 @@ export function AppHeader() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 flex flex-col">
+                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                    { isVendor ? <VendorSidebar /> : <ClientSidebar /> }
                 </SheetContent>
             </Sheet>
@@ -70,7 +71,8 @@ export function AppHeader() {
                 </Button>
                 </SheetTrigger>
                 <SheetContent className="w-full max-w-md p-0">
-                <MessagingPanel />
+                  <SheetTitle className="sr-only">Messages</SheetTitle>
+                  <MessagingPanel />
                 </SheetContent>
             </Sheet>
 

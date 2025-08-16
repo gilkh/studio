@@ -275,7 +275,7 @@ function EventPlannerContent() {
                 </Button>
                 <Link href="/client/event-planner/saved" className="w-full sm:w-auto">
                     <Button variant="outline" size="lg" asChild className="w-full">
-                       <a><List className="mr-2 h-4 w-4" /> View My Timelines</a>
+                       <><List className="mr-2 h-4 w-4" /> View My Timelines</>
                     </Button>
                 </Link>
               </div>

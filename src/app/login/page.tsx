@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { Briefcase, CalendarCheck, FileText, Search, ShieldCheck, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import Link from 'next/link';
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
@@ -109,7 +109,7 @@ export default function LoginPage() {
         <div className="container mx-auto px-4">
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">
-                    <CardTitle className="text-2xl font-bold">Sign In or Create an Account</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
                     <CardDescription>Join our community of event planners and service professionals.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
@@ -133,9 +133,9 @@ export default function LoginPage() {
                 </div>
                 <div className="mt-6 text-center text-sm">
                     Don&apos;t have an account?{' '}
-                    <a href="#" className="underline">
-                    Sign up
-                    </a>
+                    <Link href="/signup" className="underline">
+                        Sign up
+                    </Link>
                 </div>
                 </CardContent>
             </Card>

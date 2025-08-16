@@ -6,16 +6,53 @@ import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking,
 const MOCK_USER_ID = 'user123';
 const MOCK_VENDOR_ID = 'vendor123';
 
+export async function createNewUser(data: {
+    accountType: 'client' | 'vendor';
+    firstName: string;
+    lastName: string;
+    email: string;
+    businessName?: string;
+}) {
+    // In a real app, this would use Firebase Auth to create a user and get a UID
+    // For this prototype, we'll generate a random-ish ID
+    const userId = `${data.firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+
+    if (data.accountType === 'client') {
+        const userProfile: Omit<UserProfile, 'id' | 'createdAt'> = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: '', // Can be added in profile page
+            savedItemIds: []
+        };
+        await createOrUpdateUserProfile(userId, userProfile);
+    } else {
+        const vendorProfile: Omit<VendorProfile, 'id' | 'createdAt'> = {
+            businessName: data.businessName || `${data.firstName} ${data.lastName}`,
+            category: 'Uncategorized',
+            tagline: '',
+            description: '',
+            email: data.email,
+            phone: '',
+            ownerId: userId,
+            portfolio: [],
+        };
+        await createOrUpdateVendorProfile(userId, vendorProfile);
+    }
+}
+
+
 // User Profile Services
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
     const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
+        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
         return {
             id: docSnap.id,
             ...data,
-            createdAt: data.createdAt.toDate(), // Convert Firestore Timestamp to Date
+            createdAt,
         } as UserProfile;
     }
     return null;
@@ -23,8 +60,12 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
 export async function createOrUpdateUserProfile(userId: string, data: Partial<UserProfile>) {
     const docRef = doc(db, 'users', userId);
-    // Use set with merge:true to create or update document
-    await setDoc(docRef, { ...data, createdAt: serverTimestamp() }, { merge: true });
+    const existingDoc = await getDoc(docRef);
+    if (existingDoc.exists()) {
+        await updateDoc(docRef, data);
+    } else {
+        await setDoc(docRef, { ...data, createdAt: serverTimestamp() });
+    }
 }
 
 
@@ -33,10 +74,11 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
+        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
         return {
             id: docSnap.id,
             ...data,
-            createdAt: data.createdAt.toDate(),
+            createdAt
         } as VendorProfile;
     }
     return null;
@@ -44,7 +86,12 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
 
 export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<VendorProfile>) {
     const docRef = doc(db, 'vendors', vendorId);
-    await setDoc(docRef, { ...data, createdAt: serverTimestamp() }, { merge: true });
+    const existingDoc = await getDoc(docRef);
+    if (existingDoc.exists()) {
+        await updateDoc(docRef, data);
+    } else {
+        await setDoc(docRef, { ...data, createdAt: serverTimestamp() });
+    }
 }
 
 // Timeline Services
@@ -71,15 +118,18 @@ export async function deleteTimeline(userId: string, timelineId: string) {
 }
 
 // Generic function to fetch data and transform to a specific type
-async function fetchCollection<T>(path: string, transform: (data: DocumentData) => T): Promise<T[]> {
+async function fetchCollection<T extends {id: string}>(path: string, transform?: (data: DocumentData) => T): Promise<T[]> {
     const querySnapshot = await getDocs(collection(db, path));
-    return querySnapshot.docs.map(doc => transform({ id: doc.id, ...doc.data() }));
+    return querySnapshot.docs.map(doc => {
+        const data = { id: doc.id, ...doc.data() };
+        return transform ? transform(data) : data as T;
+    });
 }
 
 
 // Service and Offer Services
-export const getServices = () => fetchCollection('services', (d) => d as Service);
-export const getOffers = () => fetchCollection('offers', (d) => d as Offer);
+export const getServices = () => fetchCollection<Service>('services');
+export const getOffers = () => fetchCollection<Offer>('offers');
 
 export const getServicesAndOffers = async (): Promise<ServiceOrOffer[]> => {
     const services = await getServices();
@@ -155,9 +205,8 @@ export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
         return [];
     }
     
-    // Firestore 'in' queries are limited to 10 items.
+    // Firestore 'in' queries are limited to 30 items in an array.
     // For a production app with many saved items, you would paginate this.
-    // For this prototype, we assume a small number of saved items.
     const savedIds = user.savedItemIds;
 
     const allItems = await getServicesAndOffers();

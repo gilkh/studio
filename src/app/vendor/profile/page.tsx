@@ -21,7 +21,7 @@ export default function VendorProfilePage() {
             <div className="flex flex-col sm:flex-row items-start gap-6">
                 <div className="relative flex-shrink-0">
                     <Avatar className="h-32 w-32 border-4 border-primary/50">
-                        <AvatarImage src="https://i.pravatar.cc/150?u=timeless" alt="User" />
+                        <AvatarImage src="https://i.pravatar.cc/150?u=timeless" alt="User" data-ai-hint="company logo" />
                         <AvatarFallback>TS</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">

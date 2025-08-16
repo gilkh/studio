@@ -19,7 +19,7 @@ export default function ClientProfilePage() {
             <div className="flex items-center gap-6">
                 <div className="relative">
                     <Avatar className="h-24 w-24 border-2 border-primary">
-                        <AvatarImage src="https://i.pravatar.cc/150?u=profile" alt="User" />
+                        <AvatarImage src="https://i.pravatar.cc/150?u=profile" alt="User" data-ai-hint="user avatar" />
                         <AvatarFallback>JD</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">

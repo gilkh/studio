@@ -10,12 +10,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, PlusCircle, Trash2, Edit, Save, Check as CheckIcon } from 'lucide-react';
+import { Loader, PlusCircle, Trash2, Edit, Save } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { EventTask } from '@/lib/types';
 import { generateTimeline } from '@/lib/timeline-generator';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
 const formSchema = z.object({
@@ -49,7 +48,6 @@ export default function EventPlannerPage() {
     setTimeline(null);
     setEventName(`${values.eventType} in ${values.location}`);
     
-    // Simulate a short delay for a better user experience
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
@@ -57,7 +55,6 @@ export default function EventPlannerPage() {
       setTimeline(plan.tasks);
     } catch (error) {
       console.error('Failed to generate event plan:', error);
-      // You can add a toast notification here to inform the user
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +73,6 @@ export default function EventPlannerPage() {
       id: `custom-${Date.now()}`,
       task: 'New Task - Click edit to change',
       deadline: new Date().toISOString().split('T')[0],
-      priority: 'Medium',
       estimatedCost: 0,
       completed: false,
     };
@@ -105,12 +101,6 @@ export default function EventPlannerPage() {
   const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
   const totalTasks = timeline?.length || 0;
   const progress = totalTasks > 0 ? (completedTasksCount / totalTasks) * 100 : 0;
-
-  const priorityColors: { [key in EventTask['priority']]: string } = {
-    High: 'bg-red-500/90 border-red-600/50',
-    Medium: 'bg-yellow-500/90 border-yellow-600/50',
-    Low: 'bg-green-500/90 border-green-600/50',
-  };
 
   return (
     <div className="space-y-8">
@@ -261,12 +251,6 @@ export default function EventPlannerPage() {
                                         "bg-card border rounded-lg shadow-md p-4 space-y-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
                                         task.completed && 'bg-muted/60 opacity-80'
                                     )}>
-                                        <Badge className={cn(
-                                            "absolute top-2 right-2 text-white text-xs border", 
-                                            priorityColors[task.priority],
-                                            task.completed && 'opacity-60'
-                                        )}>{task.priority}</Badge>
-                                        
                                         <div className="flex items-start gap-3">
                                             <Checkbox 
                                                 id={`task-${task.id}`}

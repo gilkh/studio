@@ -1,3 +1,4 @@
+
 export type ServiceType = 'service' | 'offer';
 
 export interface BaseService {
@@ -59,7 +60,6 @@ export interface EventTask {
   id: string;
   task: string;
   deadline: string;
-  priority: 'High' | 'Medium' | 'Low';
   estimatedCost: number;
   completed: boolean;
 }

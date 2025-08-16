@@ -12,91 +12,76 @@ const baseTasks = (eventDate: Date, budget: number, guestCount: number) => [
   {
     task: 'Define event goals and objectives',
     deadline: createDeadline(eventDate, { months: 6 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Set a budget',
     deadline: createDeadline(eventDate, { months: 6 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Select a date and time',
     deadline: createDeadline(eventDate, { months: 6 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Create a guest list',
     deadline: createDeadline(eventDate, { months: 5 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Research and book a venue',
     deadline: createDeadline(eventDate, { months: 5 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.3, // 30% of budget
   },
   {
     task: 'Hire a caterer',
     deadline: createDeadline(eventDate, { months: 4 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.25, // 25% of budget
   },
   {
     task: 'Send out invitations',
     deadline: createDeadline(eventDate, { months: 2 }),
-    priority: 'High' as const,
     estimatedCost: guestCount * 5, // $5 per guest for invites
   },
   {
     task: 'Plan the menu and arrange for tastings',
     deadline: createDeadline(eventDate, { months: 2 }),
-    priority: 'Medium' as const,
     estimatedCost: 0, // Included in catering cost
   },
   {
     task: 'Arrange transportation and accommodation if needed',
     deadline: createDeadline(eventDate, { months: 2 }),
-    priority: 'Low' as const,
     estimatedCost: budget * 0.05,
   },
   {
     task: 'Finalize the guest list based on RSVPs',
     deadline: createDeadline(eventDate, { weeks: 3 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Create a seating chart',
     deadline: createDeadline(eventDate, { weeks: 2 }),
-    priority: 'Medium' as const,
     estimatedCost: 0,
   },
   {
     task: 'Confirm details with all vendors',
     deadline: createDeadline(eventDate, { weeks: 1 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Create a day-of timeline for the event',
     deadline: createDeadline(eventDate, { days: 5 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Send final payment to vendors',
     deadline: createDeadline(eventDate, { days: 3 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.4, // Remaining vendor costs
   },
   {
     task: 'Send thank-you notes to guests and vendors',
     deadline: format(add(eventDate, { weeks: 2 }), 'yyyy-MM-dd'),
-    priority: 'Medium' as const,
     estimatedCost: guestCount * 3,
   },
 ];
@@ -106,31 +91,26 @@ const weddingTasks = (eventDate: Date, budget: number, guestCount: number) => [
   {
     task: 'Book a photographer/videographer',
     deadline: createDeadline(eventDate, { months: 5 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.1,
   },
   {
     task: 'Shop for wedding attire',
     deadline: createDeadline(eventDate, { months: 4 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.08,
   },
   {
     task: 'Book entertainment (DJ or band)',
     deadline: createDeadline(eventDate, { months: 3 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.07,
   },
   {
     task: 'Arrange for floral and decor',
     deadline: createDeadline(eventDate, { months: 3 }),
-    priority: 'Medium' as const,
     estimatedCost: budget * 0.1,
   },
   {
     task: 'Obtain marriage license',
     deadline: createDeadline(eventDate, { weeks: 3 }),
-    priority: 'High' as const,
     estimatedCost: 50,
   },
 ];
@@ -140,25 +120,21 @@ const corporateTasks = (eventDate: Date, budget: number, guestCount: number) => 
   {
     task: 'Define agenda and content',
     deadline: createDeadline(eventDate, { months: 4 }),
-    priority: 'High' as const,
     estimatedCost: 0,
   },
   {
     task: 'Arrange for speakers or presenters',
     deadline: createDeadline(eventDate, { months: 3 }),
-    priority: 'High' as const,
     estimatedCost: budget * 0.15,
   },
   {
     task: 'Set up event registration page',
     deadline: createDeadline(eventDate, { months: 3 }),
-    priority: 'High' as const,
     estimatedCost: 200,
   },
   {
     task: 'Organize A/V equipment and support',
     deadline: createDeadline(eventDate, { months: 1 }),
-    priority: 'Medium' as const,
     estimatedCost: budget * 0.05,
   },
 ];

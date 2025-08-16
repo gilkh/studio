@@ -87,6 +87,7 @@ export interface UserProfile {
     email: string;
     phone: string;
     createdAt: Date;
+    savedItemIds?: string[];
 }
 
 export interface VendorProfile {
@@ -99,4 +100,5 @@ export interface VendorProfile {
     phone: string;
     ownerId: string;
     createdAt: Date;
+    portfolio?: string[];
 }

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Heart, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { getUserProfile, updateUserProfile } from '@/lib/services';
 import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 // Mock user ID for demonstration. In a real app, this would come from auth.
 const MOCK_USER_ID = 'user123';
@@ -117,7 +118,7 @@ export default function ClientProfilePage() {
      <Card>
         <CardHeader>
             <CardTitle>My Profile</CardTitle>
-            <CardDescription>View and edit your public profile information.</CardDescription>
+            <CardDescription>View and edit your public profile information and preferences.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
             <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -136,69 +137,78 @@ export default function ClientProfilePage() {
                     <p className="text-muted-foreground">Client since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {month: 'long', year: 'numeric'}) : 'this year'}</p>
                 </div>
             </div>
-
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="grid md:grid-cols-2 gap-6 max-w-3xl">
-                     <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="John" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                         <FormField
-                        control={form.control}
-                        name="lastName"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                            <FormLabel>Email Address</FormLabel>
-                            <FormControl>
-                                <Input type="email" placeholder="john.doe@example.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                                <Input type="tel" placeholder="(123) 456-7890" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    <div className="md:col-span-2 flex justify-end">
-                        <Button type="submit" disabled={form.formState.isSubmitting}>
-                             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
-                        </Button>
-                    </div>
-                </form>
-            </Form>
+            
+            <div className="max-w-3xl">
+              <h3 className="text-lg font-semibold mb-4">My Account</h3>
+              <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="grid md:grid-cols-2 gap-6">
+                       <FormField
+                          control={form.control}
+                          name="firstName"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>First Name</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="John" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                           <FormField
+                          control={form.control}
+                          name="lastName"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>Last Name</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="Doe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                      <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                              <FormItem className="md:col-span-2">
+                              <FormLabel>Email Address</FormLabel>
+                              <FormControl>
+                                  <Input type="email" placeholder="john.doe@example.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                      <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>Phone Number</FormLabel>
+                              <FormControl>
+                                  <Input type="tel" placeholder="(123) 456-7890" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                      <div className="md:col-span-2 flex justify-between items-center">
+                           <Link href="/client/saved">
+                              <Button variant="outline">
+                                <Heart className="mr-2 h-4 w-4" />
+                                My Saved Items
+                              </Button>
+                            </Link>
+                          <Button type="submit" disabled={form.formState.isSubmitting}>
+                               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Save Changes
+                          </Button>
+                      </div>
+                  </form>
+              </Form>
+            </div>
         </CardContent>
     </Card>
   )

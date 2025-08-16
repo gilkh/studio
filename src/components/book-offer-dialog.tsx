@@ -15,7 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { Offer } from '@/lib/types';
 import { Calendar } from './ui/calendar';
 import { Badge } from './ui/badge';
-import { Clock } from 'lucide-react';
+import { Clock, CreditCard, Lock } from 'lucide-react';
+import { Separator } from './ui/separator';
 
 interface BookOfferDialogProps {
   children: React.ReactNode;
@@ -26,14 +27,20 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [step, setStep] = React.useState(1);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    toast({
-      title: 'Booking Successful!',
-      description: `Your booking for "${offer.title}" has been confirmed.`,
-    });
-    setOpen(false);
+    if (step === 1) {
+        setStep(2);
+    } else {
+        toast({
+            title: 'Booking Successful!',
+            description: `Your booking for "${offer.title}" has been confirmed.`,
+        });
+        setOpen(false);
+        setStep(1); // Reset for next time
+    }
   };
 
   return (
@@ -41,51 +48,87 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Book Offer: {offer.title}</DialogTitle>
+          <DialogTitle>{step === 1 ? 'Book Offer' : 'Confirm & Pay'}: {offer.title}</DialogTitle>
           <DialogDescription>
-            Confirm your booking with {offer.vendorName}.
-            <div className="flex items-center gap-2 mt-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground text-sm">Availability: {offer.availability}</span>
-            </div>
+            {step === 1 ? `Confirm your booking with ${offer.vendorName}.` : `Secure your booking by completing the payment.`}
           </DialogDescription>
         </DialogHeader>
+
         <form id="book-form" onSubmit={handleSubmit} className="grid gap-6 py-4">
-            <div className="flex flex-col sm:flex-row gap-6">
-                <div className="flex-grow">
-                    <Label className="mb-2">Select a Date</Label>
-                    <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        className="rounded-md border"
-                    />
+            {step === 1 && (
+                 <div className="flex flex-col sm:flex-row gap-6">
+                    <div className="flex-grow">
+                        <Label className="mb-2">Select a Date</Label>
+                        <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            className="rounded-md border"
+                        />
+                    </div>
+                    <div className="space-y-4 sm:w-2/5">
+                        <div>
+                            <Label htmlFor="time">Select a Time</Label>
+                            <Input id="time" type="time" required defaultValue="14:00" />
+                        </div>
+                        <div>
+                            <Label htmlFor="name">Full Name</Label>
+                            <Input id="name" placeholder="John Doe" required />
+                        </div>
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" placeholder="john.doe@example.com" required/>
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-4 sm:w-2/5">
+            )}
+            {step === 2 && (
+                <div className="space-y-4">
                     <div>
-                        <Label htmlFor="time">Select a Time</Label>
-                        <Input id="time" type="time" required />
+                        <Label htmlFor="card-number">Card Number</Label>
+                        <div className="relative">
+                            <Input id="card-number" placeholder="1234 5678 9101 1121" required />
+                            <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        </div>
                     </div>
-                     <div>
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" placeholder="John Doe" required/>
+                    <div className="grid grid-cols-3 gap-4">
+                         <div>
+                            <Label htmlFor="expiry">Expiry</Label>
+                            <Input id="expiry" placeholder="MM/YY" required />
+                        </div>
+                         <div>
+                            <Label htmlFor="cvc">CVC</Label>
+                            <Input id="cvc" placeholder="123" required />
+                        </div>
+                        <div>
+                            <Label htmlFor="zip">ZIP</Label>
+                            <Input id="zip" placeholder="12345" required />
+                        </div>
                     </div>
-                     <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="john.doe@example.com" required/>
+                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
+                        <Lock className="h-3 w-3" />
+                        <span>Payments are secure and encrypted.</span>
                     </div>
                 </div>
-            </div>
-          
+            )}
         </form>
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center sm:items-end w-full">
-            <div className="text-left">
+
+        <Separator />
+
+        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between items-center sm:items-end w-full gap-4">
+            <div className="text-left w-full sm:w-auto">
                 <p className="text-muted-foreground">Total Price</p>
                 <p className="text-3xl font-bold text-primary">${offer.price}</p>
             </div>
-          <Button type="submit" form="book-form" size="lg">
-            Confirm & Book
-          </Button>
+            {step === 1 ? (
+                 <Button type="submit" form="book-form" size="lg">
+                    Proceed to Payment
+                </Button>
+            ): (
+                 <Button type="submit" form="book-form" size="lg">
+                    Confirm & Book for ${offer.price}
+                </Button>
+            )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

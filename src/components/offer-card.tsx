@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Clock } from 'lucide-react';
+import { Star, Edit, Clock, Heart } from 'lucide-react';
 import Image from 'next/image';
 import { ManageServiceDialog } from './manage-service-dialog';
 import { BookOfferDialog } from './book-offer-dialog';
@@ -25,10 +25,13 @@ export function OfferCard({ offer, role }: OfferCardProps) {
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
           data-ai-hint="event offer"
         />
-        <Badge className="absolute top-3 right-3" variant="secondary">
-          {offer.category}
-        </Badge>
-         <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground" variant="default">
+         {role === 'client' && (
+             <Button size="icon" variant="secondary" className="absolute top-3 right-3 rounded-full h-8 w-8 bg-background/70 hover:bg-background">
+                <Heart className="h-4 w-4" />
+                <span className="sr-only">Save</span>
+            </Button>
+         )}
+        <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground" variant="default">
           Special Offer
         </Badge>
       </CardHeader>

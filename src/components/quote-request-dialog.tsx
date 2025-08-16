@@ -26,9 +26,11 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // In a real app, this would trigger the creation of a new chat/message thread
+    // and navigate the user there.
     toast({
-      title: 'Quote Request Sent!',
-      description: `Your request for "${service.title}" has been sent to ${service.vendorName}.`,
+      title: 'Message Sent!',
+      description: `Your request has been sent to ${service.vendorName}. You can see their reply in your Messages.`,
     });
     setOpen(false);
   };
@@ -71,7 +73,7 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
         </form>
         <DialogFooter>
           <Button type="submit" form="quote-form">
-            Send Request
+            Send Message
           </Button>
         </DialogFooter>
       </DialogContent>

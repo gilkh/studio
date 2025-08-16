@@ -15,25 +15,77 @@ export async function createNewUser(data: {
     email: string;
     businessName?: string;
 }) {
-    // This function is now a placeholder for the prototype.
-    // In a real app, it would use Firebase Auth and then write to Firestore.
-    // The write operation was failing due to security rules, so we now
-    // simulate this step and redirect the user immediately from the UI.
-    console.log("Simulating user creation for:", data.email);
-    return Promise.resolve();
+    const { accountType, firstName, lastName, email, businessName } = data;
+    // In a real app, this ID would come from Firebase Auth after user creation.
+    // For the prototype, we'll create a simple ID.
+    const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`;
+
+    if (accountType === 'client') {
+        const userProfile: Omit<UserProfile, 'id'> = {
+            firstName,
+            lastName,
+            email,
+            phone: '',
+            createdAt: new Date(),
+            savedItemIds: [],
+        };
+        // Using setDoc with a specific ID.
+        await setDoc(doc(db, 'users', userId), userProfile);
+    } else if (accountType === 'vendor') {
+        const vendorProfile: Omit<VendorProfile, 'id'> = {
+            businessName: businessName || `${firstName}'s Business`,
+            email,
+            ownerId: userId, // Link to a user profile if needed
+            category: '',
+            tagline: '',
+            description: '',
+            phone: '',
+            createdAt: new Date(),
+        };
+        // Vendors also get a user profile for basic info
+        const userProfile: Omit<UserProfile, 'id'> = {
+            firstName,
+            lastName,
+            email,
+            phone: '',
+            createdAt: new Date(),
+        };
+        await setDoc(doc(db, 'users', userId), userProfile);
+        // Using setDoc with a specific ID, which can be the same as the user ID for simplicity.
+        await setDoc(doc(db, 'vendors', userId), vendorProfile);
+    }
 }
 
 
 // In a real app, this would also verify password. For now, it just finds a user by email.
 export async function signInUser(email: string): Promise<'client' | 'vendor' | null> {
-    // For this prototype, we'll use a simple heuristic to determine user type
-    // to avoid database reads on the unauthenticated login page.
-    // In a real app, you would have a single users collection with a 'role' field.
-    if (email.includes('vendor') || email.includes('test@vendor.com') || email.includes('timeless')) {
-        return 'vendor';
+    try {
+        // Check if it's a vendor first
+        const vendorQuery = query(collection(db, 'vendors'), where('email', '==', email));
+        const vendorSnapshot = await getDocs(vendorQuery);
+        if (!vendorSnapshot.empty) {
+            return 'vendor';
+        }
+
+        // If not a vendor, check if it's a client
+        const userQuery = query(collection(db, 'users'), where('email', '==', email));
+        const userSnapshot = await getDocs(userQuery);
+        if (!userSnapshot.empty) {
+            // Need to make sure this user isn't also a vendor
+            const vendorCheck = await getDoc(doc(db, 'vendors', userSnapshot.docs[0].id));
+            if (!vendorCheck.exists()) {
+                return 'client';
+            }
+        }
+    } catch (e) {
+        if ((e as any).code === 'unavailable') {
+            console.warn("Firestore is offline, cannot sign in.");
+            return null;
+        }
+        throw e;
     }
-    // Default to client for any other email
-    return 'client';
+    
+    return null;
 }
 
 

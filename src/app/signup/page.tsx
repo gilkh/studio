@@ -58,8 +58,6 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
     form.clearErrors();
     try {
-        // In this prototype, we simulate user creation and redirect.
-        // The createNewUser function is now a placeholder.
         await createNewUser(values);
 
         toast({

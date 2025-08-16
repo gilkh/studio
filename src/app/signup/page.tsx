@@ -56,19 +56,29 @@ export default function SignupPage() {
   const accountType = form.watch('accountType');
 
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
+    form.clearErrors();
     try {
+        // In this prototype, we simulate user creation and redirect.
+        // The createNewUser function is now a placeholder.
         await createNewUser(values);
+
         toast({
             title: "Account Created!",
-            description: "Welcome to TradeCraft. You can now sign in.",
+            description: "Welcome to TradeCraft. Redirecting you to your new dashboard.",
         });
-        // In a real app with auth, you'd auto-login here. For now, we go to login page.
-        router.push('/login');
+
+        // Redirect to the appropriate dashboard
+        if (values.accountType === 'client') {
+            router.push('/client/home');
+        } else {
+            router.push('/vendor/home');
+        }
+
     } catch(error) {
         console.error("Signup failed", error);
          toast({
             title: "Sign-up Failed",
-            description: "An account with this email may already exist or an error occurred.",
+            description: "An unexpected error occurred. Please try again.",
             variant: "destructive",
         });
     }

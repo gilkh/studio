@@ -39,9 +39,15 @@ export default function LoginPage() {
     const password = formData.get('password') as string; // In a real app, you'd use the password
 
     try {
+        // This is a mock sign-in. In a real app, this would involve a server call.
+        // For the prototype, we'll determine the role by a simple email pattern.
         const userRole = await signInUser(email);
 
         if (userRole) {
+            toast({
+                title: 'Sign In Successful!',
+                description: `Welcome back! Redirecting to your dashboard...`,
+            });
             if (userRole === 'client') {
                 router.push('/client/home');
             } else {

@@ -48,6 +48,7 @@ export default function EventPlannerPage() {
     setTimeline(null);
     setEventName(`${values.eventType} in ${values.location}`);
     
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
@@ -276,7 +277,7 @@ export default function EventPlannerPage() {
                                             </div>
                                         </div>
                                         
-                                        <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                              {editingTaskId === task.id ? (
                                                 <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600 hover:bg-green-100 hover:text-green-700">
                                                     <Save className="h-4 w-4" />
@@ -302,3 +303,5 @@ export default function EventPlannerPage() {
     </div>
   );
 }
+
+    

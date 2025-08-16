@@ -5,13 +5,14 @@ import { getFirestore, enableIndexedDbPersistence, initializeFirestore, Firestor
 import { getAuth, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
-  projectId: 'tradecraft-5c8mv',
-  appId: '1:864853702730:web:e03190ceafd4278dfd8eb3',
-  storageBucket: 'tradecraft-5c8mv.firebasestorage.app',
-  apiKey: 'AIzaSyCRM1IeOKLecBUl10L4XNPU9lWjuf2_TyA',
-  authDomain: 'tradecraft-5c8mv.firebaseapp.com',
-  messagingSenderId: '864853702730',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
+
 
 let app: FirebaseApp;
 let auth: Auth;

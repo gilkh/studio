@@ -1,20 +1,24 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import React from 'react';
 import type { Booking } from '@/lib/types';
 import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { format } from 'date-fns';
+import { Skeleton } from './ui/skeleton';
 
 interface CalendarViewProps {
   bookings: Booking[];
+  isLoading: boolean;
 }
 
-export function CalendarView({ bookings }: CalendarViewProps) {
+export function CalendarView({ bookings, isLoading }: CalendarViewProps) {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   
-  const upcomingBookings = bookings.filter(b => b.date >= new Date()).sort((a,b) => a.date.getTime() - b.date.getTime());
+  const upcomingBookings = bookings
+    .filter(b => b.date >= new Date())
+    .sort((a,b) => a.date.getTime() - b.date.getTime());
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -25,19 +29,21 @@ export function CalendarView({ bookings }: CalendarViewProps) {
             <CardDescription>View all your scheduled appointments.</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-              modifiers={{ booked: bookings.map(b => b.date) }}
-              modifiersStyles={{
-                booked: { 
-                  border: '2px solid hsl(var(--primary))',
-                  borderRadius: 'var(--radius)',
-                }
-              }}
-            />
+            {isLoading ? <Skeleton className="h-[250px] w-[280px]" /> : (
+                 <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    className="rounded-md border"
+                    modifiers={{ booked: bookings.map(b => b.date) }}
+                    modifiersStyles={{
+                        booked: { 
+                        border: '2px solid hsl(var(--primary))',
+                        borderRadius: 'var(--radius)',
+                        }
+                    }}
+                />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -49,7 +55,12 @@ export function CalendarView({ bookings }: CalendarViewProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingBookings.length > 0 ? upcomingBookings.map(booking => (
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : upcomingBookings.length > 0 ? upcomingBookings.map(booking => (
                 <div key={booking.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
                     <div className="text-center w-16 flex-shrink-0">
                         <p className="font-bold text-lg text-primary">{format(booking.date, 'dd')}</p>

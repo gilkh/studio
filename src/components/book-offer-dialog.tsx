@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -14,32 +15,61 @@ import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Offer } from '@/lib/types';
 import { Calendar } from './ui/calendar';
-import { Badge } from './ui/badge';
-import { Clock, CreditCard, Lock } from 'lucide-react';
+import { Clock, CreditCard, Loader2, Lock } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { createBooking } from '@/lib/services';
 
 interface BookOfferDialogProps {
   children: React.ReactNode;
   offer: Offer;
 }
 
+const MOCK_USER_ID = 'user123'; // In a real app, this would come from auth
+
 export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [step, setStep] = React.useState(1);
+  const [isBooking, setIsBooking] = React.useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (step === 1) {
         setStep(2);
     } else {
-        toast({
-            title: 'Booking Successful!',
-            description: `Your booking for "${offer.title}" has been confirmed.`,
-        });
-        setOpen(false);
-        setStep(1); // Reset for next time
+        setIsBooking(true);
+        try {
+            const form = event.currentTarget;
+            const time = (form.elements.namedItem('time') as HTMLInputElement).value;
+            const name = (form.elements.namedItem('name') as HTMLInputElement).value;
+
+            if (!date || !time || !name) {
+                toast({ title: "Missing Information", description: "Please fill out all fields.", variant: "destructive" });
+                return;
+            }
+
+            await createBooking({
+                title: offer.title,
+                with: name,
+                clientId: MOCK_USER_ID,
+                vendorId: offer.vendorId,
+                date: date,
+                time: time,
+            });
+            
+            toast({
+                title: 'Booking Successful!',
+                description: `Your booking for "${offer.title}" has been confirmed.`,
+            });
+            setOpen(false);
+            setStep(1); 
+        } catch (error) {
+            console.error("Failed to create booking:", error);
+            toast({ title: "Booking Failed", description: "Could not complete your booking. Please try again.", variant: "destructive" });
+        } finally {
+            setIsBooking(false);
+        }
     }
   };
 
@@ -69,15 +99,15 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
                     <div className="space-y-4 sm:w-2/5">
                         <div>
                             <Label htmlFor="time">Select a Time</Label>
-                            <Input id="time" type="time" required defaultValue="14:00" />
+                            <Input id="time" name="time" type="time" required defaultValue="14:00" />
                         </div>
                         <div>
                             <Label htmlFor="name">Full Name</Label>
-                            <Input id="name" placeholder="John Doe" required />
+                            <Input id="name" name="name" placeholder="John Doe" required />
                         </div>
                         <div>
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" placeholder="john.doe@example.com" required/>
+                            <Input id="email" name="email" type="email" placeholder="john.doe@example.com" required/>
                         </div>
                     </div>
                 </div>
@@ -125,7 +155,8 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
                     Proceed to Payment
                 </Button>
             ): (
-                 <Button type="submit" form="book-form" size="lg">
+                 <Button type="submit" form="book-form" size="lg" disabled={isBooking}>
+                    {isBooking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Confirm & Book for ${offer.price}
                 </Button>
             )}

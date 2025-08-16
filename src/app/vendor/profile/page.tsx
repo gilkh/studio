@@ -1,19 +1,19 @@
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star, Loader2, ShieldCheck, ImagePlus, PlusCircle } from 'lucide-react';
+import { Camera, Star, Loader2, ShieldCheck, ImagePlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getVendorProfile, updateVendorProfile } from '@/lib/services';
+import { getVendorProfile, createOrUpdateVendorProfile } from '@/lib/services';
 import type { VendorProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -65,11 +65,8 @@ export default function VendorProfilePage() {
     useEffect(() => {
         async function fetchVendor() {
             try {
-                const vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
-                if (vendorProfile) {
-                    setVendor(vendorProfile);
-                    form.reset(vendorProfile);
-                } else {
+                let vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
+                if (!vendorProfile) {
                     // If no profile, create one with mock data for the demo
                     const newVendor = { 
                         businessName: 'Timeless Snaps', 
@@ -78,11 +75,14 @@ export default function VendorProfilePage() {
                         description: 'Capturing your special moments with artistry and passion. We offer a range of packages including full-day coverage, engagement shoots, and custom-designed printed albums to make your memories last a lifetime.',
                         email: 'contact@timeless-snaps.com',
                         phone: '(555) 123-4567',
-                        ownerId: 'user123'
+                        ownerId: MOCK_VENDOR_ID
                     };
-                    await updateVendorProfile(MOCK_VENDOR_ID, newVendor);
-                    setVendor({ id: MOCK_VENDOR_ID, createdAt: new Date(), ...newVendor });
-                    form.reset(newVendor);
+                    await createOrUpdateVendorProfile(MOCK_VENDOR_ID, newVendor);
+                    vendorProfile = await getVendorProfile(MOCK_VENDOR_ID);
+                }
+                if (vendorProfile) {
+                    setVendor(vendorProfile);
+                    form.reset(vendorProfile);
                 }
             } catch (error) {
                 console.error("Failed to fetch vendor profile:", error);
@@ -101,7 +101,7 @@ export default function VendorProfilePage() {
 
     async function onSubmit(values: z.infer<typeof profileFormSchema>) {
         try {
-            await updateVendorProfile(MOCK_VENDOR_ID, values);
+            await createOrUpdateVendorProfile(MOCK_VENDOR_ID, values);
             setVendor(prev => prev ? { ...prev, ...values } : null);
             toast({
                 title: "Profile Updated",
@@ -202,7 +202,7 @@ export default function VendorProfilePage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Category</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select a category" />

@@ -1,19 +1,60 @@
+
+'use client';
 import type { Service } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Heart } from 'lucide-react';
+import { Star, Edit, Heart, HeartCrack } from 'lucide-react';
 import Image from 'next/image';
 import { QuoteRequestDialog } from './quote-request-dialog';
 import { ManageServiceDialog } from './manage-service-dialog';
+import { useEffect, useState } from 'react';
+import { getUserProfile, toggleSavedItem } from '@/lib/services';
+import { useToast } from '@/hooks/use-toast';
 
 interface ServiceCardProps {
   service: Service;
   role: 'client' | 'vendor';
 }
 
+const MOCK_USER_ID = 'user123';
+
 export function ServiceCard({ service, role }: ServiceCardProps) {
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if item is saved
+    if (role === 'client') {
+      getUserProfile(MOCK_USER_ID).then(profile => {
+        if (profile?.savedItemIds?.includes(service.id)) {
+          setIsSaved(true);
+        }
+      })
+    }
+  }, [service.id, role]);
+
+  const handleSaveToggle = async () => {
+    if (role !== 'client') return;
+    setIsSaving(true);
+    try {
+        await toggleSavedItem(MOCK_USER_ID, service.id);
+        setIsSaved(!isSaved);
+        toast({
+            title: isSaved ? 'Item Unsaved' : 'Item Saved!',
+            description: isSaved ? `"${service.title}" removed from your saved items.` : `"${service.title}" added to your saved items.`
+        });
+    } catch (error) {
+        console.error('Failed to toggle saved item', error);
+        toast({ title: 'Error', description: 'Could not update saved items.', variant: 'destructive' });
+    } finally {
+        setIsSaving(false);
+    }
+  }
+
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 rounded-xl group">
       <CardHeader className="p-0 relative overflow-hidden">
@@ -26,8 +67,8 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
           data-ai-hint="event service"
         />
         {role === 'client' && (
-             <Button size="icon" variant="secondary" className="absolute top-3 right-3 rounded-full h-8 w-8 bg-background/70 hover:bg-background">
-                <Heart className="h-4 w-4" />
+             <Button size="icon" variant="secondary" onClick={handleSaveToggle} disabled={isSaving} className="absolute top-3 right-3 rounded-full h-8 w-8 bg-background/70 hover:bg-background">
+                {isSaved ? <HeartCrack className="h-4 w-4 text-red-500" /> : <Heart className="h-4 w-4" />}
                 <span className="sr-only">Save</span>
             </Button>
          )}

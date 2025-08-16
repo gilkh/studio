@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import { Home, Compass, Calendar, MessageSquare, PenTool, Briefcase, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
-import { quoteRequests } from '@/lib/placeholder-data';
+import { useEffect, useState } from 'react';
+import { getVendorQuoteRequests } from '@/lib/services';
 
+const MOCK_VENDOR_ID = 'vendor123';
 
 const clientLinks = [
   { href: '/client/home', label: 'Home', icon: Home },
@@ -18,20 +20,30 @@ const clientLinks = [
 const vendorLinks = [
   { href: '/vendor/home', label: 'Home', icon: Home },
   { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
-  { href: '/vendor/client-requests', label: 'Requests', icon: Users, badge: quoteRequests.filter(q => q.status === 'pending').length },
+  { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link' },
   { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
 ];
 
 
 export function BottomNavBar() {
   const pathname = usePathname();
+  const [pendingRequests, setPendingRequests] = useState(0);
   const isVendor = pathname.startsWith('/vendor');
+  
+  useEffect(() => {
+    if (isVendor) {
+      getVendorQuoteRequests(MOCK_VENDOR_ID).then(requests => {
+        setPendingRequests(requests.filter(q => q.status === 'pending').length);
+      })
+    }
+  }, [isVendor]);
+
   const links = isVendor ? vendorLinks : clientLinks;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 lg:hidden">
       <div className="flex justify-around items-center h-full">
-        {links.map(({ href, label, icon: Icon, badge }) => (
+        {links.map(({ href, label, icon: Icon, ...props }) => (
           <Link
             key={href}
             href={href}
@@ -39,12 +51,13 @@ export function BottomNavBar() {
               'flex flex-col items-center justify-center w-full h-full gap-1 text-xs transition-colors hover:text-primary',
               pathname === href ? 'text-primary' : 'text-muted-foreground'
             )}
+            {...props}
           >
             <div className="relative">
                 <Icon className="h-6 w-6" />
-                {badge && badge > 0 && (
+                {label === 'Requests' && pendingRequests > 0 && (
                     <Badge className="absolute -top-1 -right-2 h-4 w-4 shrink-0 justify-center rounded-full p-1 text-[10px]">
-                        {badge}
+                        {pendingRequests}
                     </Badge>
                 )}
             </div>

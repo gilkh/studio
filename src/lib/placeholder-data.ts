@@ -1,11 +1,15 @@
 
 import type { Service, QuoteRequest, Booking, Message, Offer, ServiceOrOffer } from '@/lib/types';
 
+// This file is now used for initial data seeding or as a fallback.
+// In a real production app, this data would be managed by admins or vendors.
+
 export const services: Service[] = [
   {
     id: 's1',
     type: 'service',
     vendorName: 'Timeless Snaps',
+    vendorId: 'vendor123',
     vendorAvatar: 'https://i.pravatar.cc/150?u=timeless',
     title: 'Creative Wedding & Portrait Photography',
     description: 'Capturing your special moments with artistry and passion. Full-day coverage and printed albums.',
@@ -18,6 +22,7 @@ export const services: Service[] = [
     id: 's2',
     type: 'service',
     vendorName: 'Bloom & Petal',
+    vendorId: 'vendor456',
     vendorAvatar: 'https://i.pravatar.cc/150?u=bloom',
     title: 'Stunning Floral Arrangements',
     description: 'Bespoke floral designs for bouquets, centerpieces, and venue decorations. All styles from classic to modern.',
@@ -33,6 +38,7 @@ export const offers: Offer[] = [
         id: 'o1',
         type: 'offer',
         vendorName: 'Gourmet Catering Co.',
+        vendorId: 'vendor789',
         vendorAvatar: 'https://i.pravatar.cc/150?u=gourmet',
         title: 'Exquisite Wedding & Event Catering',
         description: 'Unforgettable culinary experiences for weddings, corporate events, and private parties. Custom menus available.',
@@ -47,6 +53,7 @@ export const offers: Offer[] = [
         id: 'o2',
         type: 'offer',
         vendorName: 'Groove Masters DJ',
+        vendorId: 'vendor101',
         vendorAvatar: 'https://i.pravatar.cc/150?u=groove',
         title: 'Pro DJ for Parties & Events',
         description: 'High-energy DJ services with professional sound and lighting to keep your guests dancing all night long.',
@@ -66,29 +73,15 @@ export const quoteRequests: QuoteRequest[] = [
   {
     id: 'qr1',
     clientName: 'Eve Adams',
+    clientId: 'user456',
+    vendorId: 'vendor123',
     clientAvatar: 'https://i.pravatar.cc/150?u=eve',
     serviceTitle: 'Creative Wedding & Portrait Photography',
+    serviceId: 's1',
     message: 'I\'m planning a wedding for 150 guests and would love to see your portfolio and get a quote.',
-    date: '2024-08-15',
+    eventDate: '2024-10-26',
     status: 'pending',
-  },
-  {
-    id: 'qr2',
-    clientName: 'Frank Miller',
-    clientAvatar: 'https://i.pravatar.cc/150?u=frank',
-    serviceTitle: 'Stunning Floral Arrangements',
-    message: 'We\'d like to book a full-day wedding package for our date in October.',
-    date: '2024-08-14',
-    status: 'approved',
-  },
-  {
-    id: 'qr3',
-    clientName: 'Grace Lee',
-    clientAvatar: 'https://i.pravatar.cc/150?u=grace',
-    serviceTitle: 'Creative Wedding & Portrait Photography',
-    message: 'Could you provide a quote for a 2-hour engagement shoot?',
-    date: '2024-08-12',
-    status: 'declined',
+    createdAt: new Date()
   },
 ];
 
@@ -97,6 +90,8 @@ export const bookings: Booking[] = [
         id: 'b1',
         title: 'Final Tasting Session (Gourmet Catering)',
         with: 'Eve Adams',
+        clientId: 'user456',
+        vendorId: 'vendor789',
         date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 2),
         time: '10:00 AM'
     },
@@ -104,15 +99,10 @@ export const bookings: Booking[] = [
         id: 'b2',
         title: 'Wedding Day Photoshoot',
         with: 'Frank Miller',
+        clientId: 'user789',
+        vendorId: 'vendor123',
         date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 5),
         time: '02:30 PM'
-    },
-     {
-        id: 'b3',
-        title: 'Venue Decoration Setup',
-        with: 'Michael Chen',
-        date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 10),
-        time: '11:00 AM'
     },
 ];
 
@@ -140,5 +130,3 @@ export const messages: Message[] = [
         timestamp: '2 days ago',
     }
 ]
-// This will be handled by services now
-// export const savedTimelines: SavedTimeline[] = [];

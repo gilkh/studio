@@ -1,7 +1,6 @@
 
 'use client';
 
-import { services, offers, servicesAndOffers } from '@/lib/placeholder-data';
 import { ServiceCard } from './service-card';
 import { OfferCard } from './offer-card';
 import { Input } from './ui/input';
@@ -10,9 +9,40 @@ import { Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEffect, useState } from 'react';
+import type { ServiceOrOffer, Service, Offer } from '@/lib/types';
+import { getServicesAndOffers } from '@/lib/services';
+import { Skeleton } from './ui/skeleton';
 
 export function ClientDashboard() {
-  const categories = ['All Categories', ...Array.from(new Set(servicesAndOffers.map((s) => s.category)))];
+  const [allItems, setAllItems] = useState<ServiceOrOffer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadItems() {
+        setIsLoading(true);
+        try {
+            const items = await getServicesAndOffers();
+            setAllItems(items);
+        } catch (error) {
+            console.error("Failed to load services and offers", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    loadItems();
+  }, [])
+
+
+  const categories = ['All Categories', ...Array.from(new Set(allItems.map((s) => s.category)))];
+  const services = allItems.filter(item => item.type === 'service') as Service[];
+  const offers = allItems.filter(item => item.type === 'offer') as Offer[];
+
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-96 w-full rounded-xl" />)}
+    </div>
+  );
 
   return (
     <div className="space-y-8">
@@ -51,29 +81,35 @@ export function ClientDashboard() {
           <TabsTrigger value="offers">Offers (Book Now)</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {servicesAndOffers.map((item) =>
-              item.type === 'service' ? (
-                <ServiceCard key={item.id} service={item} role="client" />
-              ) : (
-                <OfferCard key={item.id} offer={item} role="client" />
-              )
+            {isLoading ? renderSkeletons() : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {allItems.map((item) =>
+                    item.type === 'service' ? (
+                        <ServiceCard key={item.id} service={item} role="client" />
+                    ) : (
+                        <OfferCard key={item.id} offer={item} role="client" />
+                    )
+                    )}
+                </div>
             )}
-          </div>
         </TabsContent>
          <TabsContent value="services">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {services.map((service) => (
-                    <ServiceCard key={service.id} service={service} role="client" />
-                ))}
-            </div>
+             {isLoading ? renderSkeletons() : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {services.map((service) => (
+                        <ServiceCard key={service.id} service={service} role="client" />
+                    ))}
+                </div>
+            )}
         </TabsContent>
         <TabsContent value="offers">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {offers.map((offer) => (
-                    <OfferCard key={offer.id} offer={offer} role="client" />
-                ))}
-            </div>
+            {isLoading ? renderSkeletons() : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {offers.map((offer) => (
+                        <OfferCard key={offer.id} offer={offer} role="client" />
+                    ))}
+                </div>
+            )}
         </TabsContent>
       </Tabs>
     </div>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -14,10 +15,11 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { ServiceOrOffer } from '@/lib/types';
+import type { ServiceOrOffer, Service, Offer } from '@/lib/types';
 import { Checkbox } from './ui/checkbox';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Loader2 } from 'lucide-react';
+import { createServiceOrOffer } from '@/lib/services';
 
 interface ManageServiceDialogProps {
   children: React.ReactNode;
@@ -25,22 +27,68 @@ interface ManageServiceDialogProps {
 }
 
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const MOCK_VENDOR_ID = 'vendor123';
 
 export function ManageServiceDialog({ children, service }: ManageServiceDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
-  const [type, setType] = React.useState<string>(service?.type || 'service');
+  const [type, setType] = React.useState<string>(service?.type || 'offer');
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSaving(true);
     const formData = new FormData(event.currentTarget);
-    const title = formData.get('title');
-    
-    toast({
-      title: `${type === 'service' ? 'Service' : 'Offer'} ${service ? 'Updated' : 'Created'}`,
-      description: `The ${type} "${title}" has been successfully saved.`,
-    });
-    setOpen(false);
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const description = formData.get('description') as string;
+
+    try {
+        if (type === 'offer') {
+            const price = parseFloat(formData.get('price') as string);
+            const offerData: Omit<Offer, 'id'> = {
+                type: 'offer',
+                title,
+                category,
+                description,
+                price,
+                availability: 'Mon-Fri, 9am-5pm', // Mock availability
+                vendorId: MOCK_VENDOR_ID,
+                vendorName: 'Timeless Snaps', // Mock data
+                vendorAvatar: `https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`, // Mock
+                rating: 0,
+                reviewCount: 0,
+                image: 'https://placehold.co/600x400.png'
+            }
+            await createServiceOrOffer(offerData);
+        } else {
+            const serviceData: Omit<Service, 'id'> = {
+                type: 'service',
+                title,
+                category,
+                description,
+                vendorId: MOCK_VENDOR_ID,
+                vendorName: 'Timeless Snaps', // Mock data
+                vendorAvatar: `https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`, // Mock
+                rating: 0,
+                reviewCount: 0,
+                image: 'https://placehold.co/600x400.png'
+            }
+            await createServiceOrOffer(serviceData);
+        }
+        
+        toast({
+          title: `${type === 'service' ? 'Service' : 'Offer'} ${service ? 'Updated' : 'Created'}`,
+          description: `The ${type} "${title}" has been successfully saved.`,
+        });
+        setOpen(false);
+
+    } catch (error) {
+        console.error("Failed to save service/offer", error);
+        toast({ title: "Save Failed", description: "Could not save your listing.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -58,12 +106,12 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
                 <Label className="text-right">Type</Label>
                  <RadioGroup defaultValue={type} onValueChange={setType} className="col-span-3 flex gap-4">
                     <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="service" id="r-service" />
-                        <Label htmlFor="r-service">Service (Quote-based)</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
                         <RadioGroupItem value="offer" id="r-offer" />
                         <Label htmlFor="r-offer">Offer (Fixed Price)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="service" id="r-service" />
+                        <Label htmlFor="r-service">Service (Quote-based)</Label>
                     </div>
                 </RadioGroup>
             </div>
@@ -141,7 +189,8 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
           </div>
         </form>
         <DialogFooter>
-          <Button type="submit" form="service-form">
+          <Button type="submit" form="service-form" disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
           </Button>
         </DialogFooter>

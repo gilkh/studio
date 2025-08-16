@@ -1,9 +1,9 @@
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Camera, Heart, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getUserProfile, updateUserProfile } from '@/lib/services';
+import { getUserProfile, createOrUpdateUserProfile } from '@/lib/services';
 import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -44,17 +44,18 @@ export default function ClientProfilePage() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const userProfile = await getUserProfile(MOCK_USER_ID);
-        if (userProfile) {
-          setUser(userProfile);
-          form.reset(userProfile);
-        } else {
+        let userProfile = await getUserProfile(MOCK_USER_ID);
+        if (!userProfile) {
             // If no profile, create one with mock data for the demo
-            const newUser = { firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '(123) 456-7890' };
-            await updateUserProfile(MOCK_USER_ID, newUser);
-            setUser({ id: MOCK_USER_ID, createdAt: new Date(), ...newUser });
-            form.reset(newUser);
+            const newUser = { id: MOCK_USER_ID, firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '(123) 456-7890' };
+            await createOrUpdateUserProfile(MOCK_USER_ID, newUser);
+            userProfile = await getUserProfile(MOCK_USER_ID);
         }
+        if (userProfile) {
+            setUser(userProfile);
+            form.reset(userProfile);
+        }
+
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
         toast({
@@ -72,7 +73,7 @@ export default function ClientProfilePage() {
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
     try {
-      await updateUserProfile(MOCK_USER_ID, values);
+      await createOrUpdateUserProfile(MOCK_USER_ID, values);
       setUser(prev => prev ? { ...prev, ...values } : null);
       toast({
         title: "Profile Updated",

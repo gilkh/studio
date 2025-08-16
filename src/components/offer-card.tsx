@@ -1,19 +1,60 @@
+
+'use client';
 import type { Offer } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Clock, Heart } from 'lucide-react';
+import { Star, Edit, Clock, Heart, HeartCrack } from 'lucide-react';
 import Image from 'next/image';
 import { ManageServiceDialog } from './manage-service-dialog';
 import { BookOfferDialog } from './book-offer-dialog';
+import { useEffect, useState } from 'react';
+import { getUserProfile, toggleSavedItem } from '@/lib/services';
+import { useToast } from '@/hooks/use-toast';
 
 interface OfferCardProps {
   offer: Offer;
   role: 'client' | 'vendor';
 }
 
+const MOCK_USER_ID = 'user123';
+
 export function OfferCard({ offer, role }: OfferCardProps) {
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if item is saved
+    if (role === 'client') {
+      getUserProfile(MOCK_USER_ID).then(profile => {
+        if (profile?.savedItemIds?.includes(offer.id)) {
+          setIsSaved(true);
+        }
+      })
+    }
+  }, [offer.id, role]);
+
+  const handleSaveToggle = async () => {
+    if (role !== 'client') return;
+    setIsSaving(true);
+    try {
+        await toggleSavedItem(MOCK_USER_ID, offer.id);
+        setIsSaved(!isSaved);
+         toast({
+            title: isSaved ? 'Item Unsaved' : 'Item Saved!',
+            description: isSaved ? `"${offer.title}" removed from your saved items.` : `"${offer.title}" added to your saved items.`
+        });
+    } catch (error) {
+        console.error('Failed to toggle saved item', error);
+        toast({ title: 'Error', description: 'Could not update saved items.', variant: 'destructive' });
+    } finally {
+        setIsSaving(false);
+    }
+  }
+
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 rounded-xl group">
       <CardHeader className="p-0 relative overflow-hidden">
@@ -26,8 +67,8 @@ export function OfferCard({ offer, role }: OfferCardProps) {
           data-ai-hint="event offer"
         />
          {role === 'client' && (
-             <Button size="icon" variant="secondary" className="absolute top-3 right-3 rounded-full h-8 w-8 bg-background/70 hover:bg-background">
-                <Heart className="h-4 w-4" />
+             <Button size="icon" variant="secondary" onClick={handleSaveToggle} disabled={isSaving} className="absolute top-3 right-3 rounded-full h-8 w-8 bg-background/70 hover:bg-background">
+                {isSaved ? <HeartCrack className="h-4 w-4 text-red-500" /> : <Heart className="h-4 w-4" />}
                 <span className="sr-only">Save</span>
             </Button>
          )}

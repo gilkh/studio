@@ -18,8 +18,10 @@ import { usePathname } from 'next/navigation';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
-import { quoteRequests } from '@/lib/placeholder-data';
+import { useEffect, useState } from 'react';
+import { getVendorQuoteRequests } from '@/lib/services';
 
+const MOCK_VENDOR_ID = 'vendor123';
 
 const clientLinks = [
   { href: '/client/home', label: 'Home', icon: Home },
@@ -32,7 +34,7 @@ const clientLinks = [
 const vendorLinks = [
   { href: '/vendor/home', label: 'Home', icon: Home },
   { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
-  { href: '/vendor/client-requests', label: 'Requests', icon: Users, badge: quoteRequests.filter(q => q.status === 'pending').length },
+  { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link-desktop' },
   { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
   { href: '/vendor/messages', label: 'Messages', icon: MessageSquare },
 ];
@@ -41,7 +43,17 @@ const vendorLinks = [
 export function AppHeader() {
   const loggedIn = true; // Mock state
   const pathname = usePathname();
+  const [pendingRequests, setPendingRequests] = useState(0);
   const isVendor = pathname.startsWith('/vendor');
+
+  useEffect(() => {
+    if (isVendor) {
+      getVendorQuoteRequests(MOCK_VENDOR_ID).then(requests => {
+        setPendingRequests(requests.filter(q => q.status === 'pending').length);
+      })
+    }
+  }, [isVendor]);
+
   const links = isVendor ? vendorLinks : clientLinks;
 
   return (
@@ -54,7 +66,7 @@ export function AppHeader() {
         
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-4">
-            {links.map(({ href, label, badge }) => (
+            {links.map(({ href, label, ...props }) => (
             <Link
                 key={href}
                 href={href}
@@ -62,11 +74,12 @@ export function AppHeader() {
                 'flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary',
                 pathname === href ? 'text-primary' : 'text-muted-foreground'
                 )}
+                {...props}
             >
                 {label}
-                 {badge && badge > 0 && (
+                 {label === 'Requests' && pendingRequests > 0 && (
                     <Badge className="h-5 w-5 shrink-0 justify-center rounded-full p-1 text-xs">
-                        {badge}
+                        {pendingRequests}
                     </Badge>
                 )}
             </Link>

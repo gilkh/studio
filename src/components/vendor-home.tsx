@@ -3,25 +3,50 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { bookings, quoteRequests, services, offers } from '@/lib/placeholder-data';
 import Link from 'next/link';
 import { Users, Briefcase, CalendarClock, MessageSquare, PlusCircle } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect, useState } from 'react';
+import type { Booking, QuoteRequest, ServiceOrOffer } from '@/lib/types';
+import { getBookingsForVendor, getVendorQuoteRequests, getServicesAndOffers } from '@/lib/services';
+import { Skeleton } from './ui/skeleton';
+
+// Mock vendor ID
+const MOCK_VENDOR_ID = 'vendor123';
 
 export function VendorHome() {
-  const myServices = services.slice(0, 1);
-  const myOffers = offers.slice(0, 2); 
-  const pendingRequests = quoteRequests.filter(q => q.status === 'pending');
-  const upcomingBookings = bookings.filter(b => b.date >= new Date()).slice(0, 2);
+  const [listings, setListings] = useState<ServiceOrOffer[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<QuoteRequest[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+        setIsLoading(true);
+        try {
+            const [allListings, requests, bookings] = await Promise.all([
+                getServicesAndOffers(),
+                getVendorQuoteRequests(MOCK_VENDOR_ID),
+                getBookingsForVendor(MOCK_VENDOR_ID),
+            ]);
+            setListings(allListings.filter(l => l.vendorId === MOCK_VENDOR_ID));
+            setPendingRequests(requests.filter(r => r.status === 'pending'));
+            setUpcomingBookings(bookings.filter(b => b.date >= new Date()).slice(0,2));
+        } catch (error) {
+            console.error("Failed to load vendor dashboard:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    loadDashboardData();
+  }, []);
 
   const recentActivity = [
       { type: 'request', data: pendingRequests[0], time: new Date(new Date().setDate(new Date().getDate() - 1)) },
-      { type: 'booking', data: bookings[0], time: new Date(new Date().setDate(new Date().getDate() - 2)) },
-      { type: 'message', data: { name: 'Grace Lee' }, time: new Date(new Date().setDate(new Date().getDate() - 3)) },
-  ].sort((a, b) => b.time.getTime() - a.time.getTime());
+      { type: 'booking', data: upcomingBookings[0], time: new Date(new Date().setDate(new Date().getDate() - 2)) },
+  ].filter(activity => activity.data).sort((a, b) => b.time.getTime() - a.time.getTime());
+
 
   return (
     <div className="space-y-8">
@@ -51,9 +76,9 @@ export function VendorHome() {
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{myServices.length + myOffers.length}</div>
+              {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{listings.length}</div>}
               <p className="text-xs text-muted-foreground">
-                {myServices.length} Services, {myOffers.length} Offers
+                {listings.filter(l => l.type === 'service').length} Services, {listings.filter(l => l.type === 'offer').length} Offers
               </p>
             </CardContent>
           </Card>
@@ -65,7 +90,7 @@ export function VendorHome() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+{pendingRequests.length}</div>
+              {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">+{pendingRequests.length}</div>}
                <Link href="/vendor/client-requests">
                 <p className="text-xs text-muted-foreground underline hover:text-primary">
                     New quote requests from clients
@@ -79,7 +104,7 @@ export function VendorHome() {
               <CalendarClock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{upcomingBookings.length}</div>
+              {isLoading ? <Skeleton className="h-8 w-1/4 mt-1" /> : <div className="text-2xl font-bold">{upcomingBookings.length}</div>}
               <Link href="/vendor/bookings">
                 <p className="text-xs text-muted-foreground underline hover:text-primary">
                     Confirmed and scheduled events
@@ -97,32 +122,37 @@ export function VendorHome() {
                         <CardDescription>A summary of your latest notifications and tasks.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <ul className="space-y-4">
-                           {recentActivity.map((activity, index) => (
-                                <li key={index} className="flex items-center gap-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-                                        {activity.type === 'request' && <Users className="h-5 w-5 text-secondary-foreground" />}
-                                        {activity.type === 'booking' && <CalendarClock className="h-5 w-5 text-secondary-foreground" />}
-                                        {activity.type === 'message' && <MessageSquare className="h-5 w-5 text-secondary-foreground" />}
-                                    </div>
-                                    <div className="flex-grow">
-                                        {activity.type === 'request' && (
-                                            <p>New quote request from <span className="font-semibold">{(activity.data as any).clientName}</span>.</p>
-                                        )}
-                                         {activity.type === 'booking' && (
-                                            <p>New booking confirmed with <span className="font-semibold">{(activity.data as any).with}</span>.</p>
-                                        )}
-                                        {activity.type === 'message' && (
-                                            <p>You have a new message from <span className="font-semibold">{(activity.data as any).name}</span>.</p>
-                                        )}
-                                        <p className="text-sm text-muted-foreground">{formatDistanceToNow(activity.time, { addSuffix: true })}</p>
-                                    </div>
-                                    <Button variant="outline" size="sm">
-                                        {activity.type === 'request' ? 'View Request' : 'View Details'}
-                                    </Button>
-                                </li>
-                           ))}
-                        </ul>
+                        {isLoading ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                            </div>
+                        ) : recentActivity.length > 0 ? (
+                            <ul className="space-y-4">
+                               {recentActivity.map((activity, index) => (
+                                    <li key={index} className="flex items-center gap-4">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                                            {activity.type === 'request' && <Users className="h-5 w-5 text-secondary-foreground" />}
+                                            {activity.type === 'booking' && <CalendarClock className="h-5 w-5 text-secondary-foreground" />}
+                                        </div>
+                                        <div className="flex-grow">
+                                            {activity.type === 'request' && (
+                                                <p>New quote request from <span className="font-semibold">{(activity.data as QuoteRequest).clientName}</span>.</p>
+                                            )}
+                                             {activity.type === 'booking' && (
+                                                <p>New booking confirmed with <span className="font-semibold">{(activity.data as Booking).with}</span>.</p>
+                                            )}
+                                            <p className="text-sm text-muted-foreground">{formatDistanceToNow(activity.time, { addSuffix: true })}</p>
+                                        </div>
+                                        <Button variant="outline" size="sm">
+                                            View Details
+                                        </Button>
+                                    </li>
+                               ))}
+                            </ul>
+                        ) : (
+                            <p className="text-center text-muted-foreground py-4">No recent activity.</p>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -133,7 +163,12 @@ export function VendorHome() {
                          <CardDescription>Your next two events.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {upcomingBookings.length > 0 ? upcomingBookings.map(booking => (
+                        {isLoading ? (
+                            <div className="space-y-3">
+                                <Skeleton className="h-16 w-full" />
+                                <Skeleton className="h-16 w-full" />
+                            </div>
+                        ) : upcomingBookings.length > 0 ? upcomingBookings.map(booking => (
                             <div key={booking.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
                                 <div className="text-center w-16 flex-shrink-0">
                                     <p className="font-bold text-lg text-primary">{booking.date.getDate()}</p>

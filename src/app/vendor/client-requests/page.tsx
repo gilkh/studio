@@ -1,14 +1,37 @@
 
+'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { quoteRequests } from '@/lib/placeholder-data';
+import { getVendorQuoteRequests } from '@/lib/services';
+import type { QuoteRequest } from '@/lib/types';
 import { Check, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
+const MOCK_VENDOR_ID = 'vendor123';
 
 export default function ClientRequestsPage() {
+    const [requests, setRequests] = useState<QuoteRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadRequests() {
+            setIsLoading(true);
+            try {
+                const quoteRequests = await getVendorQuoteRequests(MOCK_VENDOR_ID);
+                setRequests(quoteRequests);
+            } catch (error) {
+                console.error("Failed to load quote requests:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        loadRequests();
+    }, []);
+
   return (
      <Card>
         <CardHeader>
@@ -27,7 +50,17 @@ export default function ClientRequestsPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {quoteRequests.map((request) => (
+                {isLoading ? (
+                    [...Array(3)].map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-10 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : requests.map((request) => (
                 <TableRow key={request.id}>
                     <TableCell className="font-medium">
                     <div className="flex items-center gap-3">

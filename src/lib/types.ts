@@ -4,6 +4,7 @@ export type ServiceType = 'service' | 'offer';
 export interface BaseService {
   id: string;
   type: ServiceType;
+  vendorId: string;
   vendorName: string;
   vendorAvatar: string;
   title: string;
@@ -31,18 +32,24 @@ export type ServiceOrOffer = Service | Offer;
 
 export interface QuoteRequest {
   id: string;
+  clientId: string;
   clientName: string;
   clientAvatar: string;
+  vendorId: string;
+  serviceId: string;
   serviceTitle: string;
   message: string;
-  date: string;
+  eventDate: string;
   status: 'pending' | 'approved' | 'declined';
+  createdAt: Date;
 }
 
 export interface Booking {
   id: string;
   title: string;
   with: string;
+  clientId: string;
+  vendorId: string;
   date: Date;
   time: string;
 }

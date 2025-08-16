@@ -62,7 +62,12 @@ export default function SignupPage() {
             title: "Account Created!",
             description: "Welcome to TradeCraft. You can now sign in.",
         });
-        router.push('/login');
+        // Redirect to the appropriate dashboard after signup
+        if (values.accountType === 'client') {
+            router.push('/client/home');
+        } else {
+            router.push('/vendor/home');
+        }
     } catch(error) {
         console.error("Signup failed", error);
          toast({

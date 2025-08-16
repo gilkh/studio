@@ -18,26 +18,23 @@ export async function createNewUser(data: {
     const userId = `${data.firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
 
     if (data.accountType === 'client') {
-        const userProfile: Omit<UserProfile, 'id' | 'createdAt'> = {
+        const userProfile: Omit<UserProfile, 'id' | 'createdAt' | 'savedItemIds'> = {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
             phone: '', // Can be added in profile page
-            savedItemIds: []
         };
         await createOrUpdateUserProfile(userId, userProfile);
     } else {
-        const vendorProfile: Omit<VendorProfile, 'id' | 'createdAt'> = {
+        const vendorProfile: Omit<VendorProfile, 'id' | 'createdAt' | 'portfolio' | 'ownerId'> = {
             businessName: data.businessName || `${data.firstName} ${data.lastName}`,
             category: 'Uncategorized',
             tagline: '',
             description: '',
             email: data.email,
             phone: '',
-            ownerId: userId,
-            portfolio: [],
         };
-        await createOrUpdateVendorProfile(userId, vendorProfile);
+        await createOrUpdateVendorProfile(userId, { ...vendorProfile, ownerId: userId });
     }
 }
 
@@ -58,14 +55,11 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     return null;
 }
 
-export async function createOrUpdateUserProfile(userId: string, data: Partial<UserProfile>) {
+export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id'>>) {
     const docRef = doc(db, 'users', userId);
-    const existingDoc = await getDoc(docRef);
-    if (existingDoc.exists()) {
-        await updateDoc(docRef, data);
-    } else {
-        await setDoc(docRef, { ...data, createdAt: serverTimestamp() });
-    }
+    // Use setDoc with merge:true to either create a new doc or update an existing one.
+    // This avoids the race condition of reading (getDoc) before the client is online.
+    await setDoc(docRef, { ...data, createdAt: serverTimestamp(), savedItemIds: [] }, { merge: true });
 }
 
 
@@ -84,14 +78,10 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
     return null;
 }
 
-export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<VendorProfile>) {
+export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<Omit<VendorProfile, 'id'>>) {
     const docRef = doc(db, 'vendors', vendorId);
-    const existingDoc = await getDoc(docRef);
-    if (existingDoc.exists()) {
-        await updateDoc(docRef, data);
-    } else {
-        await setDoc(docRef, { ...data, createdAt: serverTimestamp() });
-    }
+     // Use setDoc with merge:true to either create a new doc or update an existing one.
+    await setDoc(docRef, { ...data, createdAt: serverTimestamp(), portfolio: [] }, { merge: true });
 }
 
 // Timeline Services

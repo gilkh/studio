@@ -4,6 +4,7 @@ import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, Docu
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer } from './types';
 
+// Mock user ID for prototype. In a real app, this would be the actual logged-in user's ID.
 const MOCK_USER_ID = 'user123';
 const MOCK_VENDOR_ID = 'vendor123';
 
@@ -14,9 +15,16 @@ export async function createNewUser(data: {
     email: string;
     businessName?: string;
 }) {
-    // In a real app, this would use Firebase Auth to create a user and get a UID
-    // For this prototype, we'll generate a random-ish ID based on email
-    const userId = data.email;
+    // In a real app, this would use Firebase Auth to create a user and get a UID.
+    // For this prototype, we'll generate a mock ID. We use email to check for existence.
+    const userDoc = await getDoc(doc(db, 'users', data.email));
+    const vendorDoc = await getDoc(doc(db, 'vendors', data.email));
+
+    if (userDoc.exists() || vendorDoc.exists()) {
+        throw new Error('An account with this email already exists.');
+    }
+
+    const userId = data.email; // Use email as the document ID for this prototype.
 
     if (data.accountType === 'client') {
         const userProfile: Omit<UserProfile, 'id' | 'createdAt' | 'savedItemIds'> = {
@@ -38,6 +46,7 @@ export async function createNewUser(data: {
         await createOrUpdateVendorProfile(userId, { ...vendorProfile, ownerId: userId });
     }
 }
+
 
 // In a real app, this would also verify password. For now, it just finds a user by email.
 export async function signInUser(email: string): Promise<'client' | 'vendor' | null> {

@@ -68,7 +68,7 @@ export default function SignupPage() {
         console.error("Signup failed", error);
          toast({
             title: "Sign-up Failed",
-            description: "An account with this email may already exist.",
+            description: "An account with this email may already exist or an error occurred.",
             variant: "destructive",
         });
     }

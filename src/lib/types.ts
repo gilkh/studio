@@ -54,3 +54,20 @@ export interface Message {
   timestamp: string;
   unreadCount?: number;
 }
+
+export interface EventTask {
+  id: string;
+  task: string;
+  deadline: string;
+  priority: 'High' | 'Medium' | 'Low';
+  estimatedCost: number;
+  completed: boolean;
+}
+
+export interface GenerateEventPlanInput {
+  eventType: string;
+  eventDate: string;
+  location: string;
+  guestCount: number;
+  budget: number;
+}

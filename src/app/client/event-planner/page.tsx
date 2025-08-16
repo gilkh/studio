@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { generateEventPlan, GenerateEventPlanInput, EventTask } from '@/ai/flows/generate-event-plan';
 import { Loader, PlusCircle, Trash2, Edit, Save, ArrowUp, ArrowDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import type { EventTask, GenerateEventPlanInput } from '@/lib/types';
+import { generateTimeline } from '@/lib/timeline-generator';
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -46,8 +46,12 @@ export default function EventPlannerPage() {
     setIsLoading(true);
     setTimeline(null);
     setEventName(`${values.eventType} in ${values.location}`);
+    
+    // Simulate a short delay for a better user experience
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     try {
-      const plan = await generateEventPlan(values);
+      const plan = generateTimeline(values);
       setTimeline(plan.tasks);
     } catch (error) {
       console.error('Failed to generate event plan:', error);
@@ -113,8 +117,8 @@ export default function EventPlannerPage() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>AI Event Planner</CardTitle>
-          <CardDescription>Describe your event, and our AI will generate a customized timeline for you.</CardDescription>
+          <CardTitle>Event Planner</CardTitle>
+          <CardDescription>Describe your event, and we'll generate a customized timeline for you.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -198,7 +202,7 @@ export default function EventPlannerPage() {
       {isLoading && (
         <div className="text-center p-8">
           <Loader className="h-8 w-8 animate-spin mx-auto text-primary mb-4" />
-          <p className="text-muted-foreground">Our AI is crafting your personalized event plan...</p>
+          <p className="text-muted-foreground">Crafting your personalized event plan...</p>
         </div>
       )}
 
@@ -292,4 +296,3 @@ export default function EventPlannerPage() {
     </div>
   );
 }
-

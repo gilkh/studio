@@ -1,4 +1,3 @@
-
 import { ServiceCard } from '@/components/service-card';
 import { OfferCard } from '@/components/offer-card';
 import { Button } from '@/components/ui/button';

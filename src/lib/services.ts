@@ -16,32 +16,30 @@ export async function createNewUser(data: {
     businessName?: string;
 }) {
     // In a real app, this would use Firebase Auth to create a user and get a UID.
-    // For this prototype, we'll generate a mock ID. We use email to check for existence.
-    const userDoc = await getDoc(doc(db, 'users', data.email));
-    const vendorDoc = await getDoc(doc(db, 'vendors', data.email));
-
-    if (userDoc.exists() || vendorDoc.exists()) {
-        throw new Error('An account with this email already exists.');
-    }
-
-    const userId = data.email; // Use email as the document ID for this prototype.
+    // For this prototype, we'll use the email as the unique ID, as auth is not implemented.
+    // The previous implementation had a bug where it tried to read before the client was online.
+    // This new implementation only performs a write, which is safely queued by the SDK.
+    
+    const userId = data.email; 
 
     if (data.accountType === 'client') {
-        const userProfile: Omit<UserProfile, 'id' | 'createdAt' | 'savedItemIds'> = {
+        const userProfile: Omit<UserProfile, 'id' | 'createdAt'> = {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
-            phone: '', // Can be added in profile page
+            phone: '',
+            savedItemIds: [],
         };
         await createOrUpdateUserProfile(userId, userProfile);
     } else {
-        const vendorProfile: Omit<VendorProfile, 'id' | 'createdAt' | 'portfolio' | 'ownerId'> = {
+        const vendorProfile: Omit<VendorProfile, 'id' | 'createdAt' | 'ownerId'> = {
             businessName: data.businessName || `${data.firstName} ${data.lastName}`,
             category: 'Uncategorized',
             tagline: '',
             description: '',
             email: data.email,
             phone: '',
+            portfolio: [],
         };
         await createOrUpdateVendorProfile(userId, { ...vendorProfile, ownerId: userId });
     }
@@ -93,8 +91,7 @@ export async function createOrUpdateUserProfile(userId: string, data: Partial<Om
     const docRef = doc(db, 'users', userId);
     // Use setDoc with merge:true to either create a new doc or update an existing one.
     // This avoids the race condition of reading (getDoc) before the client is online.
-    const initialData = { savedItemIds: [] };
-    await setDoc(docRef, { ...initialData, ...data, createdAt: serverTimestamp() }, { merge: true });
+    await setDoc(docRef, { ...data, createdAt: serverTimestamp() }, { merge: true });
 }
 
 
@@ -124,7 +121,7 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
 export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<Omit<VendorProfile, 'id' | 'createdAt'>>) {
     const docRef = doc(db, 'vendors', vendorId);
      // Use setDoc with merge:true to either create a new doc or update an existing one.
-    await setDoc(docRef, { ...data, createdAt: serverTimestamp(), portfolio: [] }, { merge: true });
+    await setDoc(docRef, { ...data, createdAt: serverTimestamp() }, { merge: true });
 }
 
 // Timeline Services
@@ -303,3 +300,4 @@ export async function toggleSavedItem(userId: string, itemId: string) {
         });
     }
 }
+

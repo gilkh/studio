@@ -1,4 +1,3 @@
-
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -121,7 +120,7 @@ export default function ClientProfilePage() {
             <CardDescription>View and edit your public profile information.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative">
                     <Avatar className="h-24 w-24 border-2 border-primary">
                         <AvatarImage src={`https://i.pravatar.cc/150?u=${MOCK_USER_ID}`} alt={user?.firstName} data-ai-hint="user avatar" />
@@ -132,7 +131,7 @@ export default function ClientProfilePage() {
                         <span className="sr-only">Change photo</span>
                     </Button>
                 </div>
-                <div>
+                <div className="text-center sm:text-left">
                     <h2 className="text-2xl font-bold">{user?.firstName} {user?.lastName}</h2>
                     <p className="text-muted-foreground">Client since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {month: 'long', year: 'numeric'}) : 'this year'}</p>
                 </div>

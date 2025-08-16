@@ -268,13 +268,13 @@ function EventPlannerContent() {
                   )}
                 />
               </div>
-               <div className="flex gap-4 items-center">
-                <Button type="submit" disabled={isLoading} size="lg">
+               <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <Button type="submit" disabled={isLoading} size="lg" className="w-full sm:w-auto">
                     {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isLoading ? 'Generating Plan...' : 'Generate New Plan'}
                 </Button>
-                <Link href="/client/event-planner/saved">
-                    <Button variant="outline" size="lg" asChild>
+                <Link href="/client/event-planner/saved" className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" asChild className="w-full">
                        <a><List className="mr-2 h-4 w-4" /> View My Timelines</a>
                     </Button>
                 </Link>
@@ -294,17 +294,17 @@ function EventPlannerContent() {
       {timeline && (
         <Card>
             <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
                         <CardTitle>Your Plan: {eventName}</CardTitle>
                         <CardDescription>Here is your generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                         <Button variant="outline" onClick={handleAddTask}>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                         <Button variant="outline" onClick={handleAddTask} className="flex-1 sm:flex-none">
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Task
                         </Button>
-                        <Button onClick={handleSaveTimeline} disabled={isSaving}>
+                        <Button onClick={handleSaveTimeline} disabled={isSaving} className="flex-1 sm:flex-none">
                             {isSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             {isSaving ? 'Saving...' : timelineId ? 'Save Changes' : 'Save Timeline'}
                         </Button>
@@ -337,7 +337,7 @@ function EventPlannerContent() {
 
                                 {/* Task Card */}
                                 <div className={cn(
-                                    "relative ml-12 md:ml-0 md:w-[300px] lg:w-[400px]",
+                                    "relative ml-12 md:ml-0 w-full md:w-[300px] lg:w-[400px]",
                                     index % 2 === 0 ? 'md:col-start-2 md:pl-8' : 'md:col-start-1 md:text-right md:pr-8'
                                 )}>
                                      {/* Mobile: Date above card */}

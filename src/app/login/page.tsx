@@ -24,7 +24,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/50 p-4">
       <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center p-4 sm:p-6">
             <div className="flex justify-center items-center gap-3 mb-4">
                  <Logo className="h-10 w-10 text-primary" />
                  <h1 className="text-3xl font-bold text-foreground tracking-tight">EventEase</h1>
@@ -32,7 +32,7 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold">Welcome Back!</CardTitle>
           <CardDescription>Sign in to continue to your dashboard.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -44,10 +44,10 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="mt-6 flex flex-col gap-3">
-            <Button onClick={() => handleLogin('client')} className="w-full py-6 text-lg">
+            <Button onClick={() => handleLogin('client')} className="w-full py-3 sm:py-6 text-base sm:text-lg">
               Sign In as a Client
             </Button>
-            <Button onClick={() => handleLogin('vendor')} variant="secondary" className="w-full py-6 text-lg">
+            <Button onClick={() => handleLogin('vendor')} variant="secondary" className="w-full py-3 sm:py-6 text-base sm:text-lg">
               Sign In as a Vendor
             </Button>
           </div>

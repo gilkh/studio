@@ -1,4 +1,3 @@
-
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -138,7 +137,7 @@ export default function VendorProfilePage() {
             <CardDescription>This is how your profile appears to potential clients. Keep it up-to-date!</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-            <div className="flex flex-col sm:flex-row items-start gap-6">
+            <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                 <div className="relative flex-shrink-0">
                     <Avatar className="h-32 w-32 border-4 border-primary/50">
                         <AvatarImage src={`https://i.pravatar.cc/150?u=${MOCK_VENDOR_ID}`} alt={vendor?.businessName} data-ai-hint="company logo" />
@@ -149,10 +148,10 @@ export default function VendorProfilePage() {
                         <span className="sr-only">Change logo</span>
                     </Button>
                 </div>
-                <div className="flex-grow">
+                <div className="flex-grow text-center sm:text-left">
                     <h2 className="text-3xl font-bold">{vendor?.businessName}</h2>
                     <p className="text-muted-foreground">{vendor?.tagline}</p>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                    <div className="flex items-center justify-center sm:justify-start gap-1 text-sm text-muted-foreground mt-2">
                         <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                         <span className="font-bold text-base">5.0</span>
                         <span>(150 reviews)</span>

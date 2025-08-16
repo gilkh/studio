@@ -68,7 +68,7 @@ export function VendorDashboard() {
 
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <CardTitle>Your Services & Offers</CardTitle>
                     <CardDescription>A quick look at your current listings.</CardDescription>
@@ -82,7 +82,7 @@ export function VendorDashboard() {
             </CardHeader>
             <CardContent>
                  <Tabs defaultValue="offers">
-                    <TabsList className="mb-4">
+                    <TabsList className="grid grid-cols-2 w-full sm:w-auto sm:inline-flex mb-4">
                         <TabsTrigger value="offers">Offers</TabsTrigger>
                         <TabsTrigger value="services">Services</TabsTrigger>
                     </TabsList>

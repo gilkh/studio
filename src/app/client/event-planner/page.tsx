@@ -5,17 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, PlusCircle, Trash2, Edit, Save } from 'lucide-react';
+import { Loader, PlusCircle, Trash2, Edit, Save, List, X, FileCheck, CheckCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EventTask } from '@/lib/types';
+import type { EventTask, SavedTimeline } from '@/lib/types';
 import { generateTimeline } from '@/lib/timeline-generator';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -31,6 +34,20 @@ export default function EventPlannerPage() {
   const [eventName, setEventName] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editedTaskLabel, setEditedTaskLabel] = useState('');
+  const [savedTimelines, setSavedTimelines] = useState<SavedTimeline[]>([]);
+  const [timelineId, setTimelineId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+        const storedTimelines = localStorage.getItem('savedEventTimelines');
+        if (storedTimelines) {
+            setSavedTimelines(JSON.parse(storedTimelines));
+        }
+    } catch (error) {
+        console.error("Could not load saved timelines from localStorage", error);
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,9 +63,9 @@ export default function EventPlannerPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setTimeline(null);
+    setTimelineId(null);
     setEventName(`${values.eventType} in ${values.location}`);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
@@ -98,6 +115,50 @@ export default function EventPlannerPage() {
     setEditingTaskId(null);
     setEditedTaskLabel('');
   };
+
+  const handleSaveTimeline = () => {
+    if (!timeline) return;
+
+    const id = timelineId || `timeline-${Date.now()}`;
+    const newSavedTimeline: SavedTimeline = {
+      id,
+      name: eventName,
+      tasks: timeline,
+      lastModified: new Date().toISOString(),
+    };
+
+    const updatedSavedTimelines = savedTimelines.filter(st => st.id !== id);
+    const newTimelines = [...updatedSavedTimelines, newSavedTimeline];
+    
+    setSavedTimelines(newTimelines);
+    setTimelineId(id); // Keep track of the current timeline's ID
+    localStorage.setItem('savedEventTimelines', JSON.stringify(newTimelines));
+    toast({
+        title: 'Timeline Saved!',
+        description: `Your event plan "${eventName}" has been saved.`,
+        action: (
+          <div className="p-1 rounded-full bg-green-500 text-white">
+            <CheckCircle className="h-5 w-5" />
+          </div>
+        )
+    });
+  };
+  
+  const handleLoadTimeline = (timelineToLoad: SavedTimeline) => {
+    setTimeline(timelineToLoad.tasks);
+    setEventName(timelineToLoad.name);
+    setTimelineId(timelineToLoad.id);
+  }
+
+  const handleDeleteSavedTimeline = (id: string) => {
+      const newTimelines = savedTimelines.filter(st => st.id !== id);
+      setSavedTimelines(newTimelines);
+      localStorage.setItem('savedEventTimelines', JSON.stringify(newTimelines));
+      toast({
+          title: 'Timeline Deleted',
+          description: 'The saved timeline has been removed.',
+      });
+  }
 
   const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
   const totalTasks = timeline?.length || 0;
@@ -180,10 +241,63 @@ export default function EventPlannerPage() {
                   )}
                 />
               </div>
-              <Button type="submit" disabled={isLoading} size="lg">
-                {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isLoading ? 'Generating Plan...' : 'Start Planning'}
-              </Button>
+               <div className="flex gap-4 items-center">
+                <Button type="submit" disabled={isLoading} size="lg">
+                    {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isLoading ? 'Generating Plan...' : 'Generate New Plan'}
+                </Button>
+
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="lg">
+                            <List className="mr-2 h-4 w-4" /> View Saved Timelines
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>My Saved Timelines</DialogTitle>
+                            <DialogDescription>
+                                Load a previously saved event plan or delete ones you no longer need.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[60vh] overflow-y-auto p-1">
+                            {savedTimelines.length > 0 ? (
+                                <ul className="space-y-3">
+                                {savedTimelines.sort((a,b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()).map(st => {
+                                    const savedProgress = st.tasks.length > 0 ? (st.tasks.filter(t => t.completed).length / st.tasks.length) * 100 : 0;
+                                    return (
+                                        <li key={st.id} className="p-4 border rounded-lg flex items-center justify-between gap-4 group">
+                                            <div className="flex-grow">
+                                                <p className="font-semibold">{st.name}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Last updated: {format(new Date(st.lastModified), "PPP p")}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <Progress value={savedProgress} className="h-2 w-32" />
+                                                    <span className="text-xs text-muted-foreground">{Math.round(savedProgress)}%</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 items-center">
+                                                <DialogClose asChild>
+                                                    <Button onClick={() => handleLoadTimeline(st)}>
+                                                        <FileCheck className="mr-2 h-4 w-4"/> Load
+                                                    </Button>
+                                                </DialogClose>
+                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteSavedTimeline(st.id)} className="text-destructive opacity-0 group-hover:opacity-100">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                            ) : (
+                                <p className="text-center text-muted-foreground py-8">You have no saved timelines yet.</p>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+              </div>
             </form>
           </Form>
         </CardContent>
@@ -209,7 +323,7 @@ export default function EventPlannerPage() {
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Task
                         </Button>
-                        <Button>
+                        <Button onClick={handleSaveTimeline}>
                             <Save className="mr-2 h-4 w-4" />
                             Save Timeline
                         </Button>
@@ -303,5 +417,3 @@ export default function EventPlannerPage() {
     </div>
   );
 }
-
-    

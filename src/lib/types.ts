@@ -1,4 +1,5 @@
 
+
 export type ServiceType = 'service' | 'offer';
 
 export interface BaseService {
@@ -48,7 +49,7 @@ export interface Booking {
 }
 
 export interface Message {
-  id: string;
+  id:string;
   name: string;
   avatar: string;
   lastMessage: string;
@@ -70,4 +71,11 @@ export interface GenerateEventPlanInput {
   location: string;
   guestCount: number;
   budget: number;
+}
+
+export interface SavedTimeline {
+    id: string;
+    name: string;
+    tasks: EventTask[];
+    lastModified: string;
 }

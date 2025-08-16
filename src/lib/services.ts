@@ -42,16 +42,25 @@ export async function createNewUser(data: {
 
 // User Profile Services
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    const docRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
-        return {
-            id: docSnap.id,
-            ...data,
-            createdAt,
-        } as UserProfile;
+    try {
+        const docRef = doc(db, 'users', userId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt,
+            } as UserProfile;
+        }
+    } catch (e) {
+        console.error("Firebase error getting user profile:", e);
+        if ((e as any).code === 'unavailable') {
+             // Silently ignore unavailable error on initial load
+            return null;
+        }
+        throw e;
     }
     return null;
 }
@@ -60,22 +69,30 @@ export async function createOrUpdateUserProfile(userId: string, data: Partial<Om
     const docRef = doc(db, 'users', userId);
     // Use setDoc with merge:true to either create a new doc or update an existing one.
     // This avoids the race condition of reading (getDoc) before the client is online.
-    const initialData = data.firstName ? {} : { savedItemIds: [] };
+    const initialData = { savedItemIds: [] };
     await setDoc(docRef, { ...data, createdAt: serverTimestamp(), ...initialData }, { merge: true });
 }
 
 
 export async function getVendorProfile(vendorId: string): Promise<VendorProfile | null> {
-    const docRef = doc(db, 'vendors', vendorId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
-        return {
-            id: docSnap.id,
-            ...data,
-            createdAt
-        } as VendorProfile;
+    try {
+        const docRef = doc(db, 'vendors', vendorId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt
+            } as VendorProfile;
+        }
+    } catch (e) {
+        console.error("Firebase error getting vendor profile:", e);
+         if ((e as any).code === 'unavailable') {
+            return null;
+        }
+        throw e;
     }
     return null;
 }
@@ -111,11 +128,19 @@ export async function deleteTimeline(userId: string, timelineId: string) {
 
 // Generic function to fetch data and transform to a specific type
 async function fetchCollection<T extends {id: string}>(path: string, transform?: (data: DocumentData) => T): Promise<T[]> {
-    const querySnapshot = await getDocs(collection(db, path));
-    return querySnapshot.docs.map(doc => {
-        const data = { id: doc.id, ...doc.data() };
-        return transform ? transform(data) : data as T;
-    });
+    try {
+        const querySnapshot = await getDocs(collection(db, path));
+        return querySnapshot.docs.map(doc => {
+            const data = { id: doc.id, ...doc.data() };
+            return transform ? transform(data) : data as T;
+        });
+    } catch (e) {
+        console.error(`Firebase error fetching collection ${path}:`, e);
+        if ((e as any).code === 'unavailable') {
+            return []; // Return empty array if offline
+        }
+        throw e;
+    }
 }
 
 
@@ -147,15 +172,23 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'cre
 
 export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteRequest[]> {
      const q = query(collection(db, 'quoteRequests'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt.toDate(),
-        } as QuoteRequest
-    });
+    try {
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt.toDate(),
+            } as QuoteRequest
+        });
+    } catch(e) {
+        console.error("Firebase error getting quote requests:", e);
+        if ((e as any).code === 'unavailable') {
+            return [];
+        }
+        throw e;
+    }
 }
 
 
@@ -166,27 +199,43 @@ export async function createBooking(booking: Omit<Booking, 'id'>) {
 
 export const getBookingsForUser = async(userId: string) => {
     const q = query(collection(db, "bookings"), where("clientId", "==", userId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            date: data.date.toDate(),
-        } as Booking;
-    });
+    try {
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: data.date.toDate(),
+            } as Booking;
+        });
+    } catch(e) {
+        console.error("Firebase error getting user bookings:", e);
+         if ((e as any).code === 'unavailable') {
+            return [];
+        }
+        throw e;
+    }
 }
 export const getBookingsForVendor = async(vendorId: string) => {
     const q = query(collection(db, "bookings"), where("vendorId", "==", vendorId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            date: data.date.toDate(),
-        } as Booking;
-    });
+    try {
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: data.date.toDate(),
+            } as Booking;
+        });
+    } catch(e) {
+        console.error("Firebase error getting vendor bookings:", e);
+         if ((e as any).code === 'unavailable') {
+            return [];
+        }
+        throw e;
+    }
 }
 
 
@@ -207,15 +256,16 @@ export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
 
 export async function toggleSavedItem(userId: string, itemId: string) {
     const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
+    
+    const userProfile = await getUserProfile(userId);
+    
+    if (!userProfile) {
         // Create the user profile if it doesn't exist, and save the item.
         await createOrUpdateUserProfile(userId, { savedItemIds: [itemId] });
         return;
     }
     
-    const currentSaved = userSnap.data()?.savedItemIds || [];
+    const currentSaved = userProfile.savedItemIds || [];
 
     if (currentSaved.includes(itemId)) {
         // Atomically remove the item from the array

@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Search } from 'lucide-react';
 import { Button } from './ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export function ClientDashboard() {
   const categories = ['All Categories', ...Array.from(new Set(services.map((s) => s.category)))];

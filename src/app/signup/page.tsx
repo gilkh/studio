@@ -62,17 +62,13 @@ export default function SignupPage() {
             title: "Account Created!",
             description: "Welcome to TradeCraft. You can now sign in.",
         });
-        // Redirect to the appropriate dashboard after signup
-        if (values.accountType === 'client') {
-            router.push('/client/home');
-        } else {
-            router.push('/vendor/home');
-        }
+        // In a real app with auth, you'd auto-login here. For now, we go to login page.
+        router.push('/login');
     } catch(error) {
         console.error("Signup failed", error);
          toast({
             title: "Sign-up Failed",
-            description: "Could not create your account. Please try again.",
+            description: "An account with this email may already exist.",
             variant: "destructive",
         });
     }

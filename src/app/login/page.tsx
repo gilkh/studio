@@ -7,8 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
-import { Briefcase, CalendarCheck, FileText, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { Briefcase, CalendarCheck, FileText, Search, ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import { signInUser } from '@/lib/services';
+import { useToast } from '@/hooks/use-toast';
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
@@ -24,14 +27,43 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleLogin = (role: 'client' | 'vendor') => {
-    // In a real app, you'd handle authentication here.
-    // For this prototype, we'll just redirect.
-    if (role === 'client') {
-      router.push('/client/home');
-    } else {
-      router.push('/vendor/home');
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string; // In a real app, you'd use the password
+
+    try {
+        const userRole = await signInUser(email);
+
+        if (userRole) {
+            if (userRole === 'client') {
+                router.push('/client/home');
+            } else {
+                router.push('/vendor/home');
+            }
+        } else {
+             toast({
+                title: 'Sign In Failed',
+                description: 'No account found with that email. Please check your credentials or sign up.',
+                variant: 'destructive',
+            });
+        }
+
+    } catch (error) {
+        console.error("Login failed:", error);
+        toast({
+            title: 'Sign In Failed',
+            description: 'An error occurred during sign-in. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -110,33 +142,33 @@ export default function LoginPage() {
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">
                     <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
-                    <CardDescription>Join our community of event planners and service professionals.</CardDescription>
+                    <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" required />
+                    <form onSubmit={handleLogin}>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input id="email" name="email" type="email" placeholder="m@example.com" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input id="password" name="password" type="password" required />
+                            </div>
+                        </div>
+                        <div className="mt-6">
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Sign In
+                            </Button>
+                        </div>
+                    </form>
+                    <div className="mt-6 text-center text-sm">
+                        Don&apos;t have an account?{' '}
+                        <Link href="/signup" className="underline">
+                            Sign up
+                        </Link>
                     </div>
-                    <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" required />
-                    </div>
-                </div>
-                <div className="mt-6 flex flex-col gap-3">
-                    <Button onClick={() => handleLogin('client')} className="w-full py-3 text-base">
-                    Sign In as a Client
-                    </Button>
-                    <Button onClick={() => handleLogin('vendor')} variant="secondary" className="w-full py-3 text-base">
-                    Sign In as a Vendor
-                    </Button>
-                </div>
-                <div className="mt-6 text-center text-sm">
-                    Don&apos;t have an account?{' '}
-                    <Link href="/signup" className="underline">
-                        Sign up
-                    </Link>
-                </div>
                 </CardContent>
             </Card>
         </div>

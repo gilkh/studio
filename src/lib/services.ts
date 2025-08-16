@@ -15,8 +15,8 @@ export async function createNewUser(data: {
     businessName?: string;
 }) {
     // In a real app, this would use Firebase Auth to create a user and get a UID
-    // For this prototype, we'll generate a random-ish ID
-    const userId = `${data.firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+    // For this prototype, we'll generate a random-ish ID based on email
+    const userId = data.email;
 
     if (data.accountType === 'client') {
         const userProfile: Omit<UserProfile, 'id' | 'createdAt' | 'savedItemIds'> = {
@@ -37,6 +37,21 @@ export async function createNewUser(data: {
         };
         await createOrUpdateVendorProfile(userId, { ...vendorProfile, ownerId: userId });
     }
+}
+
+// In a real app, this would also verify password. For now, it just finds a user by email.
+export async function signInUser(email: string): Promise<'client' | 'vendor' | null> {
+    const userProfile = await getUserProfile(email);
+    if (userProfile) {
+        return 'client';
+    }
+
+    const vendorProfile = await getVendorProfile(email);
+    if (vendorProfile) {
+        return 'vendor';
+    }
+
+    return null;
 }
 
 
@@ -70,7 +85,7 @@ export async function createOrUpdateUserProfile(userId: string, data: Partial<Om
     // Use setDoc with merge:true to either create a new doc or update an existing one.
     // This avoids the race condition of reading (getDoc) before the client is online.
     const initialData = { savedItemIds: [] };
-    await setDoc(docRef, { ...data, createdAt: serverTimestamp(), ...initialData }, { merge: true });
+    await setDoc(docRef, { ...initialData, ...data, createdAt: serverTimestamp() }, { merge: true });
 }
 
 

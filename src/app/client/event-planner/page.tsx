@@ -3,148 +3,293 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { BadgeDollarSign, Calendar, CheckSquare, ListTodo, PlusCircle, Users } from 'lucide-react';
-import React from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { generateEventPlan, GenerateEventPlanInput, EventTask } from '@/ai/flows/generate-event-plan';
+import { Loader, PlusCircle, Trash2, Edit, Save, ArrowUp, ArrowDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
-const tasks = [
-    { id: 'task1', label: 'Book photographer', completed: true },
-    { id: 'task2', label: 'Send out invitations', completed: true },
-    { id: 'task3', label: 'Finalize catering menu', completed: false },
-    { id: 'task4', label: 'Arrange floral decorations', completed: false },
-    { id: 'task5', label: 'Confirm guest RSVPs', completed: false },
-];
+const formSchema = z.object({
+  eventType: z.string().min(3, 'Event type is required'),
+  eventDate: z.string().min(1, 'Event date is required'),
+  location: z.string().min(3, 'Location is required'),
+  guestCount: z.coerce.number().min(1, 'Guest count must be at least 1'),
+  budget: z.coerce.number().min(1, 'Budget is required'),
+});
 
 export default function EventPlannerPage() {
-    const completedTasks = tasks.filter(t => t.completed).length;
-    const progress = (completedTasks / tasks.length) * 100;
+  const [timeline, setTimeline] = useState<EventTask[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [eventName, setEventName] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editedTaskLabel, setEditedTaskLabel] = useState('');
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      eventType: '',
+      eventDate: '',
+      location: '',
+      guestCount: 100,
+      budget: 5000,
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setTimeline(null);
+    setEventName(`${values.eventType} in ${values.location}`);
+    try {
+      const plan = await generateEventPlan(values);
+      setTimeline(plan.tasks);
+    } catch (error) {
+      console.error('Failed to generate event plan:', error);
+      // You can add a toast notification here to inform the user
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const handleTaskCheck = (taskId: string) => {
+    setTimeline(prev => 
+      prev!.map(task => 
+        task.id === taskId ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+  
+  const handleAddTask = () => {
+    const newTask: EventTask = {
+      id: `custom-${Date.now()}`,
+      task: 'New Task - Click edit to change',
+      deadline: new Date().toISOString().split('T')[0],
+      priority: 'Medium',
+      estimatedCost: 0,
+      completed: false,
+    };
+    setTimeline(prev => [...(prev || []), newTask]);
+  };
+  
+  const handleDeleteTask = (taskId: string) => {
+    setTimeline(prev => prev!.filter(task => task.id !== taskId));
+  };
+  
+  const handleEditTask = (task: EventTask) => {
+    setEditingTaskId(task.id);
+    setEditedTaskLabel(task.task);
+  };
+  
+  const handleSaveTask = (taskId: string) => {
+    setTimeline(prev => 
+      prev!.map(task => 
+        task.id === taskId ? { ...task, task: editedTaskLabel } : task
+      )
+    );
+    setEditingTaskId(null);
+    setEditedTaskLabel('');
+  };
+
+  const handleMoveTask = (index: number, direction: 'up' | 'down') => {
+    if (!timeline) return;
+    const newTimeline = [...timeline];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newTimeline.length) return;
+
+    [newTimeline[index], newTimeline[targetIndex]] = [newTimeline[targetIndex], newTimeline[index]];
+    setTimeline(newTimeline);
+  };
+
+  const completedTasks = timeline?.filter(t => t.completed).length || 0;
+  const progress = timeline ? (completedTasks / timeline.length) * 100 : 0;
 
   return (
     <div className="space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Event Planner</CardTitle>
+          <CardDescription>Describe your event, and our AI will generate a customized timeline for you.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="eventType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Type</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Wedding, Corporate Retreat" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="eventDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., San Francisco, CA" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="guestCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Guest Count</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="budget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estimated Budget ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button type="submit" disabled={isLoading} size="lg">
+                {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isLoading ? 'Generating Plan...' : 'Start Planning'}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {isLoading && (
+        <div className="text-center p-8">
+          <Loader className="h-8 w-8 animate-spin mx-auto text-primary mb-4" />
+          <p className="text-muted-foreground">Our AI is crafting your personalized event plan...</p>
+        </div>
+      )}
+
+      {timeline && (
         <Card>
             <CardHeader>
-                <CardTitle>My Wedding Plan</CardTitle>
-                <CardDescription>Your all-in-one dashboard for planning the big day.</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Your Plan: {eventName}</CardTitle>
+                        <CardDescription>Here is your generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                         <Button variant="outline" onClick={handleAddTask}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Task
+                        </Button>
+                        <Button>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Timeline
+                        </Button>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
-                 <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                        <Label>Overall Progress</Label>
-                        <span className="text-sm font-medium text-primary">{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} />
-                 </div>
+                <div className="space-y-6 relative">
+                    {/* The "snake" line */}
+                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border -z-10"></div>
+                    
+                    {timeline.map((task, index) => (
+                        <div key={task.id} className="flex items-start gap-4 pl-12 relative group">
+                            <div className="absolute left-0 top-1.5 flex items-center">
+                               <div className="h-6 w-6 rounded-full bg-background border-2 border-primary flex items-center justify-center">
+                                    <div className="h-3 w-3 rounded-full bg-primary"></div>
+                               </div>
+                            </div>
+
+                            <div className="flex-grow bg-muted/50 p-4 rounded-lg">
+                                <div className="flex items-center gap-4">
+                                     <Checkbox 
+                                        id={`task-${task.id}`}
+                                        checked={task.completed}
+                                        onCheckedChange={() => handleTaskCheck(task.id)}
+                                        className="h-5 w-5"
+                                    />
+                                    {editingTaskId === task.id ? (
+                                        <Input 
+                                            value={editedTaskLabel}
+                                            onChange={(e) => setEditedTaskLabel(e.target.value)}
+                                            className="flex-grow"
+                                        />
+                                    ) : (
+                                        <Label htmlFor={`task-${task.id}`} className={`flex-grow text-base ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                            {task.task}
+                                        </Label>
+                                    )}
+
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {editingTaskId === task.id ? (
+                                            <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600">
+                                                <Save className="h-4 w-4" />
+                                            </Button>
+                                        ) : (
+                                            <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8">
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-8 w-8 text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                        <Separator orientation="vertical" className="h-6"/>
+                                        <Button size="icon" variant="ghost" onClick={() => handleMoveTask(index, 'up')} disabled={index === 0} className="h-8 w-8">
+                                            <ArrowUp className="h-4 w-4" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" onClick={() => handleMoveTask(index, 'down')} disabled={index === timeline.length - 1} className="h-8 w-8">
+                                            <ArrowDown className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="pl-9 mt-2 flex items-center gap-6 text-sm text-muted-foreground">
+                                    <p><strong>Deadline:</strong> {new Date(task.deadline).toLocaleDateString()}</p>
+                                    <p><strong>Priority:</strong> {task.priority}</p>
+                                    <p><strong>Cost:</strong> ${task.estimatedCost.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </CardContent>
         </Card>
-
-        <div className="grid md:grid-cols-2 gap-8">
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-lg">
-                            <ListTodo className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle>To-Do List</CardTitle>
-                            <CardDescription>Stay on top of your tasks.</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {tasks.map(task => (
-                             <div key={task.id} className="flex items-center gap-3">
-                                <Checkbox id={task.id} checked={task.completed} />
-                                <Label htmlFor={task.id} className={`flex-grow ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                    {task.label}
-                                </Label>
-                            </div>
-                        ))}
-                    </div>
-                    <form className="mt-6 flex gap-2">
-                        <Input placeholder="Add a new task..." />
-                        <Button><PlusCircle className="h-4 w-4" /></Button>
-                    </form>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                     <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-lg">
-                            <BadgeDollarSign className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle>Budget Tracker</CardTitle>
-                            <CardDescription>Manage your event expenses.</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <p className="font-medium">Total Budget</p>
-                                <p className="text-2xl font-bold text-primary">$15,000</p>
-                            </div>
-                             <div>
-                                <p className="font-medium text-right">Spent</p>
-                                <p className="text-2xl font-bold">$8,250</p>
-                            </div>
-                        </div>
-                        <Progress value={(8250/15000) * 100} />
-                         <Separator className="my-4"/>
-                         <div className="space-y-3">
-                             <div className="flex justify-between items-center">
-                                 <p>Venue</p>
-                                 <p className="font-medium">$4,500</p>
-                             </div>
-                             <div className="flex justify-between items-center">
-                                 <p>Catering</p>
-                                 <p className="font-medium">$2,500</p>
-                             </div>
-                             <div className="flex justify-between items-center">
-                                 <p>Photography</p>
-                                 <p className="font-medium">$1,250</p>
-                             </div>
-                         </div>
-                    </div>
-                </CardContent>
-            </Card>
-             <Card className="md:col-span-2">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-lg">
-                            <Users className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle>Guest List</CardTitle>
-                            <CardDescription>Keep track of your attendees and RSVPs.</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                   <div className="grid grid-cols-3 gap-6 text-center">
-                        <div>
-                            <p className="text-2xl font-bold">150</p>
-                            <p className="text-sm text-muted-foreground">Invited</p>
-                        </div>
-                         <div>
-                            <p className="text-2xl font-bold text-green-600">128</p>
-                            <p className="text-sm text-muted-foreground">Attending</p>
-                        </div>
-                         <div>
-                            <p className="text-2xl font-bold text-red-600">22</p>
-                            <p className="text-sm text-muted-foreground">Declined</p>
-                        </div>
-                   </div>
-                </CardContent>
-            </Card>
-        </div>
+      )}
     </div>
-  )
+  );
 }
+

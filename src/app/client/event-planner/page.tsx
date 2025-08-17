@@ -105,6 +105,7 @@ function EventPlannerContent() {
     setTimelineId(null);
     setEventName(`${values.eventType} in ${values.location}`);
     
+    // Simulate some loading time
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
@@ -328,7 +329,7 @@ function EventPlannerContent() {
                 </Button>
                 <Link href="/client/event-planner/saved" className="w-full sm:w-auto">
                     <Button variant="outline" size="lg" asChild className="w-full">
-                       <p><List className="mr-2 h-4 w-4" /> View My Timelines</p>
+                       <div><List className="mr-2 h-4 w-4" /> View My Timelines</div>
                     </Button>
                 </Link>
               </div>

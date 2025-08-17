@@ -17,7 +17,6 @@ const clientLinks = [
   { href: '/client/explore', label: 'Explore', icon: Compass },
   { href: '/client/bookings', label: 'Bookings', icon: Calendar },
   { href: '/client/event-planner', label: 'Planner', icon: PenTool },
-  { href: '/client/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link' },
 ];
 
 const vendorLinks = [
@@ -25,7 +24,6 @@ const vendorLinks = [
   { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
   { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link' },
   { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link' },
 ];
 
 

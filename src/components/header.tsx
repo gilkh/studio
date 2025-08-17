@@ -131,7 +131,7 @@ export function AppHeader() {
         <>
             <Link href={isVendor ? "/vendor/messages" : "/client/messages"}>
                 <Button variant="ghost" size="icon" aria-label="Messages" className="relative">
-                    <MessageSquare className="h-5 w-5" />
+                    <MessageSquare className="h-6 w-6" />
                     {hasUnreadMessages && (
                       <span className="absolute top-0 right-0 flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>

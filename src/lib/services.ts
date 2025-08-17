@@ -138,7 +138,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             return {
                 id: docSnap.id,
                 ...data,
-                createdAt: data.createdAt.toDate(),
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
             } as UserProfile;
         }
     } catch (e) {
@@ -167,7 +167,7 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
             return {
                 id: docSnap.id,
                 ...data,
-                createdAt: data.createdAt.toDate()
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
             } as VendorProfile;
         }
     } catch (e) {
@@ -382,14 +382,15 @@ export async function generateVendorCode(): Promise<VendorCode> {
 
 export async function getVendorCodes(): Promise<VendorCode[]> {
     const q = query(collection(db, 'vendorCodes'), orderBy('createdAt', 'desc'));
-    return await fetchCollection<VendorCode>('vendorCodes', q, (data: DocumentData) => ({
+    const transform = (data: DocumentData): VendorCode => ({
         id: data.id,
         code: data.code,
         isUsed: data.isUsed,
         usedBy: data.usedBy,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
         usedAt: data.usedAt?.toDate ? data.usedAt.toDate() : undefined,
-    } as VendorCode));
+    });
+    return await fetchCollection<VendorCode>('vendorCodes', q, transform);
 }
 
 export async function deleteVendorCode(codeId: string) {
@@ -410,7 +411,7 @@ export async function getAllUsersAndVendors() {
         const userData = { 
             id: doc.id, 
             ...data,
-            createdAt: data.createdAt.toDate(),
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
         } as UserProfile;
         
         const vendorData = vendorsData.get(doc.id);

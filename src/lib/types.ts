@@ -109,3 +109,11 @@ export interface VendorProfile {
     createdAt: Date;
     portfolio?: string[];
 }
+
+export interface VendorCode {
+    id: string;
+    code: string;
+    isUsed: boolean;
+    createdAt: Date;
+    usedBy?: string; // vendorId
+}

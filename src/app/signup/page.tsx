@@ -27,6 +27,7 @@ const signupFormSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   businessName: z.string().optional(),
+  vendorCode: z.string().optional(),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters long'),
 }).refine(data => {
@@ -37,6 +38,14 @@ const signupFormSchema = z.object({
 }, {
     message: "Business name is required for vendors",
     path: ["businessName"],
+}).refine(data => {
+    if (data.accountType === 'vendor') {
+        return !!data.vendorCode && data.vendorCode.length > 0;
+    }
+    return true;
+}, {
+    message: "A registration code is required for vendors",
+    path: ["vendorCode"],
 });
 
 
@@ -52,6 +61,7 @@ export default function SignupPage() {
       firstName: '',
       lastName: '',
       businessName: '',
+      vendorCode: '',
       email: '',
       password: '',
     },
@@ -64,25 +74,31 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
     form.clearErrors();
     try {
-        await createNewUser(values);
+        const result = await createNewUser(values);
 
-        toast({
-            title: "Account Created!",
-            description: "Welcome to TradeCraft. Redirecting you to your new dashboard.",
-        });
+        if (result) {
+            localStorage.setItem('userId', result.userId);
+            localStorage.setItem('role', result.role);
 
-        // Redirect to the appropriate dashboard
-        if (values.accountType === 'client') {
-            router.push('/client/home');
-        } else {
-            router.push('/vendor/home');
+            toast({
+                title: "Account Created!",
+                description: "Welcome to TradeCraft. Redirecting you to your new dashboard.",
+            });
+
+            // Redirect to the appropriate dashboard
+            if (result.role === 'client') {
+                router.push('/client/home');
+            } else {
+                router.push('/vendor/home');
+            }
         }
 
     } catch(error) {
         console.error("Signup failed", error);
-         toast({
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred. Please try again.";
+        toast({
             title: "Sign-up Failed",
-            description: "An unexpected error occurred. Please try again.",
+            description: errorMessage,
             variant: "destructive",
         });
     }
@@ -204,6 +220,7 @@ export default function SignupPage() {
                             </div>
 
                             {accountType === 'vendor' && (
+                                <>
                                  <FormField
                                     control={form.control}
                                     name="businessName"
@@ -217,6 +234,20 @@ export default function SignupPage() {
                                         </FormItem>
                                     )}
                                 />
+                                <FormField
+                                    control={form.control}
+                                    name="vendorCode"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Vendor Registration Code</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter code provided by admin" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                </>
                             )}
 
                              <FormField

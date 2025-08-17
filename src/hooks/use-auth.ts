@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 interface AuthInfo {
     userId: string | null;
-    role: 'client' | 'vendor' | null;
+    role: 'client' | 'vendor' | 'admin' | null;
     isLoading: boolean;
 }
 
@@ -20,7 +20,7 @@ export function useAuth(): AuthInfo {
         // This code runs only on the client side
         try {
             const storedUserId = localStorage.getItem('userId');
-            const storedRole = localStorage.getItem('role') as 'client' | 'vendor' | null;
+            const storedRole = localStorage.getItem('role') as 'client' | 'vendor' | 'admin' | null;
 
             setAuthInfo({
                 userId: storedUserId,

@@ -55,8 +55,10 @@ export default function LoginPage() {
             });
             if (result.role === 'client') {
                 router.push('/client/home');
-            } else {
+            } else if (result.role === 'vendor') {
                 router.push('/vendor/home');
+            } else if (result.role === 'admin') {
+                router.push('/admin/home');
             }
         } else {
              toast({
@@ -153,7 +155,7 @@ export default function LoginPage() {
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">
                     <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
-                    <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+                    <CardDescription>Enter your credentials to access your dashboard. <br /> Use admin@tradecraft.com to log in as admin.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
                     <form onSubmit={handleLogin}>

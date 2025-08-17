@@ -2,7 +2,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getServicesAndOffers } from '@/lib/services';
-import type { Offer } from '@/lib/types';
+import type { Offer, Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -171,6 +171,17 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
   );
 }
 
+// SERVER COMPONENT LOGIC
+// No 'use client'
+
+export async function generateStaticParams() {
+    const allItems = await getServicesAndOffers();
+    const offers = allItems.filter((item) => item.type === 'offer');
+    return offers.map((offer) => ({
+        id: offer.id,
+    }));
+}
+
 async function getOffer(id: string): Promise<Offer | null> {
     const allItems = await getServicesAndOffers();
     const offer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
@@ -192,8 +203,21 @@ export default function OfferDetailPage({ params }: { params: { id: string } }) 
   }, [params.id]);
 
   if (isLoading) {
-      // You can return a global loader here
-      return <div>Loading...</div>
+      return (
+         <div className="space-y-8">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="w-full h-[500px] rounded-xl" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                    <Skeleton className="w-full h-48 rounded-xl" />
+                    <Skeleton className="w-full h-64 rounded-xl" />
+                </div>
+                <div className="lg:col-span-1 space-y-6">
+                    <Skeleton className="w-full h-72 rounded-xl" />
+                </div>
+            </div>
+        </div>
+      )
   }
 
   return <OfferDetailView offer={offer} />;

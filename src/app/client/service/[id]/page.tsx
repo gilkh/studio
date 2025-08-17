@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -154,6 +155,18 @@ function ServiceDetailView({ service }: { service: Service | null }) {
   );
 }
 
+
+// SERVER COMPONENT LOGIC
+// No 'use client'
+
+export async function generateStaticParams() {
+    const allItems = await getServicesAndOffers();
+    const services = allItems.filter((item) => item.type === 'service');
+    return services.map((service) => ({
+        id: service.id,
+    }));
+}
+
 async function getService(id: string): Promise<Service | null> {
     const allItems = await getServicesAndOffers();
     const service = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
@@ -175,8 +188,21 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
   }, [params.id]);
   
   if (isLoading) {
-      // You can return a global loader here
-      return <div>Loading...</div>
+      return (
+         <div className="space-y-8">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="w-full h-[500px] rounded-xl" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                    <Skeleton className="w-full h-48 rounded-xl" />
+                    <Skeleton className="w-full h-64 rounded-xl" />
+                </div>
+                <div className="lg:col-span-1 space-y-6">
+                    <Skeleton className="w-full h-72 rounded-xl" />
+                </div>
+            </div>
+        </div>
+      )
   }
   
   return <ServiceDetailView service={service} />;

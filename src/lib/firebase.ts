@@ -1,5 +1,4 @@
 
-'use client';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence, initializeFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
@@ -25,20 +24,21 @@ if (getApps().length === 0) {
   app = getApp();
 }
 
-try {
-    db = initializeFirestore(app, {
-        localCache: enableIndexedDbPersistence({
-            forceOwnership: true,
-        })
-    });
-} catch (e) {
-    // This can happen in server-side rendering, we can fallback to just getFirestore()
-    // or handle it gracefully. For this prototype, we get the instance without persistence.
-    console.warn("Could not enable offline persistence. This is expected on the server.", e);
-    db = getFirestore(app);
+db = getFirestore(app);
+auth = getAuth(app);
+
+// Attempt to enable persistence on the client side
+if (typeof window !== 'undefined') {
+    try {
+        enableIndexedDbPersistence(db);
+    } catch (e: any) {
+        if (e.code == 'failed-precondition') {
+            console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+        } else if (e.code == 'unimplemented') {
+            console.warn('The current browser does not support all of the features required to enable persistence.');
+        }
+    }
 }
 
-
-auth = getAuth(app);
 
 export { app, db, auth };

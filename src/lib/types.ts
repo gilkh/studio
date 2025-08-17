@@ -84,6 +84,12 @@ export interface EventTask {
   deadline: string;
   estimatedCost: number;
   completed: boolean;
+  suggestedVendorCategory?: string;
+  assignedVendor?: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
 }
 
 export interface GenerateEventPlanInput {
@@ -111,8 +117,6 @@ export interface UserProfile {
     createdAt: Date;
     savedItemIds?: string[];
     status: 'active' | 'disabled';
-    // IMPORTANT: Storing passwords in plaintext is insecure.
-    // In a production app, this should be a securely hashed password.
     password?: string;
 }
 

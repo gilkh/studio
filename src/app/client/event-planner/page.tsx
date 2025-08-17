@@ -5,22 +5,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useTransition, ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, PlusCircle, Trash2, Edit, Save, List } from 'lucide-react';
+import { Loader, PlusCircle, Trash2, Edit, Save, List, Sparkles, Building, Link2, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EventTask, SavedTimeline } from '@/lib/types';
-import { generateTimeline } from '@/lib/timeline-generator';
+import type { EventTask, SavedTimeline, ServiceOrOffer, VendorProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { saveTimeline, getSavedTimelines, updateTimeline } from '@/lib/services';
+import { saveTimeline, getSavedTimelines, updateTimeline, getServicesAndOffers } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
+import { generateEventPlan } from '@/ai/flows/generate-event-plan-flow';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const formSchema = z.object({
   eventType: z.string().min(3, 'Event type is required'),
@@ -42,7 +50,14 @@ function EventPlannerContent() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editedTaskLabel, setEditedTaskLabel] = useState('');
   const [timelineId, setTimelineId] = useState<string | null>(null);
+  const [services, setServices] = useState<ServiceOrOffer[]>([]);
+  const [isPending, startTransition] = useTransition();
+
   const { toast } = useToast();
+
+  useEffect(() => {
+    getServicesAndOffers().then(setServices);
+  }, []);
 
   useEffect(() => {
     const timelineIdToLoad = searchParams.get('timelineId');
@@ -93,10 +108,15 @@ function EventPlannerContent() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
-      const plan = generateTimeline(values);
-      setTimeline(plan.tasks);
+      const plan = await generateEventPlan(values);
+      if (plan?.tasks) {
+        setTimeline(plan.tasks);
+      } else {
+        toast({ title: "Error", description: "Could not generate a plan. Please try again.", variant: "destructive" });
+      }
     } catch (error) {
       console.error('Failed to generate event plan:', error);
+       toast({ title: "Error", description: "An error occurred while generating the plan.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +130,7 @@ function EventPlannerContent() {
     );
   };
   
-  const handleAddTask = () => {
+  const handleAddTask = (index?: number) => {
     const newTask: EventTask = {
       id: `custom-${Date.now()}`,
       task: 'New Task - Click edit to change',
@@ -118,7 +138,18 @@ function EventPlannerContent() {
       estimatedCost: 0,
       completed: false,
     };
-    setTimeline(prev => [...(prev || []), newTask]);
+    
+    startTransition(() => {
+      setTimeline(prev => {
+        const newTasks = [...(prev || [])];
+        if (index !== undefined) {
+            newTasks.splice(index, 0, newTask);
+        } else {
+            newTasks.push(newTask);
+        }
+        return newTasks;
+      });
+    })
   };
   
   const handleDeleteTask = (taskId: string) => {
@@ -179,6 +210,29 @@ function EventPlannerContent() {
         setIsSaving(false);
     }
   };
+
+  const handleLinkVendor = (taskId: string, vendor: ServiceOrOffer) => {
+    setTimeline(prev => 
+        prev!.map(task => 
+            task.id === taskId ? { 
+                ...task, 
+                assignedVendor: {
+                    id: vendor.id,
+                    name: vendor.vendorName,
+                    avatar: vendor.vendorAvatar
+                }
+            } : task
+        )
+    )
+  }
+
+  const handleUnlinkVendor = (taskId: string) => {
+    setTimeline(prev =>
+        prev!.map(task => 
+            task.id === taskId ? { ...task, assignedVendor: undefined } : task
+        )
+    )
+  }
   
   const handleLoadTimeline = (timelineToLoad: SavedTimeline) => {
     setTimeline(timelineToLoad.tasks);
@@ -194,8 +248,8 @@ function EventPlannerContent() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Event Planner</CardTitle>
-          <CardDescription>Describe your event, and we'll generate a customized timeline for you.</CardDescription>
+          <CardTitle>AI Event Planner</CardTitle>
+          <CardDescription>Describe your event, and our AI will generate a customized planning timeline for you, complete with vendor suggestions.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -269,8 +323,8 @@ function EventPlannerContent() {
               </div>
                <div className="flex flex-col sm:flex-row gap-4 items-center">
                 <Button type="submit" disabled={isLoading} size="lg" className="w-full sm:w-auto">
-                    {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLoading ? 'Generating Plan...' : 'Generate New Plan'}
+                    {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    {isLoading ? 'Generating Plan...' : 'Generate New AI Plan'}
                 </Button>
                 <Link href="/client/event-planner/saved" className="w-full sm:w-auto">
                     <Button variant="outline" size="lg" asChild className="w-full">
@@ -296,12 +350,12 @@ function EventPlannerContent() {
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
                         <CardTitle>Your Plan: {eventName}</CardTitle>
-                        <CardDescription>Here is your generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
+                        <CardDescription>Here is your AI-generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                         <Button variant="outline" onClick={handleAddTask} className="flex-1 sm:flex-none">
+                         <Button variant="outline" onClick={() => handleAddTask()} className="flex-1 sm:flex-none">
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Task
+                            Add Task to End
                         </Button>
                         <Button onClick={handleSaveTimeline} disabled={isSaving || !userId} className="flex-1 sm:flex-none">
                             {isSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -318,10 +372,11 @@ function EventPlannerContent() {
             <CardContent>
                 <div className="relative mt-8">
                     {/* The timeline line */}
-                    <div className="absolute left-6 top-0 h-full w-0.5 bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div>
+                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div>
                     
                     {timeline.map((task, index) => (
-                        <div key={task.id} className="relative mb-8 group">
+                       <div key={task.id}>
+                        <div className="relative mb-8 group">
                             <div className="flex md:grid md:grid-cols-2 items-center">
                                 {/* Desktop: Date on the left for even, right for odd */}
                                 <div className={cn(
@@ -343,7 +398,7 @@ function EventPlannerContent() {
                                     <p className="font-semibold text-primary mb-1 md:hidden">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
                                     
                                     <div className={cn(
-                                        "bg-card border rounded-lg shadow-md p-4 space-y-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+                                        "bg-card border rounded-lg shadow-md p-4 space-y-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
                                         task.completed && 'bg-muted/60 opacity-80'
                                     )}>
                                         <div className="flex items-start gap-3">
@@ -385,10 +440,55 @@ function EventPlannerContent() {
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
+
+                                        {task.suggestedVendorCategory && !task.assignedVendor && (
+                                            <div className="pt-2 border-t border-dashed">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                         <Button variant="outline" size="sm" className="w-full">
+                                                            <Building className="mr-2 h-4 w-4" />
+                                                            Find a {task.suggestedVendorCategory}
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        {services.filter(s => s.category === task.suggestedVendorCategory).map(vendor => (
+                                                             <DropdownMenuItem key={vendor.id} onSelect={() => handleLinkVendor(task.id, vendor)}>
+                                                                <Avatar className="h-6 w-6 mr-2">
+                                                                    <AvatarImage src={vendor.vendorAvatar} />
+                                                                    <AvatarFallback>{vendor.vendorName.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                                <span>{vendor.vendorName}</span>
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        )}
+                                        {task.assignedVendor && (
+                                            <div className="pt-2 border-t border-dashed flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <Link2 className="h-4 w-4 text-green-600" />
+                                                    <span>Linked: <span className="font-semibold text-foreground">{task.assignedVendor.name}</span></span>
+                                                </div>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleUnlinkVendor(task.id)}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {/* "Add Task" button between items */}
+                        <div className="relative h-8">
+                             <div className="absolute left-6 w-0.5 h-full bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div>
+                             <div className="absolute left-6 top-1/2 -translate-y-1/2 -translate-x-1/2 md:left-1/2">
+                                <Button size="icon" variant="secondary" className="rounded-full h-7 w-7" onClick={() => handleAddTask(index + 1)}>
+                                    <PlusCircle className="h-4 w-4" />
+                                </Button>
+                             </div>
+                        </div>
+                       </div>
                     ))}
                 </div>
             </CardContent>

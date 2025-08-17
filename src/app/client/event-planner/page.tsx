@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, PlusCircle, Trash2, Edit, Save, List, Sparkles, Building, Link2, X } from 'lucide-react';
+import { Loader, PlusCircle, Trash2, Edit, Save, List, Sparkles, Building, Link2, X, ArrowLeft } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { EventTask, SavedTimeline, ServiceOrOffer, VendorProfile, GenerateEventPlanInput } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -364,6 +364,10 @@ function EventPlannerContent() {
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
+                         <Link href="/client/event-planner/saved" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary mb-2">
+                            <ArrowLeft className="h-4 w-4" />
+                            Back to Timelines
+                        </Link>
                         <CardTitle>Your Plan: {eventName}</CardTitle>
                         <CardDescription>Here is your generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
                     </div>

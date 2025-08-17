@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 const formSchema = z.object({
@@ -244,12 +245,23 @@ function EventPlannerContent() {
   const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
   const totalTasks = timeline?.length || 0;
   const progress = totalTasks > 0 ? (completedTasksCount / totalTasks) * 100 : 0;
+  
+  const taskVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.05,
+      },
+    }),
+  };
 
   return (
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Event Planner</CardTitle>
+          <CardTitle>AI-Powered Event Planner</CardTitle>
           <CardDescription>Describe your event, and we'll generate a customized planning timeline for you.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -366,37 +378,53 @@ function EventPlannerContent() {
                 </div>
                  <div className="mt-4 space-y-2">
                     <Label>Progress</Label>
-                    <Progress value={progress} className="h-3" />
+                    <Progress value={progress} className="h-4" />
                     <p className="text-sm text-muted-foreground">{completedTasksCount} of {totalTasks} tasks completed</p>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="relative mt-8">
-                    {/* The timeline line */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-border"></div>
+                    {/* The timeline line for desktop */}
+                    <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-border/80"></div>
                     
+                    <AnimatePresence>
                     {timeline.map((task, index) => (
-                       <div key={task.id}>
-                        <div className="relative mb-8 group">
-                            <div className="grid grid-cols-2 items-start gap-x-8">
+                       <motion.div 
+                        key={task.id}
+                        variants={taskVariants}
+                        initial="hidden"
+                        animate="visible"
+                        custom={index}
+                        exit="hidden"
+                        >
+                        <div className="relative mb-4 md:mb-8 group">
+                            <div className="grid grid-cols-[auto,1fr] md:grid-cols-2 items-start gap-x-4 md:gap-x-8">
                                 {/* Date / Deadline */}
                                 <div className={cn(
-                                    "text-right",
-                                    index % 2 === 0 ? 'pr-2' : 'pl-2 col-start-2 text-left'
+                                    "md:text-right col-start-2 md:col-auto",
+                                    index % 2 === 0 ? "md:text-right" : "md:col-start-2 md:text-left"
                                 )}>
-                                    <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
+                                    <p className="font-semibold text-primary pl-10 md:pl-0 md:pr-2">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}</p>
+                                    <p className="text-xs text-muted-foreground pl-10 md:pl-0 md:pr-2">{new Date(task.deadline).getFullYear()}</p>
                                 </div>
 
                                 {/* Connector dot */}
-                                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background"></div>
+                                <div className="absolute top-1 left-4 md:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary/30 border-4 border-background flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                                </div>
 
                                 {/* Task Card */}
                                 <div className={cn(
-                                    index % 2 === 0 ? 'col-start-2 pl-2' : 'col-start-1 pr-2'
+                                    "col-start-2",
+                                    index % 2 === 0 ? 'md:col-start-2' : 'md:col-start-1'
                                 )}>
-                                    <div className={cn(
-                                        "bg-card border rounded-lg shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg",
-                                        task.completed && 'bg-muted/60 opacity-70'
+                                    <motion.div
+                                        animate={{ 
+                                            background: task.completed ? 'linear-gradient(to right, hsl(var(--primary) / 0.1), hsl(var(--background)))' : 'hsl(var(--card))',
+                                            opacity: task.completed ? 0.7 : 1
+                                        }}
+                                        className={cn(
+                                        "bg-card border rounded-xl shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg"
                                     )}>
                                         <div className="flex items-start gap-4">
                                             <Checkbox 
@@ -423,16 +451,16 @@ function EventPlannerContent() {
                                             </div>
                                              <div className="flex items-center gap-1">
                                                  {editingTaskId === task.id ? (
-                                                    <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600 hover:bg-green-100 hover:text-green-700">
-                                                        <Save className="h-4 w-4" />
+                                                    <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700">
+                                                        <Save className="h-5 w-5" />
                                                     </Button>
                                                 ) : (
-                                                    <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-7 w-7">
-                                                        <Edit className="h-4 w-4" />
+                                                    <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8">
+                                                        <Edit className="h-5 w-5" />
                                                     </Button>
                                                 )}
-                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-destructive hover:bg-red-100">
-                                                    <Trash2 className="h-4 w-4" />
+                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-8 w-8 text-destructive hover:bg-red-100">
+                                                    <Trash2 className="h-5 w-5" />
                                                 </Button>
                                             </div>
                                         </div>
@@ -471,21 +499,22 @@ function EventPlannerContent() {
                                                 </Button>
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 </div>
                             </div>
                         </div>
                         {/* "Add Task" button between items */}
                         <div className="relative h-8">
-                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-border"></div>
-                             <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
-                                <Button size="icon" variant="secondary" className="rounded-full h-7 w-7" onClick={() => handleAddTask(index + 1)}>
-                                    <PlusCircle className="h-4 w-4" />
+                             <div className="absolute left-4 md:left-1/2 w-0.5 h-full -translate-x-1/2 bg-border/80"></div>
+                             <div className="absolute left-4 md:left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
+                                <Button size="icon" variant="secondary" className="rounded-full h-8 w-8 z-10" onClick={() => handleAddTask(index + 1)}>
+                                    <PlusCircle className="h-5 w-5" />
                                 </Button>
                              </div>
                         </div>
-                       </div>
+                       </motion.div>
                     ))}
+                    </AnimatePresence>
                 </div>
             </CardContent>
         </Card>

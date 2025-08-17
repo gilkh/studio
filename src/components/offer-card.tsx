@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Clock, Heart, HeartCrack, Send } from 'lucide-react';
+import { Star, Edit, Clock, Heart, HeartCrack, Send, Video } from 'lucide-react';
 import Image from 'next/image';
 import { ManageServiceDialog } from './manage-service-dialog';
 import { BookOfferDialog } from './book-offer-dialog';
@@ -35,8 +35,7 @@ export function OfferCard({ offer, role }: OfferCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   
-  // Robust check for media array
-  const mediaItems = offer.media && offer.media.length > 0 ? offer.media : [{ url: offer.image, isThumbnail: true }];
+  const mediaItems = offer.media && offer.media.length > 0 ? offer.media : [{ url: offer.image, type: 'image' as const, isThumbnail: true }];
 
 
   useEffect(() => {
@@ -84,13 +83,28 @@ export function OfferCard({ offer, role }: OfferCardProps) {
                     <CarouselItem key={index}>
                          <Link href={`/client/offer/${offer.id}`}>
                             <div className="relative h-48 w-full">
-                                <Image
-                                    src={mediaItem.url}
-                                    alt={offer.title}
-                                    fill
-                                    className="object-cover"
-                                    data-ai-hint="event offer"
-                                />
+                                {mediaItem.type === 'image' ? (
+                                    <Image
+                                        src={mediaItem.url}
+                                        alt={offer.title}
+                                        fill
+                                        className="object-cover"
+                                        data-ai-hint="event offer"
+                                    />
+                                ) : (
+                                    <div className="relative w-full h-full">
+                                        <video
+                                            src={mediaItem.url}
+                                            className="w-full h-full object-cover"
+                                            muted
+                                            loop
+                                            playsInline
+                                        />
+                                        <div className="absolute bottom-2 right-2 bg-black/50 text-white rounded-full p-1.5">
+                                            <Video className="h-4 w-4" />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </Link>
                     </CarouselItem>
@@ -169,5 +183,3 @@ export function OfferCard({ offer, role }: OfferCardProps) {
     </Card>
   );
 }
-
-    

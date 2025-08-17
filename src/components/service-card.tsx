@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Heart, HeartCrack, Send } from 'lucide-react';
+import { Star, Edit, Heart, HeartCrack, Send, Video } from 'lucide-react';
 import Image from 'next/image';
 import { QuoteRequestDialog } from './quote-request-dialog';
 import { ManageServiceDialog } from './manage-service-dialog';
@@ -34,8 +34,7 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  // Robust check for media array
-  const mediaItems = service.media && service.media.length > 0 ? service.media : [{ url: service.image, isThumbnail: true }];
+  const mediaItems = service.media && service.media.length > 0 ? service.media : [{ url: service.image, type: 'image' as const, isThumbnail: true }];
 
 
   useEffect(() => {
@@ -84,13 +83,28 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
                     <CarouselItem key={index}>
                         <Link href={`/client/service/${service.id}`}>
                             <div className="relative h-48 w-full">
-                                <Image
-                                    src={mediaItem.url}
-                                    alt={service.title}
-                                    fill
-                                    className="object-cover"
-                                    data-ai-hint="event service"
-                                />
+                                {mediaItem.type === 'image' ? (
+                                    <Image
+                                        src={mediaItem.url}
+                                        alt={service.title}
+                                        fill
+                                        className="object-cover"
+                                        data-ai-hint="event service"
+                                    />
+                                ) : (
+                                     <div className="relative w-full h-full">
+                                        <video
+                                            src={mediaItem.url}
+                                            className="w-full h-full object-cover"
+                                            muted
+                                            loop
+                                            playsInline
+                                        />
+                                        <div className="absolute bottom-2 right-2 bg-black/50 text-white rounded-full p-1.5">
+                                            <Video className="h-4 w-4" />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </Link>
                     </CarouselItem>
@@ -167,5 +181,3 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
     </Card>
   );
 }
-
-    

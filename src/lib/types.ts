@@ -2,6 +2,12 @@
 
 export type ServiceType = 'service' | 'offer';
 
+export interface MediaItem {
+  url: string;
+  type: 'image' | 'video';
+  isThumbnail?: boolean;
+}
+
 export interface BaseService {
   id: string;
   type: ServiceType;
@@ -14,7 +20,7 @@ export interface BaseService {
   rating: number;
   reviewCount: number;
   image: string;
-  media?: { url: string; isThumbnail?: boolean }[];
+  media?: MediaItem[];
 }
 
 export interface Service extends BaseService {

@@ -15,9 +15,9 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { ServiceOrOffer, Service, Offer, VendorProfile } from '@/lib/types';
+import type { ServiceOrOffer, Service, Offer, VendorProfile, MediaItem } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { DollarSign, Loader2, ImagePlus, X } from 'lucide-react';
+import { DollarSign, Loader2, ImagePlus, X, Video } from 'lucide-react';
 import { createServiceOrOffer, getVendorProfile } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { Calendar } from './ui/calendar';
@@ -43,8 +43,7 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
       ? service.availableDates.map(d => new Date(d)) 
       : []
   );
-  // Placeholder for images
-  const [images, setImages] = React.useState<string[]>(service?.media?.map(m => m.url) || []);
+  const [media, setMedia] = React.useState<MediaItem[]>(service?.media || []);
 
 
   React.useEffect(() => {
@@ -61,7 +60,7 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
         } else {
             setDates([]);
         }
-        setImages(service?.media?.map(m => m.url) || []);
+        setMedia(service?.media || []);
     }
   }, [vendorId, open, service]);
 
@@ -78,9 +77,7 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     const category = formData.get('category') as string;
     const description = formData.get('description') as string;
     
-    // In a real app, 'images' would be an array of uploaded file URLs
-    const media = images.map((url, index) => ({ url, isThumbnail: index === 0 }));
-
+    const finalMedia = media.map((item, index) => ({ ...item, isThumbnail: index === 0 }));
 
     try {
         const baseData = {
@@ -92,8 +89,8 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
             vendorAvatar: `https://i.pravatar.cc/150?u=${vendorId}`,
             rating: 0,
             reviewCount: 0,
-            image: media.length > 0 ? media[0].url : 'https://placehold.co/600x400.png',
-            media,
+            image: finalMedia.length > 0 ? finalMedia[0].url : 'https://placehold.co/600x400.png',
+            media: finalMedia,
         }
 
         if (type === 'offer') {
@@ -129,20 +126,48 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     }
   };
   
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // In a real app, you'd upload this to a storage service (e.g., Firebase Storage)
-        // and get a URL back. For this demo, we'll use the base64 data URI.
-        setImages(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
+  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+        const newMediaItems: MediaItem[] = [];
+        for(let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                 newMediaItems.push({
+                    url: reader.result as string,
+                    type: file.type.startsWith('video') ? 'video' : 'image',
+                });
+
+                if (newMediaItems.length === files.length) {
+                    // Once all files are read, update the state
+                    setMedia(prev => {
+                        const allItems = [...prev, ...newMediaItems];
+                        // Ensure an image is always first if available
+                        allItems.sort((a, b) => {
+                            if (a.type === 'image' && b.type === 'video') return -1;
+                            if (a.type === 'video' && b.type === 'image') return 1;
+                            return 0;
+                        });
+
+                         if(allItems.length > 0 && allItems[0].type === 'video'){
+                            toast({
+                                title: "Invalid Thumbnail",
+                                description: "The first item in your portfolio must be an image, not a video. It has been moved.",
+                                variant: "destructive"
+                            });
+                        }
+                        return allItems;
+                    });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
     }
   };
-  const handleRemoveImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+
+  const handleRemoveMedia = (index: number) => {
+    setMedia(prev => prev.filter((_, i) => i !== index));
   }
 
 
@@ -211,26 +236,42 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
                  <Separator />
 
                 <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2">Portfolio Images</Label>
+                    <Label className="text-right pt-2">Portfolio Media</Label>
                     <div className="col-span-3">
                          <div className="grid grid-cols-3 gap-4 mb-4">
-                            {images.map((img, index) => (
+                            {media.map((item, index) => (
                                 <div key={index} className="relative group aspect-video">
-                                    <Image src={img} alt={`upload preview ${index}`} layout="fill" className="object-cover rounded-md" />
-                                    <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => handleRemoveImage(index)}>
+                                     {item.type === 'image' ? (
+                                        <Image src={item.url} alt={`upload preview ${index}`} layout="fill" className="object-cover rounded-md" />
+                                    ) : (
+                                        <div className="relative w-full h-full">
+                                            <video src={item.url} className="w-full h-full object-cover rounded-md" muted loop playsInline />
+                                            <div className="absolute bottom-1 right-1 bg-black/50 text-white rounded-full p-1">
+                                                <Video className="h-3 w-3" />
+                                            </div>
+                                        </div>
+                                    )}
+                                    <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => handleRemoveMedia(index)}>
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
                             ))}
                         </div>
                         <Button type="button" variant="outline" asChild>
-                            <Label htmlFor="image-upload" className="cursor-pointer">
+                            <Label htmlFor="media-upload" className="cursor-pointer">
                                 <ImagePlus className="mr-2 h-4 w-4" />
-                                Add Image
+                                Add Media
                             </Label>
                         </Button>
-                        <Input id="image-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} />
-                        <p className="text-xs text-muted-foreground mt-2">The first image will be used as the thumbnail.</p>
+                        <Input 
+                            id="media-upload" 
+                            type="file" 
+                            className="sr-only" 
+                            accept="image/*,video/*" 
+                            multiple
+                            onChange={handleMediaUpload} 
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">The first item must be an image to be used as a thumbnail.</p>
                     </div>
                 </div>
 

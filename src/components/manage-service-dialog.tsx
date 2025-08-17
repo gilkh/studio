@@ -31,6 +31,45 @@ interface ManageServiceDialogProps {
   service?: ServiceOrOffer;
 }
 
+const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = document.createElement('img');
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1024;
+                const MAX_HEIGHT = 1024;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return reject('Could not get canvas context');
+
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+            };
+        };
+        reader.onerror = (error) => reject(error);
+    });
+}
+
+
 export function ManageServiceDialog({ children, service }: ManageServiceDialogProps) {
   const { userId: vendorId } = useAuth();
   const { toast } = useToast();
@@ -126,42 +165,57 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     }
   };
   
-  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
         const newMediaItems: MediaItem[] = [];
         for(let i = 0; i < files.length; i++) {
             const file = files[i];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                 newMediaItems.push({
-                    url: reader.result as string,
-                    type: file.type.startsWith('video') ? 'video' : 'image',
-                });
+            const isVideo = file.type.startsWith('video');
 
-                if (newMediaItems.length === files.length) {
-                    // Once all files are read, update the state
-                    setMedia(prev => {
-                        const allItems = [...prev, ...newMediaItems];
-                        // Ensure an image is always first if available
-                        allItems.sort((a, b) => {
-                            if (a.type === 'image' && b.type === 'video') return -1;
-                            if (a.type === 'video' && b.type === 'image') return 1;
-                            return 0;
-                        });
-
-                         if(allItems.length > 0 && allItems[0].type === 'video'){
-                            toast({
-                                title: "Invalid Thumbnail",
-                                description: "The first item in your portfolio must be an image, not a video. It has been moved.",
-                                variant: "destructive"
-                            });
-                        }
-                        return allItems;
+            if (isVideo) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    newMediaItems.push({
+                        url: reader.result as string,
+                        type: 'video',
                     });
+                     if (newMediaItems.length === files.length) {
+                        setMedia(prev => [...prev, ...newMediaItems]);
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                try {
+                    const compressedDataUrl = await compressImage(file);
+                     newMediaItems.push({
+                        url: compressedDataUrl,
+                        type: 'image',
+                    });
+                     if (newMediaItems.length === files.length) {
+                        setMedia(prev => {
+                             const allItems = [...prev, ...newMediaItems];
+                            allItems.sort((a, b) => {
+                                if (a.type === 'image' && b.type === 'video') return -1;
+                                if (a.type === 'video' && b.type === 'image') return 1;
+                                return 0;
+                            });
+
+                            if(allItems.length > 0 && allItems[0].type === 'video'){
+                                toast({
+                                    title: "Invalid Thumbnail",
+                                    description: "The first item in your portfolio must be an image, not a video. It has been moved.",
+                                    variant: "destructive"
+                                });
+                            }
+                            return allItems;
+                        });
+                    }
+                } catch (error) {
+                    console.error("Image compression failed:", error);
+                    toast({title: "Image Error", description: `Could not process image: ${file.name}`, variant: "destructive"});
                 }
-            };
-            reader.readAsDataURL(file);
+            }
         }
     }
   };

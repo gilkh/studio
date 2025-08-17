@@ -96,6 +96,7 @@ export interface UserProfile {
     phone: string;
     createdAt: Date;
     savedItemIds?: string[];
+    status: 'active' | 'disabled';
 }
 
 export interface VendorProfile {
@@ -110,6 +111,7 @@ export interface VendorProfile {
     accountTier: 'free' | 'vip1' | 'vip2' | 'vip3';
     createdAt: Date;
     portfolio?: string[];
+    status: 'active' | 'disabled';
 }
 
 export interface VendorCode {

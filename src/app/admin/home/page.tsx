@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser } from '@/lib/services';
 import type { VendorCode, UserProfile, VendorProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2 } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +30,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 
-type DisplayUser = UserProfile & { role: string, businessName?: string, accountTier?: VendorProfile['accountTier'] };
+type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'] };
 
 export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
@@ -84,6 +86,27 @@ export default function AdminHomePage() {
     }
   }
 
+  const handleStatusChange = async (user: DisplayUser, status: 'active' | 'disabled') => {
+    try {
+        await updateUserStatus(user.id, user.role, status);
+        setUsers(prev => prev.map(u => u.id === user.id ? {...u, status} : u));
+        toast({ title: "Status Updated", description: `${user.firstName}'s account is now ${status}.` });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to update user status.", variant: "destructive" });
+    }
+  }
+
+  const handleDeleteUser = async (user: DisplayUser) => {
+    try {
+        await deleteUser(user.id, user.role);
+        setUsers(prev => prev.filter(u => u.id !== user.id));
+        toast({ title: "User Deleted", description: `The user ${user.email} has been permanently deleted.` });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to delete the user.", variant: "destructive" });
+    }
+  }
+
+
   const handleDeleteCode = async (codeId: string) => {
     try {
         await deleteVendorCode(codeId);
@@ -133,6 +156,7 @@ export default function AdminHomePage() {
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Tier</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Date Joined</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -145,8 +169,9 @@ export default function AdminHomePage() {
                                     <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                                    <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                                 </TableRow>
                                 ))
                             ) : users.map(user => (
@@ -162,7 +187,7 @@ export default function AdminHomePage() {
                                         <Badge variant={user.role === 'vendor' ? 'default' : 'secondary'}>{user.role}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        {user.role === 'vendor' ? (
+                                        {user.role === 'vendor' && user.accountTier ? (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="outline" size="sm" className="capitalize">
@@ -179,12 +204,58 @@ export default function AdminHomePage() {
                                             </DropdownMenu>
                                         ) : 'N/A'}
                                     </TableCell>
+                                    <TableCell>
+                                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className={user.status === 'active' ? 'bg-green-500' : ''}>
+                                            {user.status}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground">{user.createdAt ? format(user.createdAt, 'PPP') : 'N/A'}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" onClick={() => handleResetPassword(user.email)}>
-                                            <UserCog className="mr-2 h-4 w-4" />
-                                            Reset Password
-                                        </Button>
+                                         <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => handleResetPassword(user.email)}>
+                                                    <UserCog className="mr-2 h-4 w-4" />
+                                                    Reset Password
+                                                </DropdownMenuItem>
+                                                {user.status === 'active' ? (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(user, 'disabled')}>
+                                                        <Ban className="mr-2 h-4 w-4" />
+                                                        Disable Account
+                                                    </DropdownMenuItem>
+                                                ) : (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(user, 'active')}>
+                                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                                        Enable Account
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuSeparator />
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                                                            <UserX className="mr-2 h-4 w-4" />
+                                                            Delete User
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action will permanently delete the user <span className="font-semibold">{user.email}</span> and all associated data. This cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteUser(user)}>Delete</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}

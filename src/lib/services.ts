@@ -23,6 +23,7 @@ export async function createNewUser(data: {
             phone: '',
             createdAt: new Date(),
             savedItemIds: [],
+            status: 'active',
         };
         await setDoc(doc(db, 'users', userId), userProfile);
         return { userId, role: 'client' };
@@ -46,6 +47,7 @@ export async function createNewUser(data: {
             email,
             phone: '',
             createdAt: new Date(),
+            status: 'active',
         };
         const vendorProfile: Omit<VendorProfile, 'id'> = {
             businessName: businessName || `${firstName}'s Business`,
@@ -57,6 +59,7 @@ export async function createNewUser(data: {
             phone: '',
             accountTier: 'free',
             createdAt: new Date(),
+            status: 'active',
         };
 
         const batch = writeBatch(db);
@@ -87,20 +90,28 @@ export async function signInUser(email: string): Promise<{ role: 'client' | 'ven
     }
     
     try {
-        const vendorQuery = query(collection(db, 'vendors'), where('email', '==', email));
-        const vendorSnapshot = await getDocs(vendorQuery);
-        if (!vendorSnapshot.empty) {
-            return { role: 'vendor', userId: vendorSnapshot.docs[0].id };
-        }
-
         const userQuery = query(collection(db, 'users'), where('email', '==', email));
         const userSnapshot = await getDocs(userQuery);
         if (!userSnapshot.empty) {
-             const userId = userSnapshot.docs[0].id;
-             const vendorCheck = await getDoc(doc(db, 'vendors', userId));
-             if (!vendorCheck.exists()) {
-                 return { role: 'client', userId };
+             const userDoc = userSnapshot.docs[0];
+             const userData = userDoc.data() as UserProfile;
+
+             if (userData.status === 'disabled') {
+                 console.warn(`Login attempt for disabled user: ${email}`);
+                 return null;
              }
+
+             const userId = userDoc.id;
+             const vendorCheck = await getDoc(doc(db, 'vendors', userId));
+             if (vendorCheck.exists()) {
+                const vendorData = vendorCheck.data() as VendorProfile;
+                 if (vendorData.status === 'disabled') {
+                    console.warn(`Login attempt for disabled vendor: ${email}`);
+                    return null;
+                 }
+                return { role: 'vendor', userId };
+             }
+             return { role: 'client', userId };
         }
     } catch (e) {
         if ((e as any).code === 'unavailable') {
@@ -124,11 +135,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
             return {
                 id: docSnap.id,
                 ...data,
-                createdAt,
+                createdAt: data.createdAt.toDate(),
             } as UserProfile;
         }
     } catch (e) {
@@ -154,11 +164,10 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
             return {
                 id: docSnap.id,
                 ...data,
-                createdAt
+                createdAt: data.createdAt.toDate()
             } as VendorProfile;
         }
     } catch (e) {
@@ -401,7 +410,7 @@ export async function getAllUsersAndVendors() {
         const userData = { 
             id: doc.id, 
             ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            createdAt: data.createdAt.toDate(),
         } as UserProfile;
         
         const vendorData = vendorsData.get(doc.id);
@@ -410,7 +419,8 @@ export async function getAllUsersAndVendors() {
             ...userData,
             role: vendorData ? 'vendor' : 'client',
             businessName: vendorData?.businessName,
-            accountTier: vendorData?.accountTier
+            accountTier: vendorData?.accountTier,
+            status: userData.status,
         }
     });
 
@@ -421,6 +431,32 @@ export async function updateVendorTier(vendorId: string, tier: VendorProfile['ac
     if (!vendorId) return;
     const vendorRef = doc(db, 'vendors', vendorId);
     await updateDoc(vendorRef, { accountTier: tier });
+}
+
+export async function updateUserStatus(userId: string, role: 'client' | 'vendor', status: 'active' | 'disabled') {
+    const batch = writeBatch(db);
+    const userRef = doc(db, 'users', userId);
+    batch.update(userRef, { status });
+
+    if (role === 'vendor') {
+        const vendorRef = doc(db, 'vendors', userId);
+        batch.update(vendorRef, { status });
+    }
+    await batch.commit();
+}
+
+export async function deleteUser(userId: string, role: 'client' | 'vendor') {
+    const batch = writeBatch(db);
+    const userRef = doc(db, 'users', userId);
+    batch.delete(userRef);
+
+    if (role === 'vendor') {
+        const vendorRef = doc(db, 'vendors', userId);
+        batch.delete(vendorRef);
+    }
+    // Note: In a real app, you would also need to delete associated data
+    // like bookings, messages, timelines etc. This is a simplified version.
+    await batch.commit();
 }
 
 

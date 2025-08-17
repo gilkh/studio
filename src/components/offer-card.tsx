@@ -15,6 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { QuoteRequestDialog } from './quote-request-dialog';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+
 
 interface OfferCardProps {
   offer: Offer;
@@ -26,6 +34,7 @@ export function OfferCard({ offer, role }: OfferCardProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const thumbnail = offer.media.find(m => m.isThumbnail) || offer.media[0];
 
   useEffect(() => {
     async function checkSavedStatus() {
@@ -63,26 +72,31 @@ export function OfferCard({ offer, role }: OfferCardProps) {
   }
 
 
-  const CardContentLink = ({children}: {children: React.ReactNode}) => {
-    if (role === 'client') {
-      return <Link href={`/client/offer/${offer.id}`} className="flex flex-col flex-grow">{children}</Link>
-    }
-    return <div className="flex flex-col flex-grow">{children}</div>
-  }
-
-
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 rounded-xl group">
-      <CardContentLink>
         <CardHeader className="p-0 relative overflow-hidden">
-          <Image
-            src={offer.image}
-            alt={offer.title}
-            width={600}
-            height={400}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-            data-ai-hint="event offer"
-          />
+            <Carousel className="w-full">
+                <CarouselContent>
+                    {offer.media.map((mediaItem, index) => (
+                    <CarouselItem key={index}>
+                         <Link href={`/client/offer/${offer.id}`}>
+                            <div className="relative h-48 w-full">
+                                <Image
+                                    src={mediaItem.url}
+                                    alt={offer.title}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint="event offer"
+                                />
+                            </div>
+                        </Link>
+                    </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2" />
+                <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2" />
+            </Carousel>
+         
           {role === 'client' && (
               <div className="absolute top-3 right-3 flex gap-2 z-10">
                 <QuoteRequestDialog service={offer}>
@@ -102,11 +116,13 @@ export function OfferCard({ offer, role }: OfferCardProps) {
           </Badge>
         </CardHeader>
         <div className="p-4 flex-grow flex flex-col">
-          <h3 className="text-xl font-bold leading-tight mb-2 flex-grow">{offer.title}</h3>
+            <Link href={`/client/offer/${offer.id}`} className="flex-grow">
+                <h3 className="text-xl font-bold leading-tight mb-2">{offer.title}</h3>
+            </Link>
            <Link href={`/vendor/${offer.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mt-2">
               <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-                <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
+                <AvatarImage src={`https://i.pravatar.cc/150?u=${offer.vendorId}`} alt={offer.vendorName} />
                 <AvatarFallback>{offer.vendorName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
@@ -124,8 +140,7 @@ export function OfferCard({ offer, role }: OfferCardProps) {
               <span className="text-muted-foreground text-sm">Availability: {offer.availability}</span>
           </div>
         </div>
-      </CardContentLink>
-
+      
       <CardFooter className="p-4 pt-2 flex justify-between items-center bg-muted/50">
         <div>
           <p className="text-xs text-muted-foreground">Fixed Price</p>

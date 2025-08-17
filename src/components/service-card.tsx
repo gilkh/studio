@@ -14,6 +14,14 @@ import { getUserProfile, toggleSavedItem } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+
 
 interface ServiceCardProps {
   service: Service;
@@ -25,6 +33,7 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const thumbnail = service.media.find(m => m.isThumbnail) || service.media[0];
 
   useEffect(() => {
     async function checkSavedStatus() {
@@ -60,27 +69,34 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
         setIsSaving(false);
     }
   }
-  
-  const CardContentLink = ({children}: {children: React.ReactNode}) => {
-    if (role === 'client') {
-      return <Link href={`/client/service/${service.id}`} className="flex flex-col flex-grow">{children}</Link>
-    }
-    return <div className="flex flex-col flex-grow">{children}</div>
-  }
 
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 rounded-xl group">
-      <CardContentLink>
+      
         <CardHeader className="p-0 relative overflow-hidden">
-          <Image
-            src={service.image}
-            alt={service.title}
-            width={600}
-            height={400}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-            data-ai-hint="event service"
-          />
+            <Carousel className="w-full">
+                <CarouselContent>
+                    {service.media.map((mediaItem, index) => (
+                    <CarouselItem key={index}>
+                        <Link href={`/client/service/${service.id}`}>
+                            <div className="relative h-48 w-full">
+                                <Image
+                                    src={mediaItem.url}
+                                    alt={service.title}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint="event service"
+                                />
+                            </div>
+                        </Link>
+                    </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2" />
+                <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2" />
+            </Carousel>
+
           {role === 'client' && (
               <div className="absolute top-3 right-3 flex gap-2 z-10">
                 <QuoteRequestDialog service={service}>
@@ -100,13 +116,15 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
           </Badge>
         </CardHeader>
         <div className="p-4 flex-grow flex flex-col">
-          <h3 className="text-xl font-bold leading-tight mb-2 flex-grow">{service.title}</h3>
+          <Link href={`/client/service/${service.id}`} className="flex-grow">
+            <h3 className="text-xl font-bold leading-tight mb-2">{service.title}</h3>
+          </Link>
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{service.description}</p>
           <div className="mt-auto pt-4 border-t border-dashed">
             <Link href={`/vendor/${service.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-                    <AvatarImage src={service.vendorAvatar} alt={service.vendorName} />
+                    <AvatarImage src={`https://i.pravatar.cc/150?u=${service.vendorId}`} alt={service.vendorName} />
                     <AvatarFallback>{service.vendorName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -121,8 +139,7 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
             </Link>
           </div>
         </div>
-      </CardContentLink>
-
+      
       <CardFooter className="p-4 pt-2 flex justify-between items-center bg-muted/50">
         <div>
           <p className="text-xl font-semibold text-primary">Custom Quote</p>

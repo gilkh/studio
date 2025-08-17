@@ -13,7 +13,7 @@ export async function createNewUser(data: {
     vendorCode?: string;
 }) {
     const { accountType, firstName, lastName, email, businessName, vendorCode } = data;
-    const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`;
+    const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/\s+/g, '-');
 
     if (accountType === 'client') {
         const userProfile: Omit<UserProfile, 'id'> = {
@@ -31,7 +31,6 @@ export async function createNewUser(data: {
             throw new Error("A valid vendor code is required to register as a vendor.");
         }
 
-        // Check if vendor code is valid and not used
         const codeQuery = query(collection(db, 'vendorCodes'), where('code', '==', vendorCode), where('isUsed', '==', false));
         const codeSnapshot = await getDocs(codeQuery);
 
@@ -41,7 +40,6 @@ export async function createNewUser(data: {
         
         const codeDoc = codeSnapshot.docs[0];
 
-        // Create user and vendor profile
         const userProfile: Omit<UserProfile, 'id'> = {
             firstName,
             lastName,
@@ -69,9 +67,8 @@ export async function createNewUser(data: {
         const vendorDocRef = doc(db, 'vendors', userId);
         batch.set(vendorDocRef, vendorProfile);
 
-        // Mark code as used
         const codeDocRef = doc(db, 'vendorCodes', codeDoc.id);
-        batch.update(codeDocRef, { isUsed: true, usedBy: userId });
+        batch.update(codeDocRef, { isUsed: true, usedBy: userId, usedAt: new Date() });
 
         await batch.commit();
 
@@ -85,25 +82,21 @@ export async function createNewUser(data: {
 // In a real app, this would also verify password. For now, it just finds a user by email.
 export async function signInUser(email: string): Promise<{ role: 'client' | 'vendor' | 'admin'; userId: string } | null> {
     
-    // Hardcoded admin check
     if (email.toLowerCase() === 'admin@tradecraft.com') {
         return { role: 'admin', userId: 'admin-user' };
     }
     
     try {
-        // Check if it's a vendor first
         const vendorQuery = query(collection(db, 'vendors'), where('email', '==', email));
         const vendorSnapshot = await getDocs(vendorQuery);
         if (!vendorSnapshot.empty) {
             return { role: 'vendor', userId: vendorSnapshot.docs[0].id };
         }
 
-        // If not a vendor, check if it's a client
         const userQuery = query(collection(db, 'users'), where('email', '==', email));
         const userSnapshot = await getDocs(userQuery);
         if (!userSnapshot.empty) {
              const userId = userSnapshot.docs[0].id;
-             // Need to make sure this user isn't also a vendor
              const vendorCheck = await getDoc(doc(db, 'vendors', userId));
              if (!vendorCheck.exists()) {
                  return { role: 'client', userId };
@@ -112,10 +105,7 @@ export async function signInUser(email: string): Promise<{ role: 'client' | 'ven
     } catch (e) {
         if ((e as any).code === 'unavailable') {
             console.warn("Firestore is offline, cannot sign in.");
-            // For prototype, let's allow mock login
              if (email.toLowerCase() === 'admin@tradecraft.com') return { role: 'admin', userId: 'admin-user' };
-            if (email.startsWith('vendor')) return { role: 'vendor', userId: email };
-            if (email.startsWith('client')) return { role: 'client', userId: email };
             return null;
         }
         console.error("Sign in error:", e);
@@ -134,7 +124,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const createdAt = data.createdAt?.toDate() || new Date();
+            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
             return {
                 id: docSnap.id,
                 ...data,
@@ -142,12 +132,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             } as UserProfile;
         }
     } catch (e) {
-        console.error("Firebase error getting user profile:", e);
+        console.warn("Firebase error getting user profile:", e);
         if ((e as any).code === 'unavailable') {
-             // Silently ignore unavailable error on initial load
             return null;
         }
-        throw e;
     }
     return null;
 }
@@ -155,9 +143,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'createdAt'>>) {
     if (!userId) return;
     const docRef = doc(db, 'users', userId);
-    // Use setDoc with merge:true to either create a new doc or update an existing one.
-    // This avoids the race condition of reading (getDoc) before the client is online.
-    await setDoc(docRef, { ...data }, { merge: true });
+    await setDoc(docRef, { ...data, lastModified: serverTimestamp() }, { merge: true });
 }
 
 
@@ -168,7 +154,7 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const createdAt = data.createdAt?.toDate() || new Date();
+            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
             return {
                 id: docSnap.id,
                 ...data,
@@ -176,11 +162,10 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
             } as VendorProfile;
         }
     } catch (e) {
-        console.error("Firebase error getting vendor profile:", e);
+        console.warn("Firebase error getting vendor profile:", e);
          if ((e as any).code === 'unavailable') {
             return null;
         }
-        throw e;
     }
     return null;
 }
@@ -188,8 +173,7 @@ export async function getVendorProfile(vendorId: string): Promise<VendorProfile 
 export async function createOrUpdateVendorProfile(vendorId: string, data: Partial<Omit<VendorProfile, 'id' | 'createdAt'>>) {
     if (!vendorId) return;
      const docRef = doc(db, 'vendors', vendorId);
-     // Use setDoc with merge:true to either create a new doc or update an existing one.
-    await setDoc(docRef, { ...data }, { merge: true });
+    await setDoc(docRef, { ...data, lastModified: serverTimestamp() }, { merge: true });
 }
 
 // Timeline Services
@@ -200,9 +184,9 @@ export async function getSavedTimelines(userId: string): Promise<SavedTimeline[]
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedTimeline));
     } catch(e) {
-         console.error(`Firebase error getting saved timelines:`, e);
+         console.warn(`Firebase error getting saved timelines:`, e);
         if ((e as any).code === 'unavailable') {
-            return []; // Return empty array if offline
+            return [];
         }
         throw e;
     }
@@ -224,7 +208,6 @@ export async function deleteTimeline(userId: string, timelineId: string) {
     await deleteDoc(docRef);
 }
 
-// Generic function to fetch data and transform to a specific type
 async function fetchCollection<T extends {id: string}>(path: string, q?: any, transform?: (data: DocumentData) => T): Promise<T[]> {
     try {
         const querySnapshot = await getDocs(q || collection(db, path));
@@ -233,9 +216,9 @@ async function fetchCollection<T extends {id: string}>(path: string, q?: any, tr
             return transform ? transform(data) : data as T;
         });
     } catch (e) {
-        console.error(`Firebase error fetching collection ${path}:`, e);
+        console.warn(`Firebase error fetching collection ${path}:`, e);
         if ((e as any).code === 'unavailable') {
-            return []; // Return empty array if offline
+            return []; 
         }
         throw e;
     }
@@ -279,7 +262,7 @@ export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteReq
             } as QuoteRequest
         });
     } catch(e) {
-        console.error("Firebase error getting quote requests:", e);
+        console.warn("Firebase error getting quote requests:", e);
         if ((e as any).code === 'unavailable') {
             return [];
         }
@@ -307,7 +290,7 @@ export const getBookingsForUser = async(userId: string) => {
             } as Booking;
         });
     } catch(e) {
-        console.error("Firebase error getting user bookings:", e);
+        console.warn("Firebase error getting user bookings:", e);
          if ((e as any).code === 'unavailable') {
             return [];
         }
@@ -328,7 +311,7 @@ export const getBookingsForVendor = async(vendorId: string) => {
             } as Booking;
         });
     } catch(e) {
-        console.error("Firebase error getting vendor bookings:", e);
+        console.warn("Firebase error getting vendor bookings:", e);
          if ((e as any).code === 'unavailable') {
             return [];
         }
@@ -345,9 +328,7 @@ export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
         return [];
     }
     
-    // Firestore 'in' queries are limited to 30 items in an array.
-    // For a production app with many saved items, you would paginate this.
-    const savedIds = user.savedItemIds;
+    const savedIds = user.savedItemIds.slice(0, 30);
 
     const allItems = await getServicesAndOffers();
     return allItems.filter(item => savedIds.includes(item.id));
@@ -357,26 +338,24 @@ export async function toggleSavedItem(userId: string, itemId: string) {
     if (!userId) return;
     const userRef = doc(db, 'users', userId);
     
-    const userProfile = await getUserProfile(userId);
+    try {
+        const userProfile = await getDoc(userRef);
     
-    if (!userProfile) {
-        // Create the user profile if it doesn't exist, and save the item.
-        await createOrUpdateUserProfile(userId, { savedItemIds: [itemId] });
-        return;
-    }
-    
-    const currentSaved = userProfile.savedItemIds || [];
+        if (!userProfile.exists()) {
+            await setDoc(userRef, { savedItemIds: [itemId] }, { merge: true });
+            return;
+        }
+        
+        const currentSaved = userProfile.data()?.savedItemIds || [];
 
-    if (currentSaved.includes(itemId)) {
-        // Atomically remove the item from the array
-        await updateDoc(userRef, {
-            savedItemIds: arrayRemove(itemId)
-        });
-    } else {
-        // Atomically add the new item to the array
-        await updateDoc(userRef, {
-            savedItemIds: arrayUnion(itemId)
-        });
+        if (currentSaved.includes(itemId)) {
+            await updateDoc(userRef, { savedItemIds: arrayRemove(itemId) });
+        } else {
+            await updateDoc(userRef, { savedItemIds: arrayUnion(itemId) });
+        }
+    } catch (error) {
+        console.error("Error toggling saved item, creating user profile as fallback", error);
+        await setDoc(userRef, { savedItemIds: [itemId] }, { merge: true });
     }
 }
 
@@ -397,22 +376,38 @@ export async function getVendorCodes(): Promise<VendorCode[]> {
     return await fetchCollection<VendorCode>('vendorCodes', q, (data) => ({
         ...data,
         createdAt: data.createdAt.toDate(),
+         usedAt: data.usedAt?.toDate(),
     } as VendorCode));
 }
 
-export async function resetAllPasswords() {
-    // This is a placeholder for a real password reset flow.
-    // In a real Firebase app, you would trigger password reset emails using the Firebase Admin SDK.
-    // Since we don't have real auth, this function doesn't do anything to the database.
-    console.log("Simulating password reset for all users.");
-    // For demonstration, we can clear all users and vendors, but this is destructive.
-    //
-    // const usersSnapshot = await getDocs(collection(db, "users"));
-    // const vendorsSnapshot = await getDocs(collection(db, "vendors"));
-    // const batch = writeBatch(db);
-    // usersSnapshot.forEach(doc => batch.delete(doc.ref));
-    // vendorsSnapshot.forEach(doc => batch.delete(doc.ref));
-    // await batch.commit();
+export async function getAllUsersAndVendors() {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const vendorsSnapshot = await getDocs(collection(db, "vendors"));
+
+    const vendorsData = new Map(vendorsSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data()} as VendorProfile]));
     
+    const allUsers = usersSnapshot.docs.map(doc => {
+        const userData = { id: doc.id, ...doc.data() } as UserProfile;
+        const vendorData = vendorsData.get(doc.id);
+        return {
+            ...userData,
+            role: vendorData ? 'vendor' : 'client',
+            businessName: vendorData?.businessName,
+            accountTier: vendorData?.accountTier
+        }
+    });
+
+    return allUsers;
+}
+
+export async function updateVendorTier(vendorId: string, tier: VendorProfile['accountTier']) {
+    if (!vendorId) return;
+    const vendorRef = doc(db, 'vendors', vendorId);
+    await updateDoc(vendorRef, { accountTier: tier });
+}
+
+
+export async function resetAllPasswords() {
+    console.log("Simulating password reset for all users.");
     return { success: true, message: "Password reset simulation complete. In a real app, emails would be sent." };
 }

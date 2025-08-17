@@ -1,4 +1,5 @@
 
+
 export type ServiceType = 'service' | 'offer';
 
 export interface BaseService {
@@ -117,4 +118,5 @@ export interface VendorCode {
     isUsed: boolean;
     createdAt: Date;
     usedBy?: string; // vendorId
+    usedAt?: Date;
 }

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -170,7 +169,7 @@ export default function AdminHomePage() {
                                             </DropdownMenu>
                                         ) : 'N/A'}
                                     </TableCell>
-                                    <TableCell className="text-muted-foreground">{format(new Date(user.createdAt), 'PPP')}</TableCell>
+                                    <TableCell className="text-muted-foreground">{user.createdAt ? format(user.createdAt.toDate(), 'PPP') : 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => handleResetPassword(user.email)}>
                                             <UserCog className="mr-2 h-4 w-4" />
@@ -280,4 +279,5 @@ export default function AdminHomePage() {
       </Tabs>
     </div>
   );
-}
+
+    

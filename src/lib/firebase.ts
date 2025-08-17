@@ -1,7 +1,12 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, initializeFirestore, Firestore, enableNetwork, disableNetwork, terminate, connectFirestoreEmulator, CACHE_SIZE_UNLIMITED, memoryLocalCache } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
+
+// This will only run on the server, ensuring env vars are loaded for SSR
+if (typeof window === 'undefined') {
+  require('dotenv').config();
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,24 +22,14 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-if (typeof window !== 'undefined' && getApps().length === 0) {
-  // We are on the client, initialize the app
+if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
-  db = initializeFirestore(app, {
-    localCache: memoryLocalCache({ cacheSizeBytes: CACHE_SIZE_UNLIMITED }),
-  });
-  auth = getAuth(app);
-} else if (getApps().length > 0) {
-  // App is already initialized, get the existing instance
-  app = getApp();
-  db = getFirestore(app);
-  auth = getAuth(app);
 } else {
-  // We are on the server, initialize a server-side instance
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
+  app = getApp();
 }
+
+db = getFirestore(app);
+auth = getAuth(app);
 
 
 export { app, db, auth };

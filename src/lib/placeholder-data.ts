@@ -1,5 +1,5 @@
 
-import type { Service, QuoteRequest, Booking, Message, Offer, ServiceOrOffer } from '@/lib/types';
+import type { Service, QuoteRequest, Booking, Offer, ServiceOrOffer } from '@/lib/types';
 
 // This file is now used for initial data seeding or as a fallback.
 // In a real production app, this data would be managed by admins or vendors.
@@ -106,27 +106,5 @@ export const bookings: Booking[] = [
     },
 ];
 
-export const messages: Message[] = [
-    {
-        id: 'm1',
-        name: 'Eve Adams',
-        avatar: 'https://i.pravatar.cc/150?u=eve',
-        lastMessage: 'The catering menu looks fantastic! Let\'s book it.',
-        timestamp: '10:42 AM',
-        unreadCount: 2
-    },
-    {
-        id: 'm2',
-        name: 'Frank Miller',
-        avatar: 'https://i.pravatar.cc/150?u=frank',
-        lastMessage: 'Just confirming our session for the 25th.',
-        timestamp: 'Yesterday',
-    },
-    {
-        id: 'm3',
-        name: 'Grace Lee',
-        avatar: 'https://i.pravatar.cc/150?u=grace',
-        lastMessage: 'Thanks for the quote. We\'ll be in touch.',
-        timestamp: '2 days ago',
-    }
-]
+// This is now legacy. Real chat data is in Firestore.
+export const messages = []

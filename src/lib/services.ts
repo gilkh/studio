@@ -1,8 +1,8 @@
 
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage } from './types';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -251,10 +251,51 @@ export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offe
 
 // Quote Request Services
 export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'createdAt'>) {
-    await addDoc(collection(db, 'quoteRequests'), {
+    // This function can also create a new chat
+    const chatId = [request.clientId, request.vendorId].sort().join('_');
+    const chatRef = doc(db, 'chats', chatId);
+    const chatSnap = await getDoc(chatRef);
+
+    const batch = writeBatch(db);
+
+    if (!chatSnap.exists()) {
+        const clientProfile = await getUserProfile(request.clientId);
+        const vendorProfile = await getVendorProfile(request.vendorId);
+
+        const newChat: Omit<Chat, 'id'> = {
+            participantIds: [request.clientId, request.vendorId],
+            participants: [
+                { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: `https://i.pravatar.cc/150?u=${request.clientId}` },
+                { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: `https://i.pravatar.cc/150?u=${request.vendorId}` }
+            ],
+            lastMessage: request.message,
+            lastMessageTimestamp: new Date(),
+            lastMessageSenderId: request.clientId
+        }
+        batch.set(chatRef, newChat);
+    } else {
+        batch.update(chatRef, { 
+            lastMessage: request.message,
+            lastMessageTimestamp: new Date(),
+            lastMessageSenderId: request.clientId
+        });
+    }
+
+    const messagesRef = collection(db, `chats/${chatId}/messages`);
+    const newMessage: Omit<ChatMessage, 'id'> = {
+        senderId: request.clientId,
+        text: request.message,
+        timestamp: new Date()
+    };
+    batch.set(doc(messagesRef), newMessage);
+
+    const quoteRef = collection(db, 'quoteRequests');
+    batch.set(doc(quoteRef), {
         ...request,
         createdAt: serverTimestamp(),
     });
+
+    await batch.commit();
 }
 
 export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteRequest[]> {
@@ -464,4 +505,66 @@ export async function deleteUser(userId: string, role: 'client' | 'vendor') {
 export async function resetAllPasswords() {
     console.log("Simulating password reset for all users.");
     return { success: true, message: "Password reset simulation complete. In a real app, emails would be sent." };
+}
+
+
+// --- Real-time Messaging Services ---
+
+export function getChatsForUser(userId: string, callback: (chats: Chat[]) => void): () => void {
+    const q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const chats = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                lastMessageTimestamp: data.lastMessageTimestamp.toDate(),
+            } as Chat;
+        }).sort((a,b) => b.lastMessageTimestamp.getTime() - a.lastMessageTimestamp.getTime());
+        callback(chats);
+    });
+
+    return unsubscribe;
+}
+
+export function getMessagesForChat(chatId: string, callback: (messages: ChatMessage[]) => void): () => void {
+    const q = query(collection(db, `chats/${chatId}/messages`), orderBy('timestamp', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const messages = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                timestamp: data.timestamp.toDate(),
+            } as ChatMessage;
+        });
+        callback(messages);
+    });
+
+    return unsubscribe;
+}
+
+export async function sendMessage(chatId: string, senderId: string, text: string) {
+    if (!text.trim()) return;
+
+    const messagesRef = collection(db, `chats/${chatId}/messages`);
+    const newMessage: Omit<ChatMessage, 'id'> = {
+        senderId,
+        text,
+        timestamp: new Date()
+    };
+    
+    const chatRef = doc(db, 'chats', chatId);
+
+    const batch = writeBatch(db);
+    batch.set(doc(messagesRef), newMessage);
+    batch.update(chatRef, {
+        lastMessage: text,
+        lastMessageTimestamp: newMessage.timestamp,
+        lastMessageSenderId: senderId
+    });
+
+    await batch.commit();
 }

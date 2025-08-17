@@ -82,7 +82,7 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
         <DialogHeader>
           <DialogTitle>Request a Quote</DialogTitle>
           <DialogDescription>
-            Send a message to {service.vendorName} about the service: "{service.title}".
+            Send a message to {service.vendorName} about the service: "{service.title}". This will start a new conversation in your messages.
           </DialogDescription>
         </DialogHeader>
         <form id="quote-form" onSubmit={handleSubmit} className="grid gap-4 py-4">

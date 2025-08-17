@@ -55,14 +55,28 @@ export interface Booking {
   time: string;
 }
 
-export interface Message {
-  id:string;
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: Date;
+}
+
+export interface ChatParticipant {
+  id: string;
   name: string;
   avatar: string;
-  lastMessage: string;
-  timestamp: string;
-  unreadCount?: number;
 }
+
+export interface Chat {
+  id: string;
+  participantIds: string[];
+  participants: ChatParticipant[];
+  lastMessage: string;
+  lastMessageSenderId: string;
+  lastMessageTimestamp: Date;
+}
+
 
 export interface EventTask {
   id: string;

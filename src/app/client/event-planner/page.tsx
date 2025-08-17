@@ -57,10 +57,6 @@ function EventPlannerContent() {
   const { toast } = useToast();
 
   useEffect(() => {
-    getServicesAndOffers().then(setServices);
-  }, []);
-
-  useEffect(() => {
     const timelineIdToLoad = searchParams.get('timelineId');
     if (timelineIdToLoad && userId) {
         const loadTimeline = async () => {
@@ -105,14 +101,15 @@ function EventPlannerContent() {
     setTimeline(null);
     setTimelineId(null);
     setEventName(`${values.eventType} in ${values.location}`);
-    
-    // Simulate some loading time
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
+      // Generate the plan first
       const plan = generateTimeline(values as GenerateEventPlanInput);
+      
       if (plan?.tasks) {
+        // Set timeline and then fetch associated vendor data
         setTimeline(plan.tasks);
+        getServicesAndOffers().then(setServices);
       } else {
         toast({ title: "Error", description: "Could not generate a plan. Please try again.", variant: "destructive" });
       }
@@ -240,6 +237,8 @@ function EventPlannerContent() {
     setTimeline(timelineToLoad.tasks);
     setEventName(timelineToLoad.name);
     setTimelineId(timelineToLoad.id);
+    // Fetch services when loading a timeline as well
+    getServicesAndOffers().then(setServices);
   }
 
   const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
@@ -385,7 +384,7 @@ function EventPlannerContent() {
             <CardContent>
                 <div className="relative mt-8">
                     {/* The timeline line */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-border/80"></div>
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-border"></div>
                     
                     <AnimatePresence>
                     {timeline.map((task, index) => (
@@ -404,8 +403,7 @@ function EventPlannerContent() {
                                     "text-right",
                                     index % 2 === 0 ? "text-right" : "col-start-2 text-left"
                                 )}>
-                                    <p className="font-semibold text-primary pr-2">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}</p>
-                                    <p className="text-xs text-muted-foreground pr-2">{new Date(task.deadline).getFullYear()}</p>
+                                   
                                 </div>
 
                                 {/* Connector dot */}
@@ -416,7 +414,7 @@ function EventPlannerContent() {
                                 {/* Task Card */}
                                 <div className={cn(
                                     "col-start-2",
-                                    index % 2 === 0 ? 'col-start-2' : 'col-start-1'
+                                    index % 2 === 0 ? 'col-start-2' : 'col-start-1 row-start-1'
                                 )}>
                                     <motion.div
                                         animate={{ 
@@ -447,7 +445,11 @@ function EventPlannerContent() {
                                                         {task.task}
                                                     </h4>
                                                 )}
-                                                <p className="text-sm text-muted-foreground">${task.estimatedCost.toLocaleString()}</p>
+                                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                                     <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}, {new Date(task.deadline).getFullYear()}</p>
+                                                    <span>•</span>
+                                                    <p>${task.estimatedCost.toLocaleString()}</p>
+                                                </div>
                                             </div>
                                              <div className="flex items-center gap-1">
                                                  {editingTaskId === task.id ? (
@@ -505,7 +507,7 @@ function EventPlannerContent() {
                         </div>
                         {/* "Add Task" button between items */}
                         <div className="relative h-8">
-                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-border/80"></div>
+                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-border"></div>
                              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
                                 <Button size="icon" variant="secondary" className="rounded-full h-8 w-8 z-10" onClick={() => handleAddTask(index + 1)}>
                                     <PlusCircle className="h-5 w-5" />

@@ -235,9 +235,9 @@ export default function AdminHomePage() {
                             {code.isUsed ? 'Used' : 'Available'}
                             </Badge>
                         </TableCell>
-                        <TableCell>{format(code.createdAt, 'PPP p')}</TableCell>
+                        <TableCell>{code.createdAt ? format(code.createdAt.toDate(), 'PPP p') : 'N/A'}</TableCell>
                         <TableCell>{code.usedBy || 'N/A'}</TableCell>
-                        <TableCell>{code.usedAt ? format(code.usedAt, 'PPP p') : 'N/A'}</TableCell>
+                        <TableCell>{code.usedAt ? format(code.usedAt.toDate(), 'PPP p') : 'N/A'}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>
@@ -279,5 +279,4 @@ export default function AdminHomePage() {
       </Tabs>
     </div>
   );
-
-    
+}

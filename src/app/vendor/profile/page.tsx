@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star, Loader2, ShieldCheck, ImagePlus } from 'lucide-react';
+import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,6 +30,7 @@ const profileFormSchema = z.object({
   description: z.string().min(1, "Description is required"),
   email: z.string().email(),
   phone: z.string().min(10, "Please enter a valid phone number"),
+  accountTier: z.string().min(1, "Account tier is required"),
 });
 
 // Mock Data - In a real app, this would be fetched from the DB
@@ -60,6 +61,7 @@ export default function VendorProfilePage() {
             description: '',
             email: '',
             phone: '',
+            accountTier: 'free',
         },
     });
 
@@ -275,6 +277,36 @@ export default function VendorProfilePage() {
                                     </FormItem>
                                 )}
                             />
+                        </div>
+                         <Separator />
+                          <div className="grid md:grid-cols-2 gap-6 items-end">
+                            <FormField
+                                control={form.control}
+                                name="accountTier"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Account Tier</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a tier" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="free">Free</SelectItem>
+                                                <SelectItem value="vip1">VIP 1</SelectItem>
+                                                <SelectItem value="vip2">VIP 2</SelectItem>
+                                                <SelectItem value="vip3">VIP 3</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button variant="outline" className="w-full md:w-auto justify-self-start">
+                                <Gem className="mr-2 h-4 w-4" />
+                                Manage Subscription
+                            </Button>
                         </div>
                         <div className="flex justify-end">
                             <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>

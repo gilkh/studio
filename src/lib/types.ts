@@ -106,6 +106,7 @@ export interface VendorProfile {
     email: string;
     phone: string;
     ownerId: string;
+    accountTier: 'free' | 'vip1' | 'vip2' | 'vip3';
     createdAt: Date;
     portfolio?: string[];
 }

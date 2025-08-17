@@ -1,6 +1,5 @@
 
 
-
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode } from './types';
@@ -58,6 +57,7 @@ export async function createNewUser(data: {
             tagline: '',
             description: '',
             phone: '',
+            accountTier: 'free',
             createdAt: new Date(),
         };
 

@@ -1,8 +1,6 @@
 
-'use client';
-import { useEffect, useState } from 'react';
 import { getServicesAndOffers } from '@/lib/services';
-import type { Offer, Service } from '@/lib/types';
+import type { Offer } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +11,15 @@ import { Star, Clock, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOfferDialog } from '@/components/book-offer-dialog';
+
+// This function tells Next.js which pages to pre-render at build time.
+export async function generateStaticParams() {
+  const allItems = await getServicesAndOffers();
+  const offers = allItems.filter(item => item.type === 'offer');
+  return offers.map((offer) => ({
+    id: offer.id,
+  }));
+}
 
 // Mock Data - In a real app, this would be fetched from the DB
 const mockPortfolio = [
@@ -27,6 +34,8 @@ const mockReviews = [
     { id: 2, author: 'Bob Williams', rating: 5, comment: 'Punctual, professional, and delicious. Worth every penny!'}
 ]
 
+// This is the client component that renders the UI
+// It receives data as props from the server component below.
 function OfferDetailView({ offer }: { offer: Offer | null }) {
   if (!offer) {
     return (
@@ -171,39 +180,11 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
   );
 }
 
+
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
-export default function OfferDetailPage({ params }: { params: { id: string } }) {
-  const [offer, setOffer] = useState<Offer | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadOffer() {
-        setIsLoading(true);
-        const allItems = await getServicesAndOffers();
-        const fetchedOffer = allItems.find((item) => item.id === params.id && item.type === 'offer') as Offer | undefined;
-        setOffer(fetchedOffer ?? null);
-        setIsLoading(false);
-    }
-    loadOffer();
-  }, [params.id]);
-
-  if (isLoading) {
-      return (
-         <div className="space-y-8">
-            <Skeleton className="h-10 w-48" />
-            <Skeleton className="w-full h-[500px] rounded-xl" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                    <Skeleton className="w-full h-48 rounded-xl" />
-                    <Skeleton className="w-full h-64 rounded-xl" />
-                </div>
-                <div className="lg:col-span-1 space-y-6">
-                    <Skeleton className="w-full h-72 rounded-xl" />
-                </div>
-            </div>
-        </div>
-      )
-  }
-
-  return <OfferDetailView offer={offer} />;
+export default async function OfferDetailPage({ params }: { params: { id: string } }) {
+  const allItems = await getServicesAndOffers();
+  const offer = allItems.find((item) => item.id === params.id && item.type === 'offer') as Offer | undefined;
+  
+  return <OfferDetailView offer={offer ?? null} />;
 }

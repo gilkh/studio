@@ -1,6 +1,4 @@
 
-'use client';
-import { useEffect, useState } from 'react';
 import { getServicesAndOffers } from '@/lib/services';
 import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +11,17 @@ import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QuoteRequestDialog } from '@/components/quote-request-dialog';
+
+
+// This function tells Next.js which pages to pre-render at build time.
+export async function generateStaticParams() {
+  const allItems = await getServicesAndOffers();
+  const services = allItems.filter(item => item.type === 'service');
+  return services.map((service) => ({
+    id: service.id,
+  }));
+}
+
 
 // Mock Data - In a real app, this would be fetched from the DB
 const mockPortfolio = [
@@ -27,6 +36,7 @@ const mockReviews = [
     { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
 ]
 
+// This is the client component that renders the UI
 function ServiceDetailView({ service }: { service: Service | null }) {
   if (!service) {
     return (
@@ -157,38 +167,9 @@ function ServiceDetailView({ service }: { service: Service | null }) {
 
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
-export default function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const [service, setService] = useState<Service | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadService() {
-        setIsLoading(true);
-        const allItems = await getServicesAndOffers();
-        const fetchedService = allItems.find((item) => item.id === params.id && item.type === 'service') as Service | undefined;
-        setService(fetchedService ?? null);
-        setIsLoading(false);
-    }
-    loadService();
-  }, [params.id]);
+export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
+  const allItems = await getServicesAndOffers();
+  const service = allItems.find((item) => item.id === params.id && item.type === 'service') as Service | undefined;
   
-  if (isLoading) {
-      return (
-         <div className="space-y-8">
-            <Skeleton className="h-10 w-48" />
-            <Skeleton className="w-full h-[500px] rounded-xl" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                    <Skeleton className="w-full h-48 rounded-xl" />
-                    <Skeleton className="w-full h-64 rounded-xl" />
-                </div>
-                <div className="lg:col-span-1 space-y-6">
-                    <Skeleton className="w-full h-72 rounded-xl" />
-                </div>
-            </div>
-        </div>
-      )
-  }
-  
-  return <ServiceDetailView service={service} />;
+  return <ServiceDetailView service={service ?? null} />;
 }

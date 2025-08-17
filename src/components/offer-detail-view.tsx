@@ -172,19 +172,23 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                     <CardHeader>
                         <CardTitle>About the Vendor</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex items-center gap-4">
-                        <Avatar className="h-16 w-16 border-2 border-primary">
-                            <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
-                            <AvatarFallback>{offer.vendorName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-bold text-lg">{offer.vendorName}</p>
-                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                                <span className="font-bold">{offer.rating.toFixed(1)}</span>
-                                <span>({offer.reviewCount} reviews)</span>
+                     <CardContent>
+                        <Link href={`/vendor/${offer.vendorId}`} className="group/vendor">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16 border-2 border-primary">
+                                    <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
+                                    <AvatarFallback>{offer.vendorName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-bold text-lg group-hover/vendor:underline">{offer.vendorName}</p>
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                        <span className="font-bold">{offer.rating.toFixed(1)}</span>
+                                        <span>({offer.reviewCount} reviews)</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </Link>
                     </CardContent>
                  </Card>
             </div>

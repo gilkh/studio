@@ -103,20 +103,22 @@ export function OfferCard({ offer, role }: OfferCardProps) {
         </CardHeader>
         <div className="p-4 flex-grow flex flex-col">
           <h3 className="text-xl font-bold leading-tight mb-2 flex-grow">{offer.title}</h3>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-              <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
-              <AvatarFallback>{offer.vendorName.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-sm">{offer.vendorName}</p>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="font-bold">{offer.rating.toFixed(1)}</span>
-                <span>({offer.reviewCount} reviews)</span>
+           <Link href={`/vendor/${offer.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
+                <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
+                <AvatarFallback>{offer.vendorName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-semibold text-sm group-hover/vendor:underline">{offer.vendorName}</p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span className="font-bold">{offer.rating.toFixed(1)}</span>
+                  <span>({offer.reviewCount} reviews)</span>
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dashed">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground text-sm">Availability: {offer.availability}</span>

@@ -37,17 +37,22 @@ function ForwardedItemBubble({ item }: { item: ForwardedItem }) {
     )
 }
 
-function ChatBubble({ message, isOwnMessage }: { message: ChatMessage; isOwnMessage: boolean }) {
+function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isOwnMessage: boolean, chat: Chat | null }) {
+    const { userId } = useAuth();
+    const otherParticipant = chat?.participants.find(p => p.id !== userId);
+
     const forwardedItem = parseForwardedMessage(message.text);
 
     if (forwardedItem) {
         return (
              <div className={cn("flex items-end gap-2", isOwnMessage && "justify-end")}>
                  {!isOwnMessage && (
-                    <Avatar className="h-8 w-8 self-start">
-                        <AvatarImage src={`https://i.pravatar.cc/150?u=${message.senderId}`} />
-                        <AvatarFallback>{'U'}</AvatarFallback>
-                    </Avatar>
+                    <Link href={`/vendor/${otherParticipant?.id}`}>
+                        <Avatar className="h-8 w-8 self-start">
+                            <AvatarImage src={otherParticipant?.avatar} />
+                            <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    </Link>
                 )}
                 <ForwardedItemBubble item={forwardedItem} />
              </div>
@@ -57,10 +62,12 @@ function ChatBubble({ message, isOwnMessage }: { message: ChatMessage; isOwnMess
     return (
         <div className={cn("flex items-end gap-2", isOwnMessage && "justify-end")}>
             {!isOwnMessage && (
-                <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://i.pravatar.cc/150?u=${message.senderId}`} />
-                    <AvatarFallback>{'U'}</AvatarFallback>
-                </Avatar>
+                 <Link href={`/vendor/${otherParticipant?.id}`}>
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={otherParticipant?.avatar} />
+                        <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
             )}
             <div
                 className={cn(
@@ -185,13 +192,15 @@ export function MessagingPanel() {
                             selectedChat?.id === chat.id && 'bg-muted'
                             )}
                         >
-                            <Avatar className="h-10 w-10">
-                            <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.name} />
-                            <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
-                            </Avatar>
+                            <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()}>
+                                <Avatar className="h-10 w-10">
+                                <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.name} />
+                                <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </Link>
                             <div className="flex-grow overflow-hidden">
                                 <div className="flex justify-between items-center">
-                                    <p className="font-semibold truncate">{otherParticipant?.name}</p>
+                                    <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()} className="font-semibold truncate hover:underline">{otherParticipant?.name}</Link>
                                     <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
                                 </div>
                                 <p className="text-sm truncate text-muted-foreground">
@@ -210,19 +219,21 @@ export function MessagingPanel() {
             {selectedChat ? (
                 <>
                 <div className="flex-shrink-0 border-b p-4 flex items-center gap-3 bg-background">
-                    <Avatar className="h-10 w-10">
-                        <AvatarImage src={getOtherParticipant(selectedChat)?.avatar} alt={getOtherParticipant(selectedChat)?.name} />
-                        <AvatarFallback>{getOtherParticipant(selectedChat)?.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <Link href={`/vendor/${getOtherParticipant(selectedChat)?.id}`}>
+                        <Avatar className="h-10 w-10">
+                            <AvatarImage src={getOtherParticipant(selectedChat)?.avatar} alt={getOtherParticipant(selectedChat)?.name} />
+                            <AvatarFallback>{getOtherParticipant(selectedChat)?.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    </Link>
                     <div>
-                        <h3 className="font-semibold">{getOtherParticipant(selectedChat)?.name}</h3>
+                        <Link href={`/vendor/${getOtherParticipant(selectedChat)?.id}`} className="font-semibold hover:underline">{getOtherParticipant(selectedChat)?.name}</Link>
                         <p className="text-sm text-muted-foreground">Online</p>
                     </div>
                 </div>
                 <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
                     <div className="flex flex-col gap-4">
                     {messages.map((message) => (
-                        <ChatBubble key={message.id} message={message} isOwnMessage={message.senderId === userId} />
+                        <ChatBubble key={message.id} message={message} isOwnMessage={message.senderId === userId} chat={selectedChat} />
                     ))}
                     </div>
                 </ScrollArea>

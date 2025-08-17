@@ -102,19 +102,23 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
         <div className="p-4 flex-grow flex flex-col">
           <h3 className="text-xl font-bold leading-tight mb-2 flex-grow">{service.title}</h3>
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{service.description}</p>
-          <div className="flex items-center gap-3 mt-auto pt-4 border-t border-dashed">
-            <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-              <AvatarImage src={service.vendorAvatar} alt={service.vendorName} />
-              <AvatarFallback>{service.vendorName.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-sm">{service.vendorName}</p>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="font-bold">{service.rating.toFixed(1)}</span>
-                <span>({service.reviewCount} reviews)</span>
-              </div>
-            </div>
+          <div className="mt-auto pt-4 border-t border-dashed">
+            <Link href={`/vendor/${service.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
+                    <AvatarImage src={service.vendorAvatar} alt={service.vendorName} />
+                    <AvatarFallback>{service.vendorName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                    <p className="font-semibold text-sm group-hover/vendor:underline">{service.vendorName}</p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <span className="font-bold">{service.rating.toFixed(1)}</span>
+                        <span>({service.reviewCount} reviews)</span>
+                    </div>
+                    </div>
+                </div>
+            </Link>
           </div>
         </div>
       </CardContentLink>

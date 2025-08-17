@@ -1,15 +1,35 @@
 
-import { AppHeader } from '@/components/header';
-import { logout } from '@/hooks/use-auth';
+'use client';
+
+import { useAuth, logout } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // A simple header for the admin section
+  const { role, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && role !== 'admin') {
+      router.replace('/login');
+    }
+  }, [isLoading, role, router]);
+
+  if (isLoading || role !== 'admin') {
+    return (
+        <div className="flex min-h-screen w-full items-center justify-center bg-secondary/50">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-secondary/50">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">

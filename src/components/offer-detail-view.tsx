@@ -101,45 +101,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader><CardTitle>Portfolio</CardTitle></CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {mockPortfolio.map((item) => (
-                                <div key={item.id} className="relative aspect-square overflow-hidden rounded-lg group">
-                                    <Image src={item.src} alt="Portfolio image" layout="fill" className="object-cover transition-transform group-hover:scale-110" data-ai-hint={item.hint} />
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-                
-                <Card>
-                    <CardHeader><CardTitle>Reviews ({offer.reviewCount})</CardTitle></CardHeader>
-                    <CardContent className="space-y-6">
-                        {mockReviews.map((review, index) => (
-                            <div key={review.id}>
-                                <div className="flex items-start gap-4">
-                                    <Avatar className="h-10 w-10">
-                                        <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-grow">
-                                        <div className="flex items-center justify-between">
-                                            <p className="font-semibold">{review.author}</p>
-                                            <div className="flex items-center gap-0.5">
-                                                {[...Array(review.rating)].map((_, i) => (
-                                                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <p className="text-muted-foreground mt-1">"{review.comment}"</p>
-                                    </div>
-                                </div>
-                                {index < mockReviews.length -1 && <Separator className="mt-6" />}
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
+                {/* --- Moved these sections out for mobile view reordering --- */}
             </div>
             
             <div className="lg:col-span-1 space-y-6">
@@ -191,6 +153,50 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                     </CardContent>
                  </Card>
             </div>
+
+             {/* --- Portfolio and Reviews are now here to be reordered on mobile --- */}
+            <div className="lg:col-span-2 space-y-6">
+                <Card>
+                    <CardHeader><CardTitle>Portfolio</CardTitle></CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {mockPortfolio.map((item) => (
+                                <div key={item.id} className="relative aspect-square overflow-hidden rounded-lg group">
+                                    <Image src={item.src} alt="Portfolio image" layout="fill" className="object-cover transition-transform group-hover:scale-110" data-ai-hint={item.hint} />
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader><CardTitle>Reviews ({offer.reviewCount})</CardTitle></CardHeader>
+                    <CardContent className="space-y-6">
+                        {mockReviews.map((review, index) => (
+                            <div key={review.id}>
+                                <div className="flex items-start gap-4">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-grow">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-semibold">{review.author}</p>
+                                            <div className="flex items-center gap-0.5">
+                                                {[...Array(review.rating)].map((_, i) => (
+                                                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <p className="text-muted-foreground mt-1">"{review.comment}"</p>
+                                    </div>
+                                </div>
+                                {index < mockReviews.length -1 && <Separator className="mt-6" />}
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+
         </div>
     </div>
   );

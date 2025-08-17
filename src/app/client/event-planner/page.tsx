@@ -384,8 +384,8 @@ function EventPlannerContent() {
             </CardHeader>
             <CardContent>
                 <div className="relative mt-8">
-                    {/* The timeline line for desktop */}
-                    <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-border/80"></div>
+                    {/* The timeline line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-border/80"></div>
                     
                     <AnimatePresence>
                     {timeline.map((task, index) => (
@@ -397,26 +397,26 @@ function EventPlannerContent() {
                         custom={index}
                         exit="hidden"
                         >
-                        <div className="relative mb-4 md:mb-8 group">
-                            <div className="grid grid-cols-[auto,1fr] md:grid-cols-2 items-start gap-x-4 md:gap-x-8">
+                        <div className="relative mb-8 group">
+                            <div className="grid grid-cols-2 items-start gap-x-8">
                                 {/* Date / Deadline */}
                                 <div className={cn(
-                                    "md:text-right col-start-2 md:col-auto",
-                                    index % 2 === 0 ? "md:text-right" : "md:col-start-2 md:text-left"
+                                    "text-right",
+                                    index % 2 === 0 ? "text-right" : "col-start-2 text-left"
                                 )}>
-                                    <p className="font-semibold text-primary pl-10 md:pl-0 md:pr-2">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}</p>
-                                    <p className="text-xs text-muted-foreground pl-10 md:pl-0 md:pr-2">{new Date(task.deadline).getFullYear()}</p>
+                                    <p className="font-semibold text-primary pr-2">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}</p>
+                                    <p className="text-xs text-muted-foreground pr-2">{new Date(task.deadline).getFullYear()}</p>
                                 </div>
 
                                 {/* Connector dot */}
-                                <div className="absolute top-1 left-4 md:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary/30 border-4 border-background flex items-center justify-center">
+                                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary/30 border-4 border-background flex items-center justify-center">
                                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                                 </div>
 
                                 {/* Task Card */}
                                 <div className={cn(
                                     "col-start-2",
-                                    index % 2 === 0 ? 'md:col-start-2' : 'md:col-start-1'
+                                    index % 2 === 0 ? 'col-start-2' : 'col-start-1'
                                 )}>
                                     <motion.div
                                         animate={{ 
@@ -505,8 +505,8 @@ function EventPlannerContent() {
                         </div>
                         {/* "Add Task" button between items */}
                         <div className="relative h-8">
-                             <div className="absolute left-4 md:left-1/2 w-0.5 h-full -translate-x-1/2 bg-border/80"></div>
-                             <div className="absolute left-4 md:left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
+                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-border/80"></div>
+                             <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
                                 <Button size="icon" variant="secondary" className="rounded-full h-8 w-8 z-10" onClick={() => handleAddTask(index + 1)}>
                                     <PlusCircle className="h-5 w-5" />
                                 </Button>

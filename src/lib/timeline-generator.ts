@@ -33,11 +33,13 @@ const baseTasks = (eventDate: Date, budget: number, guestCount: number) => [
     task: 'Research and book a venue',
     deadline: createDeadline(eventDate, { months: 5 }),
     estimatedCost: budget * 0.3, // 30% of budget
+    suggestedVendorCategory: 'Venue',
   },
   {
     task: 'Hire a caterer',
     deadline: createDeadline(eventDate, { months: 4 }),
     estimatedCost: budget * 0.25, // 25% of budget
+    suggestedVendorCategory: 'Catering',
   },
   {
     task: 'Send out invitations',
@@ -92,6 +94,7 @@ const weddingTasks = (eventDate: Date, budget: number, guestCount: number) => [
     task: 'Book a photographer/videographer',
     deadline: createDeadline(eventDate, { months: 5 }),
     estimatedCost: budget * 0.1,
+    suggestedVendorCategory: 'Photography',
   },
   {
     task: 'Shop for wedding attire',
@@ -102,11 +105,13 @@ const weddingTasks = (eventDate: Date, budget: number, guestCount: number) => [
     task: 'Book entertainment (DJ or band)',
     deadline: createDeadline(eventDate, { months: 3 }),
     estimatedCost: budget * 0.07,
+    suggestedVendorCategory: 'Music & Entertainment',
   },
   {
     task: 'Arrange for floral and decor',
     deadline: createDeadline(eventDate, { months: 3 }),
     estimatedCost: budget * 0.1,
+    suggestedVendorCategory: 'Decor & Floral',
   },
   {
     task: 'Obtain marriage license',
@@ -136,6 +141,7 @@ const corporateTasks = (eventDate: Date, budget: number, guestCount: number) => 
     task: 'Organize A/V equipment and support',
     deadline: createDeadline(eventDate, { months: 1 }),
     estimatedCost: budget * 0.05,
+    suggestedVendorCategory: 'Music & Entertainment',
   },
 ];
 

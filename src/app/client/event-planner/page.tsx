@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader, PlusCircle, Trash2, Edit, Save, List, Sparkles, Building, Link2, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EventTask, SavedTimeline, ServiceOrOffer, VendorProfile } from '@/lib/types';
+import type { EventTask, SavedTimeline, ServiceOrOffer, VendorProfile, GenerateEventPlanInput } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +20,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { saveTimeline, getSavedTimelines, updateTimeline, getServicesAndOffers } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
-import { generateEventPlan } from '@/ai/flows/generate-event-plan-flow';
+import { generateTimeline } from '@/lib/timeline-generator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,7 +108,7 @@ function EventPlannerContent() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
-      const plan = await generateEventPlan(values);
+      const plan = generateTimeline(values as GenerateEventPlanInput);
       if (plan?.tasks) {
         setTimeline(plan.tasks);
       } else {
@@ -248,8 +248,8 @@ function EventPlannerContent() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>AI Event Planner</CardTitle>
-          <CardDescription>Describe your event, and our AI will generate a customized planning timeline for you, complete with vendor suggestions.</CardDescription>
+          <CardTitle>Event Planner</CardTitle>
+          <CardDescription>Describe your event, and we'll generate a customized planning timeline for you.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -324,7 +324,7 @@ function EventPlannerContent() {
                <div className="flex flex-col sm:flex-row gap-4 items-center">
                 <Button type="submit" disabled={isLoading} size="lg" className="w-full sm:w-auto">
                     {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    {isLoading ? 'Generating Plan...' : 'Generate New AI Plan'}
+                    {isLoading ? 'Generating Plan...' : 'Generate Plan'}
                 </Button>
                 <Link href="/client/event-planner/saved" className="w-full sm:w-auto">
                     <Button variant="outline" size="lg" asChild className="w-full">
@@ -350,7 +350,7 @@ function EventPlannerContent() {
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
                         <CardTitle>Your Plan: {eventName}</CardTitle>
-                        <CardDescription>Here is your AI-generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
+                        <CardDescription>Here is your generated timeline. You can check off tasks, edit, and save your progress.</CardDescription>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
                          <Button variant="outline" onClick={() => handleAddTask()} className="flex-1 sm:flex-none">

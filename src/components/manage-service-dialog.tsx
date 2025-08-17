@@ -244,7 +244,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
             Fill in the details below to {service ? 'update your' : 'list a new'} service or offer.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-grow overflow-hidden">
+        <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full pr-4">
                 <form id="service-form" onSubmit={handleSubmit} className="grid gap-6 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">

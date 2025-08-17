@@ -56,6 +56,14 @@ function EventPlannerContent() {
 
   const { toast } = useToast();
 
+  const handleLoadTimeline = (timelineToLoad: SavedTimeline) => {
+    setTimeline(timelineToLoad.tasks);
+    setEventName(timelineToLoad.name);
+    setTimelineId(timelineToLoad.id);
+    // Fetch services when loading a timeline as well
+    getServicesAndOffers().then(setServices);
+  }
+
   useEffect(() => {
     const timelineIdToLoad = searchParams.get('timelineId');
     if (timelineIdToLoad && userId) {
@@ -233,14 +241,6 @@ function EventPlannerContent() {
     )
   }
   
-  const handleLoadTimeline = (timelineToLoad: SavedTimeline) => {
-    setTimeline(timelineToLoad.tasks);
-    setEventName(timelineToLoad.name);
-    setTimelineId(timelineToLoad.id);
-    // Fetch services when loading a timeline as well
-    getServicesAndOffers().then(setServices);
-  }
-
   const completedTasksCount = timeline?.filter(t => t.completed).length || 0;
   const totalTasks = timeline?.length || 0;
   const progress = totalTasks > 0 ? (completedTasksCount / totalTasks) * 100 : 0;

@@ -1,6 +1,6 @@
 
 'use client';
-import { getServicesAndOffers } from '@/lib/services';
+import { getServiceOrOfferById } from '@/lib/services';
 import type { Offer } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +21,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
   useEffect(() => {
     async function fetchOffer() {
         if(!initialOffer) {
-            const allItems = await getServicesAndOffers();
-            const foundOffer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
+            const foundOffer = (await getServiceOrOfferById(id)) as Offer | null;
             setOffer(foundOffer ?? null);
         }
     }

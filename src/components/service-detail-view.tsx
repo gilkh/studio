@@ -1,6 +1,6 @@
 
 'use client';
-import { getServicesAndOffers } from '@/lib/services';
+import { getServiceOrOfferById } from '@/lib/services';
 import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,8 +20,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
     useEffect(() => {
         async function fetchService() {
             if(!initialService) {
-                const allItems = await getServicesAndOffers();
-                const foundService = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
+                const foundService = (await getServiceOrOfferById(id)) as Service | null;
                 setService(foundService ?? null);
             }
         }

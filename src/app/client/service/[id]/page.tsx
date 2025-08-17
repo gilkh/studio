@@ -2,7 +2,7 @@
 import { getServiceOrOfferById } from '@/lib/services';
 import type { Service } from '@/lib/types';
 import { ServiceDetailView } from '@/components/service-detail-view';
-import { getServicesAndOffers } from '@/lib/services';
+import { getServices } from '@/lib/services';
 
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
@@ -17,8 +17,7 @@ export default async function ServiceDetailPage({ params }: { params: { id: stri
 // This function tells Next.js which pages to pre-render at build time.
 // It runs only on the server.
 export async function generateStaticParams() {
-  const allItems = await getServicesAndOffers();
-  const services = allItems.filter(item => item.type === 'service');
+  const services = await getServices();
   return services.map((service) => ({
     id: service.id,
   }));

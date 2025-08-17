@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { getVendorProfile, getServicesAndOffers } from '@/lib/services';
+import { getVendorProfile, getServicesAndOffers, getAllUsersAndVendors } from '@/lib/services';
 import type { VendorProfile, ServiceOrOffer, Service, Offer } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -162,4 +162,12 @@ export default function VendorPublicProfilePage({ params }: { params: { id: stri
 
     </div>
   );
+}
+
+export async function generateStaticParams() {
+    const allUsers = await getAllUsersAndVendors();
+    const vendors = allUsers.filter((user) => user.role === 'vendor');
+    return vendors.map((vendor) => ({
+        id: vendor.id,
+    }));
 }

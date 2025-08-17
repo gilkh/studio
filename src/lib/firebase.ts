@@ -12,24 +12,13 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Check if all required environment variables are present.
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error('Firebase configuration is missing. Make sure you have a .env file with all the required NEXT_PUBLIC_FIREBASE_ variables.');
-}
-
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
 // Initialize Firebase only once
 if (!getApps().length) {
-  try {
-    app = initializeApp(firebaseConfig);
-  } catch (error) {
-    console.error("Firebase initialization error:", error);
-    // Handle the error appropriately. Maybe rethrow or have a fallback.
-    throw new Error("Could not initialize Firebase. Please check your configuration.");
-  }
+  app = initializeApp(firebaseConfig);
 } else {
   app = getApp();
 }

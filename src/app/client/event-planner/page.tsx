@@ -422,7 +422,7 @@ function EventPlannerContent() {
                                             opacity: task.completed ? 0.7 : 1
                                         }}
                                         className={cn(
-                                        "bg-card border rounded-xl shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg relative pb-12 sm:pb-4"
+                                        "bg-card border rounded-xl shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg relative"
                                     )}>
                                         <div className="flex items-start justify-between gap-4">
                                             <div className='flex items-start gap-4'>
@@ -467,7 +467,7 @@ function EventPlannerContent() {
                                             </div>
                                         </div>
 
-                                        <div className="absolute bottom-2 left-2 flex sm:hidden items-center gap-1">
+                                        <div className="absolute bottom-2 left-2 flex flex-col sm:hidden items-center gap-1">
                                             {editingTaskId === task.id ? (
                                                 <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700">
                                                     <Save className="h-5 w-5" />

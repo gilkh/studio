@@ -1,16 +1,16 @@
 
-import { getServicesAndOffers } from '@/lib/services';
+import { getServiceOrOfferById } from '@/lib/services';
 import type { Offer } from '@/lib/types';
 import { OfferDetailView } from '@/components/offer-detail-view';
+import { getServicesAndOffers } from '@/lib/services';
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
 export default async function OfferDetailPage({ params }: { params: { id: string } }) {
   // Data fetching happens on the server
-  const allItems = await getServicesAndOffers();
-  const offer = allItems.find((item) => item.id === params.id && item.type === 'offer') as Offer | undefined;
+  const offer = (await getServiceOrOfferById(params.id)) as Offer | null;
   
   // The interactive UI is in a separate client component
-  return <OfferDetailView offer={offer ?? null} id={params.id} />;
+  return <OfferDetailView offer={offer} id={params.id} />;
 }
 
 

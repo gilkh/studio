@@ -1,5 +1,6 @@
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem } from './types';
@@ -274,15 +275,79 @@ export const getOffers = (vendorId?: string, count?: number) => {
 
 
 export const getServicesAndOffers = async (vendorId?: string, count?: number): Promise<ServiceOrOffer[]> => {
-    const services = await getServices(vendorId, count);
-    const offers = await getOffers(vendorId, count);
-    
-    let combined = [...services, ...offers];
-    if (count) {
-        combined = combined.slice(0, count);
+    const servicesQuery = collection(db, 'services');
+    const offersQuery = collection(db, 'offers');
+
+    const queries = [];
+
+    if (vendorId) {
+        queries.push(query(servicesQuery, where('vendorId', '==', vendorId)));
+        queries.push(query(offersQuery, where('vendorId', '==', vendorId)));
+    } else {
+        queries.push(query(servicesQuery));
+        queries.push(query(offersQuery));
     }
-    return combined;
+    
+    if (count) {
+        queries[0] = query(queries[0], limit(count));
+        queries[1] = query(queries[1], limit(count));
+    }
+    
+    try {
+        const [servicesSnapshot, offersSnapshot] = await Promise.all([
+            getDocs(queries[0]),
+            getDocs(queries[1])
+        ]);
+
+        const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+        const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+        
+        let combined = [...services, ...offers];
+        if (count) {
+            // This sort is arbitrary for now, can be improved with timestamps
+            combined = combined.slice(0, count);
+        }
+        return combined;
+    } catch(e) {
+         console.warn(`Firebase error getting services/offers:`, e);
+        if ((e as any).code === 'unavailable') {
+            return [];
+        }
+        throw e;
+    }
 }
+
+export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer | null> {
+    if (!id) return null;
+    try {
+        // Check services collection first
+        let docRef = doc(db, 'services', id);
+        let docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Service;
+        }
+
+        // If not found in services, check offers collection
+        docRef = doc(db, 'offers', id);
+        docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Offer;
+        }
+        
+        // If not found in either
+        return null;
+
+    } catch (e) {
+        console.warn(`Firebase error getting item by ID ${id}:`, e);
+        if ((e as any).code === 'unavailable') {
+            return null;
+        }
+        throw e;
+    }
+}
+
 
 export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offer, 'id'>) {
     const collectionName = item.type === 'service' ? 'services' : 'offers';

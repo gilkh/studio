@@ -1,17 +1,17 @@
 
-import { getServicesAndOffers } from '@/lib/services';
+import { getServiceOrOfferById } from '@/lib/services';
 import type { Service } from '@/lib/types';
 import { ServiceDetailView } from '@/components/service-detail-view';
+import { getServicesAndOffers } from '@/lib/services';
 
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
 export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
   // Data fetching happens on the server
-  const allItems = await getServicesAndOffers();
-  const service = allItems.find((item) => item.id === params.id && item.type === 'service') as Service | undefined;
+  const service = (await getServiceOrOfferById(params.id)) as Service | null;
   
   // The interactive UI is in a separate client component
-  return <ServiceDetailView service={service ?? null} id={params.id} />;
+  return <ServiceDetailView service={service} id={params.id} />;
 }
 
 // This function tells Next.js which pages to pre-render at build time.

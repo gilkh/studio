@@ -2,7 +2,7 @@
 
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem } from './types';
 import { formatItemForMessage } from './utils';
 
 export async function createNewUser(data: {
@@ -273,14 +273,14 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'cre
                         { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: `https://i.pravatar.cc/150?u=${request.clientId}` },
                         { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: `https://i.pravatar.cc/150?u=${request.vendorId}` }
                     ],
-                    lastMessage: `Inquiry about: ${item.title}`,
+                    lastMessage: formattedMessage,
                     lastMessageTimestamp: new Date(),
                     lastMessageSenderId: request.clientId
                 }
                 transaction.set(chatRef, newChat);
             } else {
                  transaction.update(chatRef, { 
-                    lastMessage: `Inquiry about: ${item.title}`,
+                    lastMessage: formattedMessage,
                     lastMessageTimestamp: new Date(),
                     lastMessageSenderId: request.clientId
                 });
@@ -576,7 +576,7 @@ export async function sendMessage(chatId: string, senderId: string, text: string
     const batch = writeBatch(db);
     batch.set(doc(messagesRef), newMessage);
     batch.update(chatRef, {
-        lastMessage: text.startsWith("## Inquiry About:") ? text.split('\n')[0] : text,
+        lastMessage: text,
         lastMessageTimestamp: newMessage.timestamp,
         lastMessageSenderId: senderId
     });

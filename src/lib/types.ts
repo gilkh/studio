@@ -136,3 +136,14 @@ export interface VendorCode {
     usedBy?: string; // vendorId
     usedAt?: Date;
 }
+
+export interface ForwardedItem {
+  isForwarded: true;
+  title: string;
+  image: string;
+  vendorName: string;
+  price?: number;
+  userMessage: string;
+  itemId: string;
+  itemType: ServiceType;
+}

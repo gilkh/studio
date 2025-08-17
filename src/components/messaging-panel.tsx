@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -5,15 +6,54 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, SendHorizonal, Loader2 } from 'lucide-react';
+import { Search, SendHorizonal, Loader2, FileQuestion } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
-import type { Chat, ChatMessage } from '@/lib/types';
+import type { Chat, ChatMessage, ForwardedItem } from '@/lib/types';
 import { getChatsForUser, getMessagesForChat, sendMessage } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
+import { parseForwardedMessage } from '@/lib/utils';
+import Image from 'next/image';
+import Link from 'next/link';
+
+function ForwardedItemBubble({ item }: { item: ForwardedItem }) {
+    return (
+        <div className="bg-background border rounded-lg p-3 max-w-xs w-full shadow-md">
+            <Link href={`/client/${item.itemType}/${item.itemId}`} className="block">
+                <div className="relative aspect-video rounded-md overflow-hidden mb-2">
+                    <Image src={item.image} alt={item.title} layout="fill" className="object-cover" />
+                </div>
+                <h4 className="font-bold text-sm">{item.title}</h4>
+                <p className="text-xs text-muted-foreground">by {item.vendorName}</p>
+                <p className="text-sm font-semibold text-primary mt-1">
+                    {item.price ? `$${item.price}` : 'Custom Quote'}
+                </p>
+            </Link>
+            <div className="mt-3 bg-muted rounded-md p-2">
+                <p className="text-sm text-foreground">{item.userMessage}</p>
+            </div>
+        </div>
+    )
+}
 
 function ChatBubble({ message, isOwnMessage }: { message: ChatMessage; isOwnMessage: boolean }) {
+    const forwardedItem = parseForwardedMessage(message.text);
+
+    if (forwardedItem) {
+        return (
+             <div className={cn("flex items-end gap-2", isOwnMessage && "justify-end")}>
+                 {!isOwnMessage && (
+                    <Avatar className="h-8 w-8 self-start">
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${message.senderId}`} />
+                        <AvatarFallback>{'U'}</AvatarFallback>
+                    </Avatar>
+                )}
+                <ForwardedItemBubble item={forwardedItem} />
+             </div>
+        )
+    }
+
     return (
         <div className={cn("flex items-end gap-2", isOwnMessage && "justify-end")}>
             {!isOwnMessage && (
@@ -96,6 +136,25 @@ export function MessagingPanel() {
       return chat.participants.find(p => p.id !== userId);
   }
 
+  const renderLastMessage = (chat: Chat) => {
+    const forwarded = parseForwardedMessage(chat.lastMessage);
+    const sender = chat.lastMessageSenderId === userId ? 'You: ' : '';
+
+    if (forwarded) {
+        return (
+            <span className={cn("flex items-center gap-1.5", chat.lastMessageSenderId !== userId && 'text-foreground font-medium')}>
+                {sender} <FileQuestion className="h-4 w-4" /> Inquiry about service
+            </span>
+        )
+    }
+
+    return (
+         <span className={cn(chat.lastMessageSenderId !== userId && 'text-foreground font-medium')}>
+            {sender}{chat.lastMessage}
+        </span>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex-shrink-0 border-b p-4">
@@ -106,7 +165,7 @@ export function MessagingPanel() {
         </div>
       </div>
       <div className="flex flex-grow overflow-hidden">
-        <ScrollArea className="h-full w-1/3 border-r">
+        <ScrollArea className="h-full w-full sm:w-1/3 border-r">
           <div className="flex flex-col">
             {isLoading ? (
                  <div className="p-4 space-y-4">
@@ -122,7 +181,7 @@ export function MessagingPanel() {
                             key={chat.id}
                             onClick={() => setSelectedChat(chat)}
                             className={cn(
-                            'flex items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50',
+                            'flex items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50 w-full',
                             selectedChat?.id === chat.id && 'bg-muted'
                             )}
                         >
@@ -135,8 +194,8 @@ export function MessagingPanel() {
                                     <p className="font-semibold truncate">{otherParticipant?.name}</p>
                                     <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
                                 </div>
-                                <p className={cn("text-sm truncate", chat.lastMessageSenderId !== userId ? 'text-foreground font-medium' : 'text-muted-foreground')}>
-                                    {chat.lastMessage}
+                                <p className="text-sm truncate text-muted-foreground">
+                                   {renderLastMessage(chat)}
                                 </p>
                             </div>
                         </button>
@@ -147,7 +206,7 @@ export function MessagingPanel() {
             )}
           </div>
         </ScrollArea>
-        <div className="flex-grow flex flex-col h-full bg-slate-50">
+        <div className={cn("flex-grow flex-col h-full bg-slate-50", selectedChat ? "flex" : "hidden sm:flex")}>
             {selectedChat ? (
                 <>
                 <div className="flex-shrink-0 border-b p-4 flex items-center gap-3 bg-background">

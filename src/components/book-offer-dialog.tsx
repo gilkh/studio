@@ -29,9 +29,13 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
   const { userId } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [step, setStep] = React.useState(1);
   const [isBooking, setIsBooking] = React.useState(false);
+
+  const availableDates = React.useMemo(() => {
+    return offer.availableDates?.map(d => new Date(d)) || [];
+  }, [offer.availableDates]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,6 +44,10 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
         return;
     }
     if (step === 1) {
+        if (!date) {
+            toast({ title: "Missing Date", description: "Please select a date for your booking.", variant: "destructive" });
+            return;
+        }
         setStep(2);
     } else {
         setIsBooking(true);
@@ -99,12 +107,14 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
             {step === 1 && (
                  <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex-grow">
-                        <Label className="mb-2">Select a Date</Label>
+                        <Label className="mb-2">Select an Available Date</Label>
                         <Calendar
                             mode="single"
                             selected={date}
                             onSelect={setDate}
                             className="rounded-md border"
+                            disabled={(d) => !availableDates.some(ad => ad.getTime() === d.getTime())}
+                            initialFocus
                         />
                     </div>
                     <div className="space-y-4 sm:w-2/5">

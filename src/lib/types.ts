@@ -20,13 +20,13 @@ export interface BaseService {
 export interface Service extends BaseService {
   type: 'service';
   price?: never; // Services don't have a fixed price, they require a quote
-  availability?: never;
+  availableDates?: never;
 }
 
 export interface Offer extends BaseService {
     type: 'offer';
     price: number; // Offers have a fixed price
-    availability: string;
+    availableDates?: string[]; // Array of available date strings "yyyy-MM-dd"
 }
 
 export type ServiceOrOffer = Service | Offer;

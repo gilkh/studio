@@ -113,7 +113,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                     <CardContent className="space-y-4">
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground text-sm">Availability: {offer.availability}</span>
+                            <span className="text-muted-foreground text-sm">Multiple dates available</span>
                         </div>
                          <Separator />
                         <div className="flex gap-2">

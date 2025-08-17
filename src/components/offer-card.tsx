@@ -145,7 +145,7 @@ export function OfferCard({ offer, role }: OfferCardProps) {
           </Link>
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dashed">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground text-sm">Availability: {offer.availability}</span>
+              <span className="text-muted-foreground text-sm">Multiple dates available</span>
           </div>
         </div>
       

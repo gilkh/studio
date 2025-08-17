@@ -16,18 +16,17 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { ServiceOrOffer, Service, Offer, VendorProfile } from '@/lib/types';
-import { Checkbox } from './ui/checkbox';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { DollarSign, Loader2 } from 'lucide-react';
 import { createServiceOrOffer, getVendorProfile } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
+import { Calendar } from './ui/calendar';
+import { format } from 'date-fns';
 
 interface ManageServiceDialogProps {
   children: React.ReactNode;
   service?: ServiceOrOffer;
 }
-
-const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export function ManageServiceDialog({ children, service }: ManageServiceDialogProps) {
   const { userId: vendorId } = useAuth();
@@ -36,6 +35,11 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
   const [type, setType] = React.useState<string>(service?.type || 'offer');
   const [isSaving, setIsSaving] = React.useState(false);
   const [vendorProfile, setVendorProfile] = React.useState<VendorProfile | null>(null);
+  const [dates, setDates] = React.useState<Date[] | undefined>(
+      service?.type === 'offer' && service.availableDates 
+      ? service.availableDates.map(d => new Date(d)) 
+      : []
+  );
 
   React.useEffect(() => {
     async function loadVendor() {
@@ -44,8 +48,15 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
             setVendorProfile(profile);
         }
     }
-    loadVendor();
-  }, [vendorId]);
+    if (open) {
+        loadVendor();
+        if (service?.type === 'offer' && service.availableDates) {
+            setDates(service.availableDates.map(d => new Date(d)));
+        } else {
+            setDates([]);
+        }
+    }
+  }, [vendorId, open, service]);
 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -75,11 +86,13 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
 
         if (type === 'offer') {
             const price = parseFloat(formData.get('price') as string);
+            const availableDates = dates?.map(date => format(date, 'yyyy-MM-dd'));
+
             const offerData: Omit<Offer, 'id'> = {
                 ...baseData,
                 type: 'offer',
                 price,
-                availability: 'Mon-Fri, 9am-5pm', // Mock availability
+                availableDates,
             }
             await createServiceOrOffer(offerData);
         } else {
@@ -164,42 +177,39 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
             />
           </div>
            {type === 'offer' && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="price" className="text-right">
-                Price
-              </Label>
-              <div className="relative col-span-3">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  defaultValue={service?.type === 'offer' ? service.price : undefined}
-                  className="pl-8"
-                  required
-                />
-              </div>
-            </div>
-           )}
-           <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right pt-2">
-              Availability
-            </Label>
-            <div className="col-span-3 space-y-4">
-              <div className="space-y-2">
-                 {weekDays.map(day => (
-                    <div key={day} className="flex items-center gap-2">
-                        <Checkbox id={`day-${day}`} />
-                        <Label htmlFor={`day-${day}`} className="font-normal w-24">{day}</Label>
-                        <Input type="time" className="h-8" />
-                        <span className="text-muted-foreground">-</span>
-                        <Input type="time" className="h-8" />
+            <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="price" className="text-right">
+                        Price
+                    </Label>
+                    <div className="relative col-span-3">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="price"
+                        name="price"
+                        type="number"
+                        defaultValue={service?.type === 'offer' ? service.price : undefined}
+                        className="pl-8"
+                        required
+                        />
                     </div>
-                ))}
-              </div>
-              <Textarea placeholder="Add any extra availability notes (e.g., 'By appointment only on weekends')..." />
-            </div>
-          </div>
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                    <Label className="text-right pt-2">
+                        Availability
+                    </Label>
+                    <div className="col-span-3">
+                         <Calendar
+                            mode="multiple"
+                            selected={dates}
+                            onSelect={setDates}
+                            className="rounded-md border"
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">Select all dates this specific offer is available.</p>
+                    </div>
+                </div>
+            </>
+           )}
         </form>
         <DialogFooter>
           <Button type="submit" form="service-form" disabled={isSaving}>

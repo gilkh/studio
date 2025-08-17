@@ -1,17 +1,25 @@
 
 'use client';
 import { getServiceOrOfferById } from '@/lib/services';
-import type { Service } from '@/lib/types';
+import type { Service, MediaItem } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Star, MessageSquare, ArrowLeft, Send } from 'lucide-react';
+import { Star, MessageSquare, ArrowLeft, Send, Video } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QuoteRequestDialog } from '@/components/quote-request-dialog';
 import { useEffect, useState } from 'react';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+
 
 // This is the client component that renders the UI
 export function ServiceDetailView({ service: initialService, id }: { service: Service | null, id: string }) {
@@ -40,17 +48,13 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
   }
 
     // Mock Data - In a real app, this would be fetched from the DB
-    const mockPortfolio = [
-        {id: 1, src: 'https://placehold.co/600x400.png', hint: 'event photography'},
-        {id: 2, src: 'https://placehold.co/600x400.png', hint: 'wedding photography'},
-        {id: 3, src: 'https://placehold.co/600x400.png', hint: 'portrait photography'},
-        {id: 4, src: 'https://placehold.co/600x400.png', hint: 'event photography'},
-    ];
-
     const mockReviews = [
         { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely stunning photos! Timeless Snaps captured our wedding day perfectly.'},
         { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
     ]
+
+    const mediaItems = service.media && service.media.length > 0 ? service.media : [{ url: service.image, type: 'image' as const, isThumbnail: true }];
+
 
   return (
     <div className="space-y-8">
@@ -59,16 +63,41 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
             Back to Explore
         </Link>
 
-        <div className="relative w-full h-[300px] md:h-[500px] overflow-hidden rounded-xl">
-            <Image
-                src={service.image}
-                alt={service.title}
-                fill
-                className="object-cover"
-                data-ai-hint="event service"
-            />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-             <div className="absolute bottom-6 left-6 text-white">
+        <div className="relative">
+             <Carousel className="w-full overflow-hidden rounded-xl">
+                <CarouselContent>
+                    {mediaItems.map((mediaItem, index) => (
+                        <CarouselItem key={index} className="relative h-[300px] md:h-[500px]">
+                            {mediaItem.type === 'image' ? (
+                                <Image
+                                    src={mediaItem.url}
+                                    alt={`${service.title} - media ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint="event service"
+                                />
+                            ) : (
+                                <video
+                                    src={mediaItem.url}
+                                    className="w-full h-full object-cover"
+                                    muted
+                                    loop
+                                    autoPlay
+                                    playsInline
+                                />
+                            )}
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+                {mediaItems.length > 1 && (
+                    <>
+                        <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 z-10" />
+                        <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 z-10" />
+                    </>
+                )}
+            </Carousel>
+             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl pointer-events-none" />
+             <div className="absolute bottom-6 left-6 text-white z-10 pointer-events-none">
                 <Badge className="mb-2" variant="secondary">{service.category}</Badge>
                 <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">{service.title}</h1>
              </div>
@@ -84,7 +113,6 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
                         <p>{service.description}</p>
                     </CardContent>
                 </Card>
-                {/* --- Moved these sections out for mobile view reordering --- */}
             </div>
             
             <div className="lg:col-span-1 space-y-6">
@@ -135,21 +163,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
                  </Card>
             </div>
 
-            {/* --- Portfolio and Reviews are now here to be reordered on mobile --- */}
             <div className="lg:col-span-2 space-y-6">
-                <Card>
-                    <CardHeader><CardTitle>Portfolio</CardTitle></CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {mockPortfolio.map((item) => (
-                                <div key={item.id} className="relative aspect-square overflow-hidden rounded-lg group">
-                                    <Image src={item.src} alt="Portfolio image" layout="fill" className="object-cover transition-transform group-hover:scale-110" data-ai-hint={item.hint}/>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-                
                 <Card>
                     <CardHeader><CardTitle>Reviews ({service.reviewCount})</CardTitle></CardHeader>
                     <CardContent className="space-y-6">

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import type { Chat, ChatMessage, ForwardedItem } from '@/lib/types';
-import { getChatsForUser, getMessagesForChat, sendMessage } from '@/lib/services';
+import { getChatsForUser, getMessagesForChat, sendMessage, markChatAsRead } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
@@ -108,7 +109,7 @@ export function MessagingPanel() {
         setChats(loadedChats);
         // Don't auto-select on mobile to show the list first
         if (!isMobile && !selectedChat && loadedChats.length > 0) {
-            setSelectedChat(loadedChats[0]);
+            handleSelectChat(loadedChats[0]);
         }
         setIsLoading(false);
     });
@@ -134,6 +135,13 @@ export function MessagingPanel() {
     }
   }, [messages]);
 
+  const handleSelectChat = (chat: Chat) => {
+    setSelectedChat(chat);
+    if (userId) {
+      markChatAsRead(chat.id, userId);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId || !selectedChat || !newMessage.trim()) return;
@@ -150,17 +158,19 @@ export function MessagingPanel() {
   const renderLastMessage = (chat: Chat) => {
     const forwarded = parseForwardedMessage(chat.lastMessage);
     const sender = chat.lastMessageSenderId === userId ? 'You: ' : '';
+    const isUnread = (chat.unreadCount?.[userId] || 0) > 0;
+
 
     if (forwarded) {
         return (
-            <span className={cn("flex items-center gap-1.5", chat.lastMessageSenderId !== userId && 'text-foreground font-medium')}>
+            <span className={cn("flex items-center gap-1.5", isUnread && 'text-foreground font-medium')}>
                 {sender} <FileQuestion className="h-4 w-4" /> Inquiry about service
             </span>
         )
     }
 
     return (
-         <span className={cn(chat.lastMessageSenderId !== userId && 'text-foreground font-medium')}>
+         <span className={cn(isUnread && 'text-foreground font-medium')}>
             {sender}{chat.lastMessage}
         </span>
     );
@@ -194,10 +204,11 @@ export function MessagingPanel() {
                 ) : chats.length > 0 ? (
                     chats.map((chat) => {
                         const otherParticipant = getOtherParticipant(chat);
+                        const unreadForUser = chat.unreadCount?.[userId || ''] || 0;
                         return (
                             <button
                                 key={chat.id}
-                                onClick={() => setSelectedChat(chat)}
+                                onClick={() => handleSelectChat(chat)}
                                 className={cn(
                                 'flex items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50 w-full',
                                 selectedChat?.id === chat.id && 'bg-muted'
@@ -218,6 +229,11 @@ export function MessagingPanel() {
                                     {renderLastMessage(chat)}
                                     </p>
                                 </div>
+                                {unreadForUser > 0 && (
+                                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                                        {unreadForUser}
+                                    </div>
+                                )}
                             </button>
                         )
                     })

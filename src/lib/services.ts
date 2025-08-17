@@ -1,7 +1,8 @@
 
 
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit } from 'firebase/firestore';
+
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit, increment } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
@@ -366,6 +367,7 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'cre
     try {
         await runTransaction(db, async (transaction) => {
             const chatSnap = await transaction.get(chatRef);
+            const otherParticipantId = request.vendorId;
 
             if (!chatSnap.exists()) {
                 const clientProfile = await getUserProfile(request.clientId);
@@ -379,14 +381,16 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'cre
                     ],
                     lastMessage: formattedMessage,
                     lastMessageTimestamp: new Date(),
-                    lastMessageSenderId: request.clientId
+                    lastMessageSenderId: request.clientId,
+                    unreadCount: { [otherParticipantId]: 1 }
                 }
                 transaction.set(chatRef, newChat);
             } else {
                  transaction.update(chatRef, { 
                     lastMessage: formattedMessage,
                     lastMessageTimestamp: new Date(),
-                    lastMessageSenderId: request.clientId
+                    lastMessageSenderId: request.clientId,
+                    [`unreadCount.${otherParticipantId}`]: increment(1)
                 });
             }
 
@@ -678,26 +682,53 @@ export function getMessagesForChat(chatId: string, callback: (messages: ChatMess
 export async function sendMessage(chatId: string, senderId: string, text: string) {
     if (!text.trim()) return;
 
+    const chatRef = doc(db, 'chats', chatId);
     const messagesRef = collection(db, `chats/${chatId}/messages`);
+    
     const newMessage: Omit<ChatMessage, 'id'> = {
         senderId,
         text,
         timestamp: new Date()
     };
     
+    try {
+        await runTransaction(db, async (transaction) => {
+            const chatSnap = await transaction.get(chatRef);
+            if (!chatSnap.exists()) {
+                throw new Error("Chat does not exist!");
+            }
+            const chatData = chatSnap.data() as Chat;
+            const otherParticipantId = chatData.participantIds.find(id => id !== senderId);
+
+            if (!otherParticipantId) {
+                throw new Error("Could not find other participant in chat");
+            }
+
+            const isForwarded = parseForwardedMessage(text);
+            const lastMessageText = isForwarded ? "Forwarded an item" : text;
+
+            // Add new message
+            transaction.set(doc(messagesRef), newMessage);
+
+            // Update chat document
+            transaction.update(chatRef, {
+                lastMessage: lastMessageText,
+                lastMessageTimestamp: newMessage.timestamp,
+                lastMessageSenderId: senderId,
+                [`unreadCount.${otherParticipantId}`]: increment(1)
+            });
+        });
+    } catch (error) {
+        console.error("Transaction failed: ", error);
+        throw error;
+    }
+}
+
+
+export async function markChatAsRead(chatId: string, userId: string) {
+    if (!chatId || !userId) return;
     const chatRef = doc(db, 'chats', chatId);
-
-    const batch = writeBatch(db);
-    batch.set(doc(messagesRef), newMessage);
-
-    const isForwarded = parseForwardedMessage(text);
-    const lastMessageText = isForwarded ? "Forwarded an item" : text;
-
-    batch.update(chatRef, {
-        lastMessage: lastMessageText,
-        lastMessageTimestamp: newMessage.timestamp,
-        lastMessageSenderId: senderId
+    await updateDoc(chatRef, {
+        [`unreadCount.${userId}`]: 0
     });
-
-    await batch.commit();
 }

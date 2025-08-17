@@ -76,6 +76,7 @@ export interface Chat {
   lastMessage: string;
   lastMessageSenderId: string;
   lastMessageTimestamp: Date;
+  unreadCount?: { [key: string]: number };
 }
 
 

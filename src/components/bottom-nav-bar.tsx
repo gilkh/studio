@@ -1,4 +1,5 @@
 
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -8,13 +9,15 @@ import { Badge } from './ui/badge';
 import { useEffect, useState } from 'react';
 import { getVendorQuoteRequests } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
+import type { Chat } from '@/lib/types';
+import { getChatsForUser } from '@/lib/services';
 
 const clientLinks = [
   { href: '/client/home', label: 'Home', icon: Home },
   { href: '/client/explore', label: 'Explore', icon: Compass },
   { href: '/client/bookings', label: 'Bookings', icon: Calendar },
   { href: '/client/event-planner', label: 'Planner', icon: PenTool },
-  { href: '/client/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/client/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link' },
 ];
 
 const vendorLinks = [
@@ -22,7 +25,7 @@ const vendorLinks = [
   { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
   { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link' },
   { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link' },
 ];
 
 
@@ -30,6 +33,7 @@ export function BottomNavBar() {
   const pathname = usePathname();
   const { userId, role } = useAuth();
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const isVendor = role === 'vendor';
   
   useEffect(() => {
@@ -39,6 +43,18 @@ export function BottomNavBar() {
       })
     }
   }, [isVendor, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const unsubscribe = getChatsForUser(userId, (chats: Chat[]) => {
+      const anyUnread = chats.some(chat => (chat.unreadCount?.[userId] || 0) > 0);
+      setHasUnreadMessages(anyUnread);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
 
   const links = isVendor ? vendorLinks : clientLinks;
 
@@ -62,7 +78,7 @@ export function BottomNavBar() {
                         {pendingRequests}
                     </Badge>
                 )}
-                 {label === 'Messages' && (
+                 {label === 'Messages' && hasUnreadMessages && (
                     <span className="absolute top-0 right-0 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>

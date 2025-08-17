@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,9 +18,9 @@ import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { useEffect, useState } from 'react';
-import { getVendorQuoteRequests, getUserProfile, getVendorProfile } from '@/lib/services';
+import { getVendorQuoteRequests, getUserProfile, getVendorProfile, getChatsForUser } from '@/lib/services';
 import { useAuth, logout } from '@/hooks/use-auth';
-import type { UserProfile, VendorProfile } from '@/lib/types';
+import type { UserProfile, VendorProfile, Chat } from '@/lib/types';
 
 
 const clientLinks = [
@@ -27,7 +28,7 @@ const clientLinks = [
   { href: '/client/explore', label: 'Explore', icon: Compass },
   { href: '/client/bookings', label: 'Bookings', icon: Calendar },
   { href: '/client/event-planner', label: 'Planner', icon: PenTool },
-  { href: '/client/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/client/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link-desktop' },
 ];
 
 const vendorLinks = [
@@ -35,7 +36,7 @@ const vendorLinks = [
   { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
   { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link-desktop' },
   { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link-desktop' },
 ];
 
 
@@ -46,6 +47,7 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
   const isVendor = role === 'vendor';
   const links = isVendor ? vendorLinks : clientLinks;
@@ -65,6 +67,18 @@ export function AppHeader() {
     }
     fetchData();
   }, [userId, isVendor]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const unsubscribe = getChatsForUser(userId, (chats: Chat[]) => {
+      const anyUnread = chats.some(chat => (chat.unreadCount?.[userId] || 0) > 0);
+      setHasUnreadMessages(anyUnread);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
 
   const handleLogout = () => {
     logout();
@@ -118,10 +132,12 @@ export function AppHeader() {
             <Link href={isVendor ? "/vendor/messages" : "/client/messages"}>
                 <Button variant="ghost" size="icon" aria-label="Messages" className="relative">
                     <MessageSquare className="h-5 w-5" />
-                    <span className="absolute top-0 right-0 flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                    </span>
+                    {hasUnreadMessages && (
+                      <span className="absolute top-0 right-0 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                      </span>
+                    )}
                 </Button>
             </Link>
 

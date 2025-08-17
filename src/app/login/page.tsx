@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -50,10 +51,10 @@ export default function LoginPage() {
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
-    const password = formData.get('password') as string; // In a real app, you'd use the password
+    const password = formData.get('password') as string;
 
     try {
-        const result = await signInUser(email);
+        const result = await signInUser(email, password);
 
         if (result) {
             // Save user info to localStorage to simulate a session
@@ -76,7 +77,7 @@ export default function LoginPage() {
         } else {
              toast({
                 title: 'Sign In Failed',
-                description: 'No account found with that email. Please check your credentials or sign up.',
+                description: 'No account found with that email or password. Please check your credentials or sign up.',
                 variant: 'destructive',
             });
         }

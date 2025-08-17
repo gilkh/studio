@@ -56,7 +56,7 @@ export interface Booking {
 }
 
 export interface ChatMessage {
-  id: string;
+  id:string;
   senderId: string;
   text: string;
   timestamp: Date;
@@ -111,6 +111,9 @@ export interface UserProfile {
     createdAt: Date;
     savedItemIds?: string[];
     status: 'active' | 'disabled';
+    // IMPORTANT: Storing passwords in plaintext is insecure.
+    // In a production app, this should be a securely hashed password.
+    password?: string;
 }
 
 export interface VendorProfile {

@@ -3,29 +3,35 @@
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem } from './types';
-import { formatItemForMessage } from './utils';
+import { formatItemForMessage, parseForwardedMessage } from './utils';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
     firstName: string;
     lastName: string;
     email: string;
+    password?: string;
     businessName?: string;
     vendorCode?: string;
 }) {
-    const { accountType, firstName, lastName, email, businessName, vendorCode } = data;
+    const { accountType, firstName, lastName, email, password, businessName, vendorCode } = data;
     const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/\s+/g, '-');
 
+    // In a real app, you would hash the password here before storing it.
+    // e.g., const hashedPassword = await bcrypt.hash(password, 10);
+    // For this demo, we are storing it in plaintext which is NOT secure.
+    const userProfile: Omit<UserProfile, 'id'> = {
+        firstName,
+        lastName,
+        email,
+        phone: '',
+        createdAt: new Date(),
+        savedItemIds: [],
+        status: 'active',
+        password: password, // Storing plaintext password for demo purposes.
+    };
+
     if (accountType === 'client') {
-        const userProfile: Omit<UserProfile, 'id'> = {
-            firstName,
-            lastName,
-            email,
-            phone: '',
-            createdAt: new Date(),
-            savedItemIds: [],
-            status: 'active',
-        };
         await setDoc(doc(db, 'users', userId), userProfile);
         return { userId, role: 'client' };
     } else if (accountType === 'vendor') {
@@ -42,14 +48,6 @@ export async function createNewUser(data: {
         
         const codeDoc = codeSnapshot.docs[0];
 
-        const userProfile: Omit<UserProfile, 'id'> = {
-            firstName,
-            lastName,
-            email,
-            phone: '',
-            createdAt: new Date(),
-            status: 'active',
-        };
         const vendorProfile: Omit<VendorProfile, 'id'> = {
             businessName: businessName || `${firstName}'s Business`,
             email,
@@ -84,9 +82,9 @@ export async function createNewUser(data: {
 
 
 // In a real app, this would also verify password. For now, it just finds a user by email.
-export async function signInUser(email: string): Promise<{ role: 'client' | 'vendor' | 'admin'; userId: string } | null> {
+export async function signInUser(email: string, password?: string): Promise<{ role: 'client' | 'vendor' | 'admin'; userId: string } | null> {
     
-    if (email.toLowerCase() === 'admin@tradecraft.com') {
+    if (email.toLowerCase() === 'admin@tradecraft.com' && password === 'admin') {
         return { role: 'admin', userId: 'admin-user' };
     }
     
@@ -96,6 +94,12 @@ export async function signInUser(email: string): Promise<{ role: 'client' | 'ven
         if (!userSnapshot.empty) {
              const userDoc = userSnapshot.docs[0];
              const userData = userDoc.data() as UserProfile;
+
+             // Password check
+             if (userData.password !== password) {
+                 console.warn(`Password mismatch for user: ${email}`);
+                 return null; // Invalid password
+             }
 
              if (userData.status === 'disabled') {
                  console.warn(`Login attempt for disabled user: ${email}`);
@@ -575,8 +579,12 @@ export async function sendMessage(chatId: string, senderId: string, text: string
 
     const batch = writeBatch(db);
     batch.set(doc(messagesRef), newMessage);
+
+    const isForwarded = parseForwardedMessage(text);
+    const lastMessageText = isForwarded ? "Forwarded an item" : text;
+
     batch.update(chatRef, {
-        lastMessage: text,
+        lastMessage: lastMessageText,
         lastMessageTimestamp: newMessage.timestamp,
         lastMessageSenderId: senderId
     });

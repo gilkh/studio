@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const signupFormSchema = z.object({
   vendorCode: z.string().optional(),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters long'),
+  confirmPassword: z.string()
 }).refine(data => {
     if (data.accountType === 'vendor') {
         return !!data.businessName && data.businessName.length > 0;
@@ -46,6 +48,9 @@ const signupFormSchema = z.object({
 }, {
     message: "A registration code is required for vendors",
     path: ["vendorCode"],
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
 });
 
 
@@ -64,6 +69,7 @@ export default function SignupPage() {
       vendorCode: '',
       email: '',
       password: '',
+      confirmPassword: ''
     },
   });
 
@@ -269,6 +275,19 @@ export default function SignupPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                            <FormField
+                                control={form.control}
+                                name="confirmPassword"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Confirm Password</FormLabel>
                                     <FormControl>
                                         <Input type="password" {...field} />
                                     </FormControl>

@@ -168,7 +168,6 @@ export default function LoginPage() {
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">
                     <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
-                    <CardDescription>Enter your credentials to access your dashboard. <br /> Use admin@tradecraft.com to log in as admin.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
                     <form onSubmit={handleLogin}>

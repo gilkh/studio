@@ -129,10 +129,18 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     }
   };
   
-  // Dummy function for image upload simulation
-  const handleAddImage = () => {
-    setImages(prev => [...prev, 'https://placehold.co/600x400.png'])
-  }
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // In a real app, you'd upload this to a storage service (e.g., Firebase Storage)
+        // and get a URL back. For this demo, we'll use the base64 data URI.
+        setImages(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const handleRemoveImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
   }
@@ -215,10 +223,13 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
                                 </div>
                             ))}
                         </div>
-                        <Button type="button" variant="outline" onClick={handleAddImage}>
-                            <ImagePlus className="mr-2 h-4 w-4" />
-                            Add Image
+                        <Button type="button" variant="outline" asChild>
+                            <Label htmlFor="image-upload" className="cursor-pointer">
+                                <ImagePlus className="mr-2 h-4 w-4" />
+                                Add Image
+                            </Label>
                         </Button>
+                        <Input id="image-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} />
                         <p className="text-xs text-muted-foreground mt-2">The first image will be used as the thumbnail.</p>
                     </div>
                 </div>
@@ -270,5 +281,3 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     </Dialog>
   );
 }
-
-    

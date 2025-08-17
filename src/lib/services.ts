@@ -361,7 +361,7 @@ export async function toggleSavedItem(userId: string, itemId: string) {
 
 // Admin Services
 export async function generateVendorCode(): Promise<VendorCode> {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase() + Math.random().toString(36).substring(2, 8).toUpperCase();
     const newCode: Omit<VendorCode, 'id'> = {
         code,
         isUsed: false,
@@ -382,6 +382,13 @@ export async function getVendorCodes(): Promise<VendorCode[]> {
         usedAt: data.usedAt?.toDate ? data.usedAt.toDate() : undefined,
     } as VendorCode));
 }
+
+export async function deleteVendorCode(codeId: string) {
+    if (!codeId) return;
+    const docRef = doc(db, 'vendorCodes', codeId);
+    await deleteDoc(docRef);
+}
+
 
 export async function getAllUsersAndVendors() {
     const usersSnapshot = await getDocs(collection(db, "users"));

@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode } from '@/lib/services';
 import type { VendorCode, UserProfile, VendorProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,6 +81,16 @@ export default function AdminHomePage() {
         toast({ title: "Tier Updated", description: `Vendor tier has been changed to ${tier}.` });
     } catch (error) {
         toast({ title: "Error", description: "Failed to update vendor tier.", variant: "destructive" });
+    }
+  }
+
+  const handleDeleteCode = async (codeId: string) => {
+    try {
+        await deleteVendorCode(codeId);
+        setCodes(prev => prev.filter(c => c.id !== codeId));
+        toast({ title: "Code Deleted", description: "The vendor code has been removed." });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to delete the code.", variant: "destructive" });
     }
   }
 
@@ -206,22 +216,24 @@ export default function AdminHomePage() {
                         <TableHead>Status</TableHead>
                         <TableHead>Date Created</TableHead>
                         <TableHead>Used By</TableHead>
-                         <TableHead>Date Used</TableHead>
+                        <TableHead>Date Used</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
                     {isLoading ? (
                         [...Array(3)].map((_, i) => (
                         <TableRow key={i}>
-                            <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-48" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                             <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                         </TableRow>
                         ))
                     ) : codes.map(code => (
-                        <TableRow key={code.id}>
+                        <TableRow key={code.id} className={code.isUsed ? 'bg-muted/50' : ''}>
                         <TableCell className="font-mono font-semibold">
                             <div className="flex items-center gap-2">
                                 {code.code}
@@ -238,6 +250,27 @@ export default function AdminHomePage() {
                         <TableCell>{code.createdAt ? format(code.createdAt, 'PPP p') : 'N/A'}</TableCell>
                         <TableCell>{code.usedBy || 'N/A'}</TableCell>
                         <TableCell>{code.usedAt ? format(code.usedAt, 'PPP p') : 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" disabled={code.isUsed}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action will permanently delete the vendor code <span className="font-mono font-semibold">{code.code}</span>. This cannot be undone.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteCode(code.id)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

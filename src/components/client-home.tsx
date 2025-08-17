@@ -42,7 +42,7 @@ export function ClientHome() {
     const { userId, isLoading: isAuthLoading } = useAuth();
     const [user, setUser] = useState<UserProfile | null>(null);
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
-    const [savedItems, setSavedItems] = useState<ServiceOrOffer[]>([]);
+    const [savedItemsCount, setSavedItemsCount] = useState(0);
     const [featuredItems, setFeaturedItems] = useState<ServiceOrOffer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -55,16 +55,19 @@ export function ClientHome() {
 
             setIsLoading(true);
             try {
-                const [userProfile, bookings, saved, allItems] = await Promise.all([
+                // Fetch data in parallel for better performance
+                const [userProfile, bookings, saved, featured] = await Promise.all([
                     getUserProfile(userId),
                     getBookingsForUser(userId),
-                    getSavedItems(userId),
-                    getServicesAndOffers(),
+                    getSavedItems(userId, true), // Only fetch count
+                    getServicesAndOffers(undefined, 4), // Fetch 4 featured items
                 ]);
+                
                 setUser(userProfile)
                 setUpcomingBookings(bookings.filter(b => b.date >= new Date()));
-                setSavedItems(saved);
-                setFeaturedItems(allItems.slice(0, 4)); // Show first 4 as featured
+                setSavedItemsCount(Array.isArray(saved) ? saved.length : 0);
+                setFeaturedItems(featured);
+
             } catch (error) {
                 console.error("Failed to load client dashboard:", error);
             } finally {
@@ -113,7 +116,7 @@ export function ClientHome() {
                 />
                  <StatCard 
                     title="Saved Items"
-                    value={savedItems.length}
+                    value={savedItemsCount}
                     icon={Heart}
                     linkHref="/client/saved"
                     linkText="View your favorites"

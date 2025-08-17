@@ -1,6 +1,6 @@
 
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
@@ -258,13 +258,30 @@ async function fetchCollection<T extends {id: string}>(path: string, q?: any, tr
 
 
 // Service and Offer Services
-export const getServices = () => fetchCollection<Service>('services');
-export const getOffers = () => fetchCollection<Offer>('offers');
+export const getServices = (vendorId?: string, count?: number) => {
+    let q = query(collection(db, 'services'));
+    if (vendorId) q = query(q, where('vendorId', '==', vendorId));
+    if (count) q = query(q, limit(count));
+    return fetchCollection<Service>('services', q);
+}
 
-export const getServicesAndOffers = async (): Promise<ServiceOrOffer[]> => {
-    const services = await getServices();
-    const offers = await getOffers();
-    return [...services, ...offers];
+export const getOffers = (vendorId?: string, count?: number) => {
+    let q = query(collection(db, 'offers'));
+    if (vendorId) q = query(q, where('vendorId', '==', vendorId));
+    if (count) q = query(q, limit(count));
+    return fetchCollection<Offer>('offers', q);
+}
+
+
+export const getServicesAndOffers = async (vendorId?: string, count?: number): Promise<ServiceOrOffer[]> => {
+    const services = await getServices(vendorId, count);
+    const offers = await getOffers(vendorId, count);
+    
+    let combined = [...services, ...offers];
+    if (count) {
+        combined = combined.slice(0, count);
+    }
+    return combined;
 }
 
 export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offer, 'id'>) {
@@ -408,11 +425,15 @@ export const getBookingsForVendor = async(vendorId: string) => {
 
 
 // Saved Items
-export async function getSavedItems(userId: string): Promise<ServiceOrOffer[]> {
-    if (!userId) return [];
+export async function getSavedItems(userId: string, countOnly = false): Promise<ServiceOrOffer[] | number> {
+    if (!userId) return countOnly ? 0 : [];
     const user = await getUserProfile(userId);
     if (!user || !user.savedItemIds || user.savedItemIds.length === 0) {
-        return [];
+        return countOnly ? 0 : [];
+    }
+
+    if (countOnly) {
+        return user.savedItemIds.length;
     }
     
     const savedIds = user.savedItemIds.slice(0, 30);

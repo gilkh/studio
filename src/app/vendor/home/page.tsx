@@ -121,14 +121,14 @@ export default function VendorHomePage() {
         }
         setIsLoading(true);
         try {
-            const [profile, allListings, requests, bookings] = await Promise.all([
+            const [profile, vendorListings, requests, bookings] = await Promise.all([
                 getVendorProfile(vendorId),
-                getServicesAndOffers(),
+                getServicesAndOffers(vendorId), // Fetch only this vendor's listings
                 getVendorQuoteRequests(vendorId),
                 getBookingsForVendor(vendorId),
             ]);
             setVendorProfile(profile);
-            setListings(allListings.filter(l => l.vendorId === vendorId));
+            setListings(vendorListings);
             setPendingRequests(requests.filter(r => r.status === 'pending'));
             setUpcomingBookings(bookings.filter(b => b.date >= new Date()).slice(0,2));
         } catch (error) {

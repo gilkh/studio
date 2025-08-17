@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Users, Briefcase, CalendarClock, MessageSquare, PlusCircle } from 'lucide-react';
+import { Users, Briefcase, CalendarClock, PlusCircle } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -29,14 +29,18 @@ export function VendorHome() {
         }
         setIsLoading(true);
         try {
+            // All data fetching is now done in the page component.
+            // This component will receive data via props in a future step if needed,
+            // but for now we can rely on the page-level loading.
+            // This avoids redundant fetches.
             const [profile, allListings, requests, bookings] = await Promise.all([
                 getVendorProfile(vendorId),
-                getServicesAndOffers(),
+                getServicesAndOffers(vendorId),
                 getVendorQuoteRequests(vendorId),
                 getBookingsForVendor(vendorId),
             ]);
             setVendorProfile(profile);
-            setListings(allListings.filter(l => l.vendorId === vendorId));
+            setListings(allListings);
             setPendingRequests(requests.filter(r => r.status === 'pending'));
             setUpcomingBookings(bookings.filter(b => b.date >= new Date()).slice(0,2));
         } catch (error) {
@@ -49,9 +53,10 @@ export function VendorHome() {
   }, [vendorId, isAuthLoading]);
 
   const recentActivity = [
-      { type: 'request', data: pendingRequests[0], time: new Date(new Date().setDate(new Date().getDate() - 1)) },
-      { type: 'booking', data: upcomingBookings[0], time: new Date(new Date().setDate(new Date().getDate() - 2)) },
+      ...pendingRequests.slice(0, 1).map(r => ({ type: 'request', data: r, time: new Date(r.createdAt) })),
+      ...upcomingBookings.slice(0, 1).map(b => ({ type: 'booking', data: b, time: new Date(b.date) })),
   ].filter(activity => activity.data).sort((a, b) => b.time.getTime() - a.time.getTime());
+
 
   const pageIsLoading = isLoading || isAuthLoading;
 

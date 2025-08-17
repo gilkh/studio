@@ -86,11 +86,14 @@ export async function createNewUser(data: {
 }
 
 
-// In a real app, this would also verify password. For now, it just finds a user by email.
 export async function signInUser(email: string, password?: string): Promise<{ role: 'client' | 'vendor' | 'admin'; userId: string } | null> {
     
-    if (email.toLowerCase() === 'admin@tradecraft.com' && password === 'admin') {
-        return { role: 'admin', userId: 'admin-user' };
+    if (email.toLowerCase() === 'admin@tradecraft.com') {
+        if (password === 'admin') {
+            return { role: 'admin', userId: 'admin-user' };
+        } else {
+            return null; // Correct email, wrong password for admin
+        }
     }
     
     try {

@@ -154,18 +154,30 @@ function ServiceDetailView({ service }: { service: Service | null }) {
   );
 }
 
-export async function generateStaticParams() {
-  const allItems = await getServicesAndOffers();
-  const services = allItems.filter(item => item.type === 'service');
-  return services.map((service) => ({
-    id: service.id,
-  }));
+async function getService(id: string): Promise<Service | null> {
+    const allItems = await getServicesAndOffers();
+    const service = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
+    return service ?? null;
 }
 
-export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
-  const allItems = await getServicesAndOffers();
-  const service = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
+export default function ServiceDetailPage({ params }: { params: { id: string } }) {
+  const [service, setService] = useState<Service | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadService() {
+        setIsLoading(true);
+        const fetchedService = await getService(params.id);
+        setService(fetchedService);
+        setIsLoading(false);
+    }
+    loadService();
+  }, [params.id]);
   
-  return <ServiceDetailView service={service ?? null} />;
+  if (isLoading) {
+      // You can return a global loader here
+      return <div>Loading...</div>
+  }
+  
+  return <ServiceDetailView service={service} />;
 }

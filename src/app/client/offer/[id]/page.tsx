@@ -171,18 +171,30 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
   );
 }
 
-export async function generateStaticParams() {
-  const allItems = await getServicesAndOffers();
-  const offers = allItems.filter(item => item.type === 'offer');
-  return offers.map((offer) => ({
-    id: offer.id,
-  }));
+async function getOffer(id: string): Promise<Offer | null> {
+    const allItems = await getServicesAndOffers();
+    const offer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
+    return offer ?? null;
 }
 
-export default async function OfferDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
-  const allItems = await getServicesAndOffers();
-  const offer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
+export default function OfferDetailPage({ params }: { params: { id: string } }) {
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  return <OfferDetailView offer={offer ?? null} />;
+  useEffect(() => {
+    async function loadOffer() {
+        setIsLoading(true);
+        const fetchedOffer = await getOffer(params.id);
+        setOffer(fetchedOffer);
+        setIsLoading(false);
+    }
+    loadOffer();
+  }, [params.id]);
+
+  if (isLoading) {
+      // You can return a global loader here
+      return <div>Loading...</div>
+  }
+
+  return <OfferDetailView offer={offer} />;
 }

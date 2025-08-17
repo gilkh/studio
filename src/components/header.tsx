@@ -10,9 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MessageSquare, User, LogOut, Menu, Home, Compass, Calendar, PenTool, Briefcase, Users, Settings } from 'lucide-react';
-import { MessagingPanel } from './messaging-panel';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './logo';
@@ -28,8 +26,8 @@ const clientLinks = [
   { href: '/client/home', label: 'Home', icon: Home },
   { href: '/client/explore', label: 'Explore', icon: Compass },
   { href: '/client/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/client/messages', label: 'Messages', icon: MessageSquare },
   { href: '/client/event-planner', label: 'Planner', icon: PenTool },
+  { href: '/client/messages', label: 'Messages', icon: MessageSquare },
 ];
 
 const vendorLinks = [
@@ -117,8 +115,7 @@ export function AppHeader() {
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
         {!isLoading && userId ? (
         <>
-            <Sheet>
-                <SheetTrigger asChild>
+            <Link href={isVendor ? "/vendor/messages" : "/client/messages"}>
                 <Button variant="ghost" size="icon" aria-label="Messages" className="relative">
                     <MessageSquare className="h-5 w-5" />
                     <span className="absolute top-0 right-0 flex h-2 w-2">
@@ -126,12 +123,7 @@ export function AppHeader() {
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                     </span>
                 </Button>
-                </SheetTrigger>
-                <SheetContent className="w-full max-w-md p-0">
-                  <SheetTitle className="sr-only">Messages</SheetTitle>
-                  <MessagingPanel />
-                </SheetContent>
-            </Sheet>
+            </Link>
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>

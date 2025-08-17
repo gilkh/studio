@@ -14,6 +14,7 @@ const clientLinks = [
   { href: '/client/explore', label: 'Explore', icon: Compass },
   { href: '/client/bookings', label: 'Bookings', icon: Calendar },
   { href: '/client/event-planner', label: 'Planner', icon: PenTool },
+  { href: '/client/messages', label: 'Messages', icon: MessageSquare },
 ];
 
 const vendorLinks = [
@@ -21,6 +22,7 @@ const vendorLinks = [
   { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
   { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link' },
   { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare },
 ];
 
 
@@ -60,6 +62,12 @@ export function BottomNavBar() {
                         {pendingRequests}
                     </Badge>
                 )}
+                 {label === 'Messages' && (
+                    <span className="absolute top-0 right-0 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </span>
+                 )}
             </div>
             <span className="text-[10px]">{label}</span>
           </Link>

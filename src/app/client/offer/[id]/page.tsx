@@ -11,10 +11,23 @@ import { Star, Clock, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOfferDialog } from '@/components/book-offer-dialog';
+import { useEffect, useState } from 'react';
 
 // This is the client component that renders the UI
-// It receives data as props from the server component below.
-function OfferDetailView({ offer }: { offer: Offer | null }) {
+function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | null, id: string }) {
+  const [offer, setOffer] = useState(initialOffer);
+  
+  useEffect(() => {
+    async function fetchOffer() {
+        if(!initialOffer) {
+            const allItems = await getServicesAndOffers();
+            const foundOffer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
+            setOffer(foundOffer ?? null);
+        }
+    }
+    fetchOffer();
+  }, [initialOffer, id]);
+
   if (!offer) {
     return (
       <div className="text-center py-12">
@@ -173,11 +186,11 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
 }
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
-async function OfferDetailPage({ params }: { params: { id: string } }) {
+export default async function OfferDetailPage({ params }: { params: { id: string } }) {
   const allItems = await getServicesAndOffers();
   const offer = allItems.find((item) => item.id === params.id && item.type === 'offer') as Offer | undefined;
   
-  return <OfferDetailView offer={offer ?? null} />;
+  return <OfferDetailView offer={offer ?? null} id={params.id} />;
 }
 
 
@@ -189,5 +202,3 @@ export async function generateStaticParams() {
     id: offer.id,
   }));
 }
-
-export default OfferDetailPage;

@@ -11,9 +11,23 @@ import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QuoteRequestDialog } from '@/components/quote-request-dialog';
+import { useEffect, useState } from 'react';
 
 // This is the client component that renders the UI
-function ServiceDetailView({ service }: { service: Service | null }) {
+function ServiceDetailView({ service: initialService, id }: { service: Service | null, id: string }) {
+    const [service, setService] = useState(initialService);
+
+    useEffect(() => {
+        async function fetchService() {
+            if(!initialService) {
+                const allItems = await getServicesAndOffers();
+                const foundService = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
+                setService(foundService ?? null);
+            }
+        }
+        fetchService();
+    }, [initialService, id]);
+
   if (!service) {
     return (
       <div className="text-center py-12">
@@ -156,11 +170,11 @@ function ServiceDetailView({ service }: { service: Service | null }) {
 
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
-async function ServiceDetailPage({ params }: { params: { id: string } }) {
+export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
   const allItems = await getServicesAndOffers();
   const service = allItems.find((item) => item.id === params.id && item.type === 'service') as Service | undefined;
   
-  return <ServiceDetailView service={service ?? null} />;
+  return <ServiceDetailView service={service ?? null} id={params.id} />;
 }
 
 // This function tells Next.js which pages to pre-render at build time.
@@ -171,5 +185,3 @@ export async function generateStaticParams() {
     id: service.id,
   }));
 }
-
-export default ServiceDetailPage;

@@ -27,9 +27,10 @@ import {
 interface OfferCardProps {
   offer: Offer;
   role: 'client' | 'vendor';
+  onListingUpdate?: () => void;
 }
 
-export function OfferCard({ offer, role }: OfferCardProps) {
+export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
   const { userId } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -172,7 +173,7 @@ export function OfferCard({ offer, role }: OfferCardProps) {
             <Button size="lg">Book Now</Button>
           </BookOfferDialog>
         ) : (
-          <ManageServiceDialog service={offer}>
+          <ManageServiceDialog service={offer} onListingUpdate={onListingUpdate}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
               Edit Offer

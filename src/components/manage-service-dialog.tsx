@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ServiceOrOffer, Service, Offer, VendorProfile, MediaItem } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { DollarSign, Loader2, ImagePlus, X, Video } from 'lucide-react';
-import { createServiceOrOffer, getVendorProfile } from '@/lib/services';
+import { createServiceOrOffer, getVendorProfile, updateServiceOrOffer } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
@@ -29,6 +29,7 @@ import { Separator } from './ui/separator';
 interface ManageServiceDialogProps {
   children: React.ReactNode;
   service?: ServiceOrOffer;
+  onListingUpdate?: () => void;
 }
 
 const compressImage = (file: File): Promise<string> => {
@@ -70,19 +71,15 @@ const compressImage = (file: File): Promise<string> => {
 }
 
 
-export function ManageServiceDialog({ children, service }: ManageServiceDialogProps) {
+export function ManageServiceDialog({ children, service, onListingUpdate }: ManageServiceDialogProps) {
   const { userId: vendorId } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [type, setType] = React.useState<string>(service?.type || 'offer');
   const [isSaving, setIsSaving] = React.useState(false);
   const [vendorProfile, setVendorProfile] = React.useState<VendorProfile | null>(null);
-  const [dates, setDates] = React.useState<Date[] | undefined>(
-      service?.type === 'offer' && service.availableDates 
-      ? service.availableDates.map(d => new Date(d)) 
-      : []
-  );
-  const [media, setMedia] = React.useState<MediaItem[]>(service?.media || []);
+  const [dates, setDates] = React.useState<Date[] | undefined>([]);
+  const [media, setMedia] = React.useState<MediaItem[]>([]);
 
 
   React.useEffect(() => {
@@ -94,12 +91,14 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     }
     if (open) {
         loadVendor();
+        // Reset state when dialog opens based on service prop
+        setType(service?.type || 'offer');
+        setMedia(service?.media || []);
         if (service?.type === 'offer' && service.availableDates) {
             setDates(service.availableDates.map(d => new Date(d)));
         } else {
             setDates([]);
         }
-        setMedia(service?.media || []);
     }
   }, [vendorId, open, service]);
 
@@ -119,16 +118,16 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
     const finalMedia = media.map((item, index) => ({ ...item, isThumbnail: index === 0 }));
 
     try {
-        const baseData = {
+        const baseData: Partial<ServiceOrOffer> = {
             title,
             category,
             description,
             vendorId,
             vendorName: vendorProfile.businessName,
             vendorAvatar: `https://i.pravatar.cc/150?u=${vendorId}`,
-            rating: 0,
-            reviewCount: 0,
-            image: finalMedia.length > 0 ? finalMedia[0].url : 'https://placehold.co/600x400.png',
+            rating: service?.rating || 0,
+            reviewCount: service?.reviewCount || 0,
+            image: finalMedia.length > 0 ? finalMedia[0].url : service?.image || 'https://placehold.co/600x400.png',
             media: finalMedia,
         }
 
@@ -136,19 +135,28 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
             const price = parseFloat(formData.get('price') as string);
             const availableDates = dates?.map(date => format(date, 'yyyy-MM-dd'));
 
-            const offerData: Omit<Offer, 'id'> = {
+            const offerData: Partial<Offer> = {
                 ...baseData,
                 type: 'offer',
                 price,
                 availableDates,
             }
-            await createServiceOrOffer(offerData);
+            if (service?.id) {
+                await updateServiceOrOffer(service.id, offerData);
+            } else {
+                await createServiceOrOffer(offerData as Omit<Offer, 'id'>);
+            }
+
         } else {
-            const serviceData: Omit<Service, 'id'> = {
+            const serviceData: Partial<Service> = {
                 ...baseData,
                 type: 'service',
             }
-            await createServiceOrOffer(serviceData);
+             if (service?.id) {
+                await updateServiceOrOffer(service.id, serviceData);
+            } else {
+                await createServiceOrOffer(serviceData as Omit<Service, 'id'>);
+            }
         }
         
         toast({
@@ -156,6 +164,7 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
           description: `The ${type} "${title}" has been successfully saved.`,
         });
         setOpen(false);
+        onListingUpdate?.(); // Callback to refresh the list
 
     } catch (error) {
         console.error("Failed to save service/offer", error);
@@ -228,144 +237,146 @@ export function ManageServiceDialog({ children, service }: ManageServiceDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{service ? 'Edit' : 'Create New'}</DialogTitle>
           <DialogDescription>
             Fill in the details below to {service ? 'update your' : 'list a new'} service or offer.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-grow pr-6 -mr-6">
-            <form id="service-form" onSubmit={handleSubmit} className="grid gap-6 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right">Type</Label>
-                    <RadioGroup defaultValue={type} onValueChange={setType} className="col-span-3 flex gap-4">
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="offer" id="r-offer" />
-                            <Label htmlFor="r-offer">Offer (Fixed Price)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="service" id="r-service" />
-                            <Label htmlFor="r-service">Service (Quote-based)</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="title" className="text-right">
-                    Title
-                    </Label>
-                    <Input id="title" name="title" defaultValue={service?.title} className="col-span-3" required />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category" className="text-right">
-                    Category
-                    </Label>
-                    <Select name="category" defaultValue={service?.category}>
-                    <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Catering">Catering</SelectItem>
-                        <SelectItem value="Photography">Photography</SelectItem>
-                        <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
-                        <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
-                        <SelectItem value="Venue">Venue</SelectItem>
-                    </SelectContent>
-                    </Select>
-                </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="description" className="text-right pt-2">
-                    Description
-                    </Label>
-                    <Textarea
-                    id="description"
-                    name="description"
-                    defaultValue={service?.description}
-                    className="col-span-3"
-                    required
-                    rows={4}
-                    />
-                </div>
-                
-                 <Separator />
-
-                <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2">Portfolio Media</Label>
-                    <div className="col-span-3">
-                         <div className="grid grid-cols-3 gap-4 mb-4">
-                            {media.map((item, index) => (
-                                <div key={index} className="relative group aspect-video">
-                                     {item.type === 'image' ? (
-                                        <Image src={item.url} alt={`upload preview ${index}`} layout="fill" className="object-cover rounded-md" />
-                                    ) : (
-                                        <div className="relative w-full h-full">
-                                            <video src={item.url} className="w-full h-full object-cover rounded-md" muted loop playsInline />
-                                            <div className="absolute bottom-1 right-1 bg-black/50 text-white rounded-full p-1">
-                                                <Video className="h-3 w-3" />
-                                            </div>
-                                        </div>
-                                    )}
-                                    <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => handleRemoveMedia(index)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button type="button" variant="outline" asChild>
-                            <Label htmlFor="media-upload" className="cursor-pointer">
-                                <ImagePlus className="mr-2 h-4 w-4" />
-                                Add Media
-                            </Label>
-                        </Button>
-                        <Input 
-                            id="media-upload" 
-                            type="file" 
-                            className="sr-only" 
-                            accept="image/*,video/*" 
-                            multiple
-                            onChange={handleMediaUpload} 
-                        />
-                        <p className="text-xs text-muted-foreground mt-2">The first item must be an image to be used as a thumbnail.</p>
+        <div className="flex-grow overflow-hidden pr-2">
+            <ScrollArea className="h-full pr-4">
+                <form id="service-form" onSubmit={handleSubmit} className="grid gap-6 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right">Type</Label>
+                        <RadioGroup defaultValue={type} onValueChange={setType} className="col-span-3 flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="offer" id="r-offer" />
+                                <Label htmlFor="r-offer">Offer (Fixed Price)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="service" id="r-service" />
+                                <Label htmlFor="r-service">Service (Quote-based)</Label>
+                            </div>
+                        </RadioGroup>
                     </div>
-                </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="title" className="text-right">
+                        Title
+                        </Label>
+                        <Input id="title" name="title" defaultValue={service?.title} className="col-span-3" required />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="category" className="text-right">
+                        Category
+                        </Label>
+                        <Select name="category" defaultValue={service?.category}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Catering">Catering</SelectItem>
+                            <SelectItem value="Photography">Photography</SelectItem>
+                            <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
+                            <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
+                            <SelectItem value="Venue">Venue</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label htmlFor="description" className="text-right pt-2">
+                        Description
+                        </Label>
+                        <Textarea
+                        id="description"
+                        name="description"
+                        defaultValue={service?.description}
+                        className="col-span-3"
+                        required
+                        rows={4}
+                        />
+                    </div>
+                    
+                     <Separator />
 
-                {type === 'offer' && (
-                    <>
-                         <Separator />
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">
-                                Price
-                            </Label>
-                            <div className="relative col-span-3">
-                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                id="price"
-                                name="price"
-                                type="number"
-                                defaultValue={service?.type === 'offer' ? service.price : undefined}
-                                className="pl-8"
-                                required
-                                />
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Portfolio Media</Label>
+                        <div className="col-span-3">
+                             <div className="grid grid-cols-3 gap-4 mb-4">
+                                {media.map((item, index) => (
+                                    <div key={index} className="relative group aspect-video">
+                                         {item.type === 'image' ? (
+                                            <Image src={item.url} alt={`upload preview ${index}`} layout="fill" className="object-cover rounded-md" />
+                                        ) : (
+                                            <div className="relative w-full h-full">
+                                                <video src={item.url} className="w-full h-full object-cover rounded-md" muted loop playsInline />
+                                                <div className="absolute bottom-1 right-1 bg-black/50 text-white rounded-full p-1">
+                                                    <Video className="h-3 w-3" />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => handleRemoveMedia(index)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
                             </div>
+                            <Button type="button" variant="outline" asChild>
+                                <Label htmlFor="media-upload" className="cursor-pointer">
+                                    <ImagePlus className="mr-2 h-4 w-4" />
+                                    Add Media
+                                </Label>
+                            </Button>
+                            <Input 
+                                id="media-upload" 
+                                type="file" 
+                                className="sr-only" 
+                                accept="image/*,video/*" 
+                                multiple
+                                onChange={handleMediaUpload} 
+                            />
+                            <p className="text-xs text-muted-foreground mt-2">The first item must be an image to be used as a thumbnail.</p>
                         </div>
-                        <div className="grid grid-cols-4 items-start gap-4">
-                            <Label className="text-right pt-2">
-                                Availability
-                            </Label>
-                            <div className="col-span-3">
-                                <Calendar
-                                    mode="multiple"
-                                    selected={dates}
-                                    onSelect={setDates}
-                                    className="rounded-md border"
-                                />
-                                <p className="text-sm text-muted-foreground mt-2">Select all dates this specific offer is available.</p>
+                    </div>
+
+                    {type === 'offer' && (
+                        <>
+                             <Separator />
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="price" className="text-right">
+                                    Price
+                                </Label>
+                                <div className="relative col-span-3">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                    id="price"
+                                    name="price"
+                                    type="number"
+                                    defaultValue={service?.type === 'offer' ? service.price : undefined}
+                                    className="pl-8"
+                                    required
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    </>
-                )}
-            </form>
-        </ScrollArea>
+                            <div className="grid grid-cols-4 items-start gap-4">
+                                <Label className="text-right pt-2">
+                                    Availability
+                                </Label>
+                                <div className="col-span-3">
+                                    <Calendar
+                                        mode="multiple"
+                                        selected={dates}
+                                        onSelect={setDates}
+                                        className="rounded-md border"
+                                    />
+                                    <p className="text-sm text-muted-foreground mt-2">Select all dates this specific offer is available.</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </form>
+            </ScrollArea>
+        </div>
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button type="submit" form="service-form" disabled={isSaving}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

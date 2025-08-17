@@ -26,9 +26,10 @@ import {
 interface ServiceCardProps {
   service: Service;
   role: 'client' | 'vendor';
+  onListingUpdate?: () => void;
 }
 
-export function ServiceCard({ service, role }: ServiceCardProps) {
+export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps) {
   const { userId } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -170,7 +171,7 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
             <Button size="lg">Get a Quote</Button>
           </QuoteRequestDialog>
         ) : (
-          <ManageServiceDialog service={service}>
+          <ManageServiceDialog service={service} onListingUpdate={onListingUpdate}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
               Edit Service

@@ -4,6 +4,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit, increment } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem } from './types';
@@ -356,6 +357,17 @@ export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offe
     const collectionName = item.type === 'service' ? 'services' : 'offers';
     await addDoc(collection(db, collectionName), item);
 }
+
+export async function updateServiceOrOffer(itemId: string, itemData: Partial<ServiceOrOffer>) {
+    const docRef = doc(db, itemData.type === 'service' ? 'services' : 'offers', itemId);
+    await updateDoc(docRef, itemData);
+}
+
+export async function deleteServiceOrOffer(itemId: string, itemType: 'service' | 'offer') {
+    const docRef = doc(db, itemType, itemId);
+    await deleteDoc(docRef);
+}
+
 
 // Quote Request Services
 export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'createdAt' | 'status'> & { item: ServiceOrOffer }) {

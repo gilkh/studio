@@ -75,10 +75,10 @@ export function ClientDashboard() {
       </Card>
       
       <Tabs defaultValue="all">
-        <TabsList className="w-full sm:w-auto sm:inline-flex h-auto flex-col sm:flex-row">
-          <TabsTrigger value="all" className="w-full sm:w-auto">All</TabsTrigger>
-          <TabsTrigger value="services" className="w-full sm:w-auto">Services (for Quote)</TabsTrigger>
-          <TabsTrigger value="offers" className="w-full sm:w-auto">Offers (Book Now)</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="services">Services (for Quote)</TabsTrigger>
+          <TabsTrigger value="offers">Offers (Book Now)</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
             {isLoading ? renderSkeletons() : (

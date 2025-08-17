@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { getServicesAndOffers } from '@/lib/services';
 import type { Offer } from '@/lib/types';
-import { useParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,44 +27,7 @@ const mockReviews = [
     { id: 2, author: 'Bob Williams', rating: 5, comment: 'Punctual, professional, and delicious. Worth every penny!'}
 ]
 
-export default function OfferDetailPage() {
-  const { id } = useParams();
-  const [offer, setOffer] = useState<Offer | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchOffer() {
-      setIsLoading(true);
-      const allItems = await getServicesAndOffers();
-      const foundOffer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
-      setOffer(foundOffer || null);
-      setIsLoading(false);
-    }
-
-    if (id) {
-      fetchOffer();
-    }
-  }, [id]);
-
-  if (isLoading) {
-    return (
-        <div className="space-y-8">
-            <Skeleton className="h-12 w-1/4" />
-            <Skeleton className="h-[400px] w-full rounded-xl" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2 space-y-6">
-                    <Skeleton className="h-10 w-3/4" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-48 w-full" />
-                </div>
-                <div className="space-y-6">
-                    <Skeleton className="h-48 w-full" />
-                </div>
-            </div>
-        </div>
-    );
-  }
-
+function OfferDetailView({ offer }: { offer: Offer | null }) {
   if (!offer) {
     return (
       <div className="text-center py-12">
@@ -207,4 +169,20 @@ export default function OfferDetailPage() {
         </div>
     </div>
   );
+}
+
+export async function generateStaticParams() {
+  const allItems = await getServicesAndOffers();
+  const offers = allItems.filter(item => item.type === 'offer');
+  return offers.map((offer) => ({
+    id: offer.id,
+  }));
+}
+
+export default async function OfferDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+  const allItems = await getServicesAndOffers();
+  const offer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
+
+  return <OfferDetailView offer={offer ?? null} />;
 }

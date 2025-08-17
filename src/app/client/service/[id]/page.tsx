@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react';
 import { getServicesAndOffers } from '@/lib/services';
 import type { Service } from '@/lib/types';
-import { useParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -28,45 +26,7 @@ const mockReviews = [
     { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
 ]
 
-
-export default function ServiceDetailPage() {
-  const { id } = useParams();
-  const [service, setService] = useState<Service | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchService() {
-      setIsLoading(true);
-      const allItems = await getServicesAndOffers();
-      const foundService = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
-      setService(foundService || null);
-      setIsLoading(false);
-    }
-
-    if (id) {
-      fetchService();
-    }
-  }, [id]);
-
-  if (isLoading) {
-    return (
-        <div className="space-y-8">
-            <Skeleton className="h-12 w-1/4" />
-            <Skeleton className="h-[400px] w-full rounded-xl" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2 space-y-6">
-                    <Skeleton className="h-10 w-3/4" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-48 w-full" />
-                </div>
-                <div className="space-y-6">
-                    <Skeleton className="h-48 w-full" />
-                </div>
-            </div>
-        </div>
-    );
-  }
-
+function ServiceDetailView({ service }: { service: Service | null }) {
   if (!service) {
     return (
       <div className="text-center py-12">
@@ -192,4 +152,20 @@ export default function ServiceDetailPage() {
         </div>
     </div>
   );
+}
+
+export async function generateStaticParams() {
+  const allItems = await getServicesAndOffers();
+  const services = allItems.filter(item => item.type === 'service');
+  return services.map((service) => ({
+    id: service.id,
+  }));
+}
+
+export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+  const allItems = await getServicesAndOffers();
+  const service = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
+  
+  return <ServiceDetailView service={service ?? null} />;
 }

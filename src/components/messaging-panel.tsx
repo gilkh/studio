@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, SendHorizonal, Loader2, FileQuestion } from 'lucide-react';
+import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import type { Chat, ChatMessage, ForwardedItem } from '@/lib/types';
 import { getChatsForUser, getMessagesForChat, sendMessage } from '@/lib/services';
@@ -16,6 +16,8 @@ import { Skeleton } from './ui/skeleton';
 import { parseForwardedMessage } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 function ForwardedItemBubble({ item }: { item: ForwardedItem }) {
     return (
@@ -96,6 +98,7 @@ export function MessagingPanel() {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!userId) return;
@@ -103,14 +106,15 @@ export function MessagingPanel() {
     setIsLoading(true);
     const unsubscribe = getChatsForUser(userId, (loadedChats) => {
         setChats(loadedChats);
-        if (!selectedChat && loadedChats.length > 0) {
+        // Don't auto-select on mobile to show the list first
+        if (!isMobile && !selectedChat && loadedChats.length > 0) {
             setSelectedChat(loadedChats[0]);
         }
         setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [userId, selectedChat]);
+  }, [userId, selectedChat, isMobile]);
 
 
   useEffect(() => {
@@ -162,6 +166,9 @@ export function MessagingPanel() {
     );
   }
 
+  const showChatList = !isMobile || (isMobile && !selectedChat);
+  const showChatWindow = !isMobile || (isMobile && selectedChat);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex-shrink-0 border-b p-4">
@@ -172,53 +179,65 @@ export function MessagingPanel() {
         </div>
       </div>
       <div className="flex flex-grow overflow-hidden">
-        <ScrollArea className="h-full w-full sm:w-1/3 border-r">
-          <div className="flex flex-col">
-            {isLoading ? (
-                 <div className="p-4 space-y-4">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-            ) : chats.length > 0 ? (
-                chats.map((chat) => {
-                    const otherParticipant = getOtherParticipant(chat);
-                    return (
-                        <button
-                            key={chat.id}
-                            onClick={() => setSelectedChat(chat)}
-                            className={cn(
-                            'flex items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50 w-full',
-                            selectedChat?.id === chat.id && 'bg-muted'
-                            )}
-                        >
-                            <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()}>
-                                <Avatar className="h-10 w-10">
-                                <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.name} />
-                                <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            </Link>
-                            <div className="flex-grow overflow-hidden">
-                                <div className="flex justify-between items-center">
-                                    <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()} className="font-semibold truncate hover:underline">{otherParticipant?.name}</Link>
-                                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
+        <aside className={cn(
+            "h-full w-full flex-col border-r sm:flex sm:w-1/3",
+            showChatList ? 'flex' : 'hidden'
+        )}>
+            <ScrollArea>
+            <div className="flex flex-col">
+                {isLoading ? (
+                    <div className="p-4 space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                    </div>
+                ) : chats.length > 0 ? (
+                    chats.map((chat) => {
+                        const otherParticipant = getOtherParticipant(chat);
+                        return (
+                            <button
+                                key={chat.id}
+                                onClick={() => setSelectedChat(chat)}
+                                className={cn(
+                                'flex items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50 w-full',
+                                selectedChat?.id === chat.id && 'bg-muted'
+                                )}
+                            >
+                                <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()}>
+                                    <Avatar className="h-10 w-10">
+                                    <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.name} />
+                                    <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </Link>
+                                <div className="flex-grow overflow-hidden">
+                                    <div className="flex justify-between items-center">
+                                        <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()} className="font-semibold truncate hover:underline">{otherParticipant?.name}</Link>
+                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
+                                    </div>
+                                    <p className="text-sm truncate text-muted-foreground">
+                                    {renderLastMessage(chat)}
+                                    </p>
                                 </div>
-                                <p className="text-sm truncate text-muted-foreground">
-                                   {renderLastMessage(chat)}
-                                </p>
-                            </div>
-                        </button>
-                    )
-                })
-            ) : (
-                <p className="p-4 text-center text-muted-foreground">No conversations yet.</p>
-            )}
-          </div>
-        </ScrollArea>
-        <div className={cn("flex-grow flex-col h-full bg-slate-50", selectedChat ? "flex" : "hidden sm:flex")}>
+                            </button>
+                        )
+                    })
+                ) : (
+                    <p className="p-4 text-center text-muted-foreground">No conversations yet.</p>
+                )}
+            </div>
+            </ScrollArea>
+        </aside>
+
+        <div className={cn(
+            "flex-grow flex-col h-full bg-slate-50",
+            showChatWindow ? 'flex' : 'hidden sm:flex'
+            )}>
             {selectedChat ? (
                 <>
                 <div className="flex-shrink-0 border-b p-4 flex items-center gap-3 bg-background">
+                    <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setSelectedChat(null)}>
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
                     <Link href={`/vendor/${getOtherParticipant(selectedChat)?.id}`}>
                         <Avatar className="h-10 w-10">
                             <AvatarImage src={getOtherParticipant(selectedChat)?.avatar} alt={getOtherParticipant(selectedChat)?.name} />

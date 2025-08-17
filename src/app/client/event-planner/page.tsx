@@ -422,36 +422,36 @@ function EventPlannerContent() {
                                             opacity: task.completed ? 0.7 : 1
                                         }}
                                         className={cn(
-                                        "bg-card border rounded-xl shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg"
+                                        "bg-card border rounded-xl shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg relative pb-12 sm:pb-4"
                                     )}>
-                                        <div className="flex items-start gap-4">
-                                            <Checkbox 
-                                                id={`task-${task.id}`}
-                                                checked={task.completed}
-                                                onCheckedChange={() => handleTaskCheck(task.id)}
-                                                className="h-5 w-5 mt-0.5"
-                                            />
-                                            
-                                            <div className="flex-1">
-                                                 {editingTaskId === task.id ? (
-                                                    <Input 
-                                                        value={editedTaskLabel}
-                                                        onChange={(e) => setEditedTaskLabel(e.target.value)}
-                                                        className="flex-grow text-base h-8"
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveTask(task.id)}
-                                                    />
-                                                ) : (
-                                                    <h4 className={cn("font-semibold", task.completed && 'line-through text-muted-foreground')}>
-                                                        {task.task}
-                                                    </h4>
-                                                )}
-                                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                                     <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}, {new Date(task.deadline).getFullYear()}</p>
-                                                    <span>•</span>
-                                                    <p>${task.estimatedCost.toLocaleString()}</p>
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className='flex items-start gap-4'>
+                                                <Checkbox 
+                                                    id={`task-${task.id}`}
+                                                    checked={task.completed}
+                                                    onCheckedChange={() => handleTaskCheck(task.id)}
+                                                    className="h-5 w-5 mt-0.5"
+                                                />
+                                                
+                                                <div className="flex-1">
+                                                     {editingTaskId === task.id ? (
+                                                        <Input 
+                                                            value={editedTaskLabel}
+                                                            onChange={(e) => setEditedTaskLabel(e.target.value)}
+                                                            className="flex-grow text-base h-8"
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleSaveTask(task.id)}
+                                                        />
+                                                    ) : (
+                                                        <h4 className={cn("font-semibold", task.completed && 'line-through text-muted-foreground')}>
+                                                            {task.task}
+                                                        </h4>
+                                                    )}
+                                                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                                         <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}, {new Date(task.deadline).getFullYear()}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                             <div className="flex items-center gap-1">
+                                             <div className="hidden sm:flex items-center gap-1">
                                                  {editingTaskId === task.id ? (
                                                     <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700">
                                                         <Save className="h-5 w-5" />
@@ -465,6 +465,21 @@ function EventPlannerContent() {
                                                     <Trash2 className="h-5 w-5" />
                                                 </Button>
                                             </div>
+                                        </div>
+
+                                        <div className="absolute bottom-2 left-2 flex sm:hidden items-center gap-1">
+                                            {editingTaskId === task.id ? (
+                                                <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700">
+                                                    <Save className="h-5 w-5" />
+                                                </Button>
+                                            ) : (
+                                                <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8">
+                                                    <Edit className="h-5 w-5" />
+                                                </Button>
+                                            )}
+                                            <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-8 w-8 text-destructive hover:bg-red-100">
+                                                <Trash2 className="h-5 w-5" />
+                                            </Button>
                                         </div>
 
                                         {task.suggestedVendorCategory && !task.assignedVendor && (

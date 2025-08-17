@@ -77,9 +77,16 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
     }
   };
 
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    setOpen(true);
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+       <div onClick={handleTriggerClick}>
+        {children}
+      </div>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{step === 1 ? 'Book Offer' : 'Confirm & Pay'}: {offer.title}</DialogTitle>

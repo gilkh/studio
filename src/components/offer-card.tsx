@@ -131,7 +131,7 @@ export function OfferCard({ offer, role }: OfferCardProps) {
         </div>
         {role === 'client' ? (
           <BookOfferDialog offer={offer}>
-            <Button size="lg" onClick={(e) => e.stopPropagation()}>Book Now</Button>
+            <Button size="lg">Book Now</Button>
           </BookOfferDialog>
         ) : (
           <ManageServiceDialog service={offer}>

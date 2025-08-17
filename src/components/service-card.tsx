@@ -125,7 +125,7 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
         </div>
         {role === 'client' ? (
           <QuoteRequestDialog service={service}>
-            <Button size="lg" onClick={(e) => e.stopPropagation()}>Get a Quote</Button>
+            <Button size="lg">Get a Quote</Button>
           </QuoteRequestDialog>
         ) : (
           <ManageServiceDialog service={service}>

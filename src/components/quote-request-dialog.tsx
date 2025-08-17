@@ -75,13 +75,18 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
         setIsSending(false);
     }
   };
+  
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    e.preventDefault(); 
+    setOpen(true);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-        if (isSending) return;
-        setOpen(isOpen)
-    }}>
-      <DialogTrigger asChild onClick={(e) => {e.stopPropagation(); e.preventDefault();}}>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div onClick={handleTriggerClick}>
+        {children}
+      </div>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Contact {service.vendorName}</DialogTitle>

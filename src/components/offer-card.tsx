@@ -37,7 +37,6 @@ export function OfferCard({ offer, role }: OfferCardProps) {
   
   // Robust check for media array
   const mediaItems = offer.media && offer.media.length > 0 ? offer.media : [{ url: offer.image, isThumbnail: true }];
-  const thumbnail = mediaItems.find(m => m.isThumbnail) || mediaItems[0];
 
 
   useEffect(() => {
@@ -99,8 +98,8 @@ export function OfferCard({ offer, role }: OfferCardProps) {
                 </CarouselContent>
                 {mediaItems.length > 1 && (
                     <>
-                        <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2" />
-                        <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2" />
+                        <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                        <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 z-10" />
                     </>
                 )}
             </Carousel>
@@ -170,3 +169,5 @@ export function OfferCard({ offer, role }: OfferCardProps) {
     </Card>
   );
 }
+
+    

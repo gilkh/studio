@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Star, Clock, ArrowLeft } from 'lucide-react';
+import { Star, Clock, ArrowLeft, Send } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOfferDialog } from '@/components/book-offer-dialog';
 import { useEffect, useState } from 'react';
+import { QuoteRequestDialog } from './quote-request-dialog';
 
 // This is the client component that renders the UI
 export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | null, id: string }) {
@@ -154,9 +155,16 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                             <span className="text-muted-foreground text-sm">Availability: {offer.availability}</span>
                         </div>
                          <Separator />
-                        <BookOfferDialog offer={offer}>
-                            <Button size="lg" className="w-full text-lg h-12">Book Now</Button>
-                        </BookOfferDialog>
+                        <div className="flex gap-2">
+                            <BookOfferDialog offer={offer}>
+                                <Button size="lg" className="w-full text-lg h-12">Book Now</Button>
+                            </BookOfferDialog>
+                            <QuoteRequestDialog service={offer}>
+                                <Button size="lg" variant="outline" className="h-12 w-12 p-0">
+                                    <Send className="h-5 w-5" />
+                                </Button>
+                            </QuoteRequestDialog>
+                        </div>
                     </CardContent>
                  </Card>
 

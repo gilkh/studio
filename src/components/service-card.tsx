@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Heart, HeartCrack } from 'lucide-react';
+import { Star, Edit, Heart, HeartCrack, Send } from 'lucide-react';
 import Image from 'next/image';
 import { QuoteRequestDialog } from './quote-request-dialog';
 import { ManageServiceDialog } from './manage-service-dialog';
@@ -82,10 +82,18 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
             data-ai-hint="event service"
           />
           {role === 'client' && (
-              <Button size="icon" variant="secondary" onClick={handleSaveToggle} disabled={isSaving} className="absolute top-3 right-3 rounded-full h-8 w-8 bg-background/70 hover:bg-background z-10">
-                  {isSaved ? <HeartCrack className="h-4 w-4 text-red-500" /> : <Heart className="h-4 w-4" />}
-                  <span className="sr-only">Save</span>
-              </Button>
+              <div className="absolute top-3 right-3 flex gap-2 z-10">
+                <QuoteRequestDialog service={service}>
+                  <Button size="icon" variant="secondary" className="rounded-full h-8 w-8 bg-background/70 hover:bg-background">
+                      <Send className="h-4 w-4" />
+                      <span className="sr-only">Send to Vendor</span>
+                  </Button>
+                </QuoteRequestDialog>
+                <Button size="icon" variant="secondary" onClick={handleSaveToggle} disabled={isSaving} className="rounded-full h-8 w-8 bg-background/70 hover:bg-background">
+                    {isSaved ? <HeartCrack className="h-4 w-4 text-red-500" /> : <Heart className="h-4 w-4" />}
+                    <span className="sr-only">Save</span>
+                </Button>
+              </div>
           )}
           <Badge className="absolute top-3 left-3 z-10" variant="secondary">
             {service.category}

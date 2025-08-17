@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Star, MessageSquare, ArrowLeft, Send } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QuoteRequestDialog } from '@/components/quote-request-dialog';
@@ -134,12 +134,19 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
                          <p className="text-muted-foreground">Pricing is tailored to your event's needs.</p>
                     </CardHeader>
                     <CardContent>
-                        <QuoteRequestDialog service={service}>
-                            <Button size="lg" className="w-full text-lg h-12">
-                                <MessageSquare className="mr-2 h-5 w-5" />
-                                Request a Quote
-                            </Button>
-                        </QuoteRequestDialog>
+                        <div className="flex gap-2">
+                            <QuoteRequestDialog service={service}>
+                                <Button size="lg" className="w-full text-lg h-12">
+                                    <MessageSquare className="mr-2 h-5 w-5" />
+                                    Request a Quote
+                                </Button>
+                            </QuoteRequestDialog>
+                            <QuoteRequestDialog service={service}>
+                                <Button size="lg" variant="outline" className="h-12 w-12 p-0">
+                                    <Send className="h-5 w-5" />
+                                </Button>
+                            </QuoteRequestDialog>
+                        </div>
                     </CardContent>
                  </Card>
 

@@ -16,7 +16,7 @@ import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Service, UserProfile, Offer } from '@/lib/types';
 import { createQuoteRequest, getUserProfile } from '@/lib/services';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 interface QuoteRequestDialogProps {
@@ -81,12 +81,12 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
         if (isSending) return;
         setOpen(isOpen)
     }}>
-      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{children}</DialogTrigger>
+      <DialogTrigger asChild onClick={(e) => {e.stopPropagation(); e.preventDefault();}}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Request a Quote</DialogTitle>
+          <DialogTitle>Contact {service.vendorName}</DialogTitle>
           <DialogDescription>
-            Send a message to {service.vendorName} about their service: "{service.title}". This will start a new conversation in your messages.
+            Send a message regarding "{service.title}". This will start a new conversation in your messages.
           </DialogDescription>
         </DialogHeader>
         <form id="quote-form" onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -97,7 +97,7 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
             <Textarea
               id="message"
               name="message"
-              placeholder="Hi, I'm interested in your service. I'd like to discuss my event needs..."
+              placeholder="Hi, I'm interested in this. Could you tell me more about..."
               className="col-span-3"
               rows={5}
               required
@@ -107,7 +107,7 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
             <Label htmlFor="date" className="text-right">
               Event Date
             </Label>
-            <Input id="date" name="date" type="date" className="col-span-3" required />
+            <Input id="date" name="date" type="date" className="col-span-3" />
           </div>
            <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="guests" className="text-right">
@@ -118,7 +118,7 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
         </form>
         <DialogFooter>
           <Button type="submit" form="quote-form" disabled={isSending} className="w-full sm:w-auto">
-            {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+            {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
             Send Message
           </Button>
         </DialogFooter>

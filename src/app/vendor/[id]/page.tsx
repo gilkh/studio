@@ -5,12 +5,10 @@ import { VendorPublicProfile } from '@/components/vendor-public-profile';
 
 
 export default async function VendorPublicProfilePage({ params }: { params: { id: string } }) {
-  const [vendor, allListings] = await Promise.all([
+  const [vendor, listings] = await Promise.all([
       getVendorProfile(params.id),
-      getServicesAndOffers()
+      getServicesAndOffers(params.id) // Fetch only this vendor's listings
   ]);
-  
-  const listings = allListings.filter(item => item.vendorId === params.id);
 
   return <VendorPublicProfile vendor={vendor} listings={listings} />;
 }

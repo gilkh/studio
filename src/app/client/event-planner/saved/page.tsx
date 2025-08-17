@@ -84,7 +84,7 @@ export default function SavedTimelinesPage() {
                         <div>
                             <CardTitle>My Saved Timelines</CardTitle>
                             <CardDescription>
-                                Load a previously saved event plan or delete ones you no longer need.
+                                View a previously saved event plan or delete ones you no longer need.
                             </CardDescription>
                         </div>
                     </div>
@@ -115,7 +115,7 @@ export default function SavedTimelinesPage() {
                                         </div>
                                         <div className="flex gap-2 items-center">
                                             <Button onClick={() => handleLoadTimeline(st.id)}>
-                                                <FileCheck className="mr-2 h-4 w-4"/> Load
+                                                <FileCheck className="mr-2 h-4 w-4"/> View
                                             </Button>
                                             <Button size="icon" variant="ghost" onClick={() => handleDeleteSavedTimeline(st.id)} className="text-destructive opacity-50 group-hover:opacity-100">
                                                 <Trash2 className="h-4 w-4" />

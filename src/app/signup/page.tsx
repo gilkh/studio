@@ -76,6 +76,7 @@ export default function SignupPage() {
   const accountType = form.watch('accountType');
   const firstName = form.watch('firstName');
   const lastName = form.watch('lastName');
+  const businessName = form.watch('businessName');
 
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
     form.clearErrors();
@@ -108,6 +109,16 @@ export default function SignupPage() {
             variant: "destructive",
         });
     }
+  }
+  
+  const getInitials = () => {
+    if (accountType === 'vendor' && businessName) {
+        return businessName.substring(0, 2);
+    }
+    if (firstName && lastName) {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`;
+    }
+    return <User />;
   }
 
   return (
@@ -169,7 +180,7 @@ export default function SignupPage() {
                                         <Avatar className="h-24 w-24 border-2 border-primary/50">
                                             <AvatarImage src={avatarPreview || undefined} alt="Avatar preview" />
                                             <AvatarFallback>
-                                                {firstName && lastName ? `${firstName.charAt(0)}${lastName.charAt(0)}` : <User />}
+                                                {getInitials()}
                                             </AvatarFallback>
                                         </Avatar>
                                         <label htmlFor="picture-upload" className="absolute -bottom-2 -right-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-background hover:bg-accent">

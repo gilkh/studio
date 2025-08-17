@@ -19,9 +19,9 @@ import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { useEffect, useState } from 'react';
-import { getVendorQuoteRequests, getUserProfile } from '@/lib/services';
+import { getVendorQuoteRequests, getUserProfile, getVendorProfile } from '@/lib/services';
 import { useAuth, logout } from '@/hooks/use-auth';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, VendorProfile } from '@/lib/types';
 
 
 const clientLinks = [
@@ -44,6 +44,7 @@ const vendorLinks = [
 export function AppHeader() {
   const { userId, role, isLoading } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const [pendingRequests, setPendingRequests] = useState(0);
@@ -59,10 +60,10 @@ export function AppHeader() {
             getVendorQuoteRequests(userId).then(requests => {
                 setPendingRequests(requests.filter(q => q.status === 'pending').length);
             });
+            getVendorProfile(userId).then(setVendorProfile);
         }
         
-        const profile = await getUserProfile(userId);
-        setUserProfile(profile);
+        getUserProfile(userId).then(setUserProfile);
     }
     fetchData();
   }, [userId, isVendor]);
@@ -71,6 +72,16 @@ export function AppHeader() {
     logout();
     router.push('/login');
   };
+  
+  const getInitials = () => {
+    if (isVendor && vendorProfile?.businessName) {
+        return vendorProfile.businessName.substring(0, 2);
+    }
+    if (userProfile?.firstName && userProfile?.lastName) {
+        return `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`;
+    }
+    return 'U';
+  }
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -128,7 +139,7 @@ export function AppHeader() {
                     <Avatar className="h-9 w-9">
                     <AvatarImage src={`https://i.pravatar.cc/150?u=${userId}`} alt="User" />
                     <AvatarFallback>
-                        <User className="h-5 w-5" />
+                        {getInitials()}
                     </AvatarFallback>
                     </Avatar>
                 </Button>
@@ -136,7 +147,7 @@ export function AppHeader() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{userProfile?.firstName} {userProfile?.lastName}</p>
+                    <p className="text-sm font-medium leading-none">{isVendor ? vendorProfile?.businessName : `${userProfile?.firstName} ${userProfile?.lastName}`}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                         {userProfile?.email}
                     </p>

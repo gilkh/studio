@@ -169,7 +169,7 @@ export default function AdminHomePage() {
                                             </DropdownMenu>
                                         ) : 'N/A'}
                                     </TableCell>
-                                    <TableCell className="text-muted-foreground">{user.createdAt ? format(user.createdAt.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                    <TableCell className="text-muted-foreground">{user.createdAt ? format(user.createdAt, 'PPP') : 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => handleResetPassword(user.email)}>
                                             <UserCog className="mr-2 h-4 w-4" />
@@ -235,9 +235,9 @@ export default function AdminHomePage() {
                             {code.isUsed ? 'Used' : 'Available'}
                             </Badge>
                         </TableCell>
-                        <TableCell>{code.createdAt ? format(code.createdAt.toDate(), 'PPP p') : 'N/A'}</TableCell>
+                        <TableCell>{code.createdAt ? format(code.createdAt, 'PPP p') : 'N/A'}</TableCell>
                         <TableCell>{code.usedBy || 'N/A'}</TableCell>
-                        <TableCell>{code.usedAt ? format(code.usedAt.toDate(), 'PPP p') : 'N/A'}</TableCell>
+                        <TableCell>{code.usedAt ? format(code.usedAt, 'PPP p') : 'N/A'}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

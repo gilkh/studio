@@ -96,51 +96,54 @@ export async function signInUser(email: string, password?: string): Promise<{ ro
     try {
         const userQuery = query(collection(db, 'users'), where('email', '==', email));
         const userSnapshot = await getDocs(userQuery);
-        if (!userSnapshot.empty) {
-             const userDoc = userSnapshot.docs[0];
-             const userData = userDoc.data() as UserProfile;
-             
-             if (!password || !userData.password) {
-                 console.warn(`Login attempt without password for user: ${email}`);
-                 return null;
-             }
-
-             // Verify the supplied password against the stored hash.
-             const isPasswordCorrect = await verifyPassword(userData.password, password);
-
-             if (!isPasswordCorrect) {
-                 console.warn(`Password mismatch for user: ${email}`);
-                 return null; // Invalid password
-             }
-
-             if (userData.status === 'disabled') {
-                 console.warn(`Login attempt for disabled user: ${email}`);
-                 return null;
-             }
-
-             const userId = userDoc.id;
-             const vendorCheck = await getDoc(doc(db, 'vendors', userId));
-             if (vendorCheck.exists()) {
-                const vendorData = vendorCheck.data() as VendorProfile;
-                 if (vendorData.status === 'disabled') {
-                    console.warn(`Login attempt for disabled vendor: ${email}`);
-                    return null;
-                 }
-                return { role: 'vendor', userId };
-             }
-             return { role: 'client', userId };
+        
+        if (userSnapshot.empty) {
+            console.log(`No user found with email: ${email}`);
+            return null; // No user found
         }
-    } catch (e) {
-        if ((e as any).code === 'unavailable') {
-            console.warn("Firestore is offline, cannot sign in.");
-             if (email.toLowerCase() === 'admin@tradecraft.com') return { role: 'admin', userId: 'admin-user' };
+        
+        const userDoc = userSnapshot.docs[0];
+        const userData = userDoc.data() as UserProfile;
+        
+        if (!password || !userData.password) {
+            console.warn(`Login attempt without password for user: ${email}`);
             return null;
         }
-        console.error("Sign in error:", e);
-        throw e;
+
+        const isPasswordCorrect = await verifyPassword(userData.password, password);
+
+        if (!isPasswordCorrect) {
+            console.warn(`Password mismatch for user: ${email}`);
+            return null; // Invalid password
+        }
+
+        if (userData.status === 'disabled') {
+            console.warn(`Login attempt for disabled user: ${email}`);
+            throw new Error('Your account has been disabled. Please contact support.');
+        }
+
+        const userId = userDoc.id;
+        const vendorCheck = await getDoc(doc(db, 'vendors', userId));
+
+        if (vendorCheck.exists()) {
+            const vendorData = vendorCheck.data() as VendorProfile;
+            if (vendorData.status === 'disabled') {
+                console.warn(`Login attempt for disabled vendor: ${email}`);
+                throw new Error('Your account has been disabled. Please contact support.');
+            }
+            return { role: 'vendor', userId };
+        }
+        
+        return { role: 'client', userId };
+
+    } catch (e: any) {
+        if (e.code === 'unavailable') {
+            console.warn("Firestore is offline, cannot sign in.");
+            return null;
+        }
+        console.error("Sign in error:", e.message);
+        throw e; // Re-throw the error to be caught by the UI
     }
-    
-    return null;
 }
 
 

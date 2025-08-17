@@ -84,9 +84,10 @@ export default function LoginPage() {
 
     } catch (error) {
         console.error("Login failed:", error);
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign-in. Please try again.';
         toast({
             title: 'Sign In Failed',
-            description: 'An error occurred during sign-in. Please try again.',
+            description: errorMessage,
             variant: 'destructive',
         });
     } finally {

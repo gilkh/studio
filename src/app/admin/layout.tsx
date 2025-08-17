@@ -17,11 +17,15 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
+    // If auth is done loading and the user is not an admin, redirect them.
     if (!isLoading && role !== 'admin') {
       router.replace('/login');
     }
   }, [isLoading, role, router]);
 
+  // While loading, or if the user is not an admin, show a loading screen.
+  // This prevents any of the child components (the actual admin page) from rendering
+  // for unauthorized users.
   if (isLoading || role !== 'admin') {
     return (
         <div className="flex min-h-screen w-full items-center justify-center bg-secondary/50">
@@ -30,6 +34,7 @@ export default function AdminLayout({
     );
   }
 
+  // Only render the admin content if the user is authenticated as an admin.
   return (
     <div className="flex min-h-screen w-full flex-col bg-secondary/50">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">

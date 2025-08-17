@@ -373,10 +373,13 @@ export async function generateVendorCode(): Promise<VendorCode> {
 
 export async function getVendorCodes(): Promise<VendorCode[]> {
     const q = query(collection(db, 'vendorCodes'), orderBy('createdAt', 'desc'));
-    return await fetchCollection<VendorCode>('vendorCodes', q, (data) => ({
-        ...data,
-        createdAt: data.createdAt.toDate(),
-         usedAt: data.usedAt?.toDate(),
+    return await fetchCollection<VendorCode>('vendorCodes', q, (data: DocumentData) => ({
+        id: data.id,
+        code: data.code,
+        isUsed: data.isUsed,
+        usedBy: data.usedBy,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        usedAt: data.usedAt?.toDate ? data.usedAt.toDate() : undefined,
     } as VendorCode));
 }
 
@@ -387,8 +390,15 @@ export async function getAllUsersAndVendors() {
     const vendorsData = new Map(vendorsSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data()} as VendorProfile]));
     
     const allUsers = usersSnapshot.docs.map(doc => {
-        const userData = { id: doc.id, ...doc.data() } as UserProfile;
+        const data = doc.data();
+        const userData = { 
+            id: doc.id, 
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        } as UserProfile;
+        
         const vendorData = vendorsData.get(doc.id);
+
         return {
             ...userData,
             role: vendorData ? 'vendor' : 'client',

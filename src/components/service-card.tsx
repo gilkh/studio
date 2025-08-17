@@ -33,7 +33,11 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const thumbnail = service.media.find(m => m.isThumbnail) || service.media[0];
+
+  // Robust check for media array
+  const mediaItems = service.media && service.media.length > 0 ? service.media : [{ url: service.image, isThumbnail: true }];
+  const thumbnail = mediaItems.find(m => m.isThumbnail) || mediaItems[0];
+
 
   useEffect(() => {
     async function checkSavedStatus() {
@@ -77,7 +81,7 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
         <CardHeader className="p-0 relative overflow-hidden">
             <Carousel className="w-full">
                 <CarouselContent>
-                    {service.media.map((mediaItem, index) => (
+                    {mediaItems.map((mediaItem, index) => (
                     <CarouselItem key={index}>
                         <Link href={`/client/service/${service.id}`}>
                             <div className="relative h-48 w-full">
@@ -93,8 +97,12 @@ export function ServiceCard({ service, role }: ServiceCardProps) {
                     </CarouselItem>
                     ))}
                 </CarouselContent>
-                <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2" />
-                <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2" />
+                 {mediaItems.length > 1 && (
+                    <>
+                        <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2" />
+                        <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2" />
+                    </>
+                )}
             </Carousel>
 
           {role === 'client' && (

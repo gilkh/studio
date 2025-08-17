@@ -14,6 +14,7 @@ export interface BaseService {
   rating: number;
   reviewCount: number;
   image: string;
+  media: { url: string; isThumbnail?: boolean }[];
 }
 
 export interface Service extends BaseService {

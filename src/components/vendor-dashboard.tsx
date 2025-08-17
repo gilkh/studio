@@ -9,7 +9,10 @@ import { OfferCard } from './offer-card';
 import Link from 'next/link';
 import { Users, Briefcase, CalendarClock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { memo } from 'react';
 
+const MemoizedOfferCard = memo(OfferCard);
+const MemoizedServiceCard = memo(ServiceCard);
 
 export function VendorDashboard() {
   const myServices = services.slice(0, 1);
@@ -89,14 +92,14 @@ export function VendorDashboard() {
                     <TabsContent value="offers">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {myOffers.map((offer) => (
-                                <OfferCard key={offer.id} offer={offer} role="vendor" />
+                                <MemoizedOfferCard key={offer.id} offer={offer} role="vendor" />
                             ))}
                         </div>
                     </TabsContent>
                     <TabsContent value="services">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {myServices.map((service) => (
-                                <ServiceCard key={service.id} service={service} role="vendor" />
+                                <MemoizedServiceCard key={service.id} service={service} role="vendor" />
                             ))}
                         </div>
                     </TabsContent>

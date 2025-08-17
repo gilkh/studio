@@ -1,12 +1,18 @@
 
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import React from 'react';
+import React, { useState } from 'react';
 import type { Booking } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Calendar component to reduce initial bundle size
+const Calendar = dynamic(() => import('@/components/ui/calendar').then(mod => mod.Calendar), {
+    loading: () => <Skeleton className="h-[250px] w-[280px]" />,
+    ssr: false // This component uses client-side state, so we disable SSR
+});
 
 interface CalendarViewProps {
   bookings: Booking[];
@@ -14,7 +20,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ bookings, isLoading }: CalendarViewProps) {
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(new Date());
   
   const upcomingBookings = bookings
     .filter(b => b.date >= new Date())

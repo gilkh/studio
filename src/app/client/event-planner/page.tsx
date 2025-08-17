@@ -373,41 +373,41 @@ function EventPlannerContent() {
             <CardContent>
                 <div className="relative mt-8">
                     {/* The timeline line */}
-                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div>
+                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border md:left-1/2 md:-translate-x-1/2"></div>
                     
                     {timeline.map((task, index) => (
                        <div key={task.id}>
                         <div className="relative mb-8 group">
-                            <div className="flex md:grid md:grid-cols-2 items-center">
+                            <div className="grid items-start md:grid-cols-2">
                                 {/* Desktop: Date on the left for even, right for odd */}
                                 <div className={cn(
-                                    "hidden md:flex",
-                                    index % 2 === 0 ? 'justify-end pr-8' : 'justify-start pl-8 col-start-2'
+                                    "hidden md:block text-right",
+                                    index % 2 === 0 ? 'pr-8' : 'pl-8 col-start-2'
                                 )}>
-                                    <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
+                                    <p className={cn("font-semibold text-primary", index % 2 !== 0 && "text-left")}>{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
                                 </div>
 
                                 {/* Connector dot */}
-                                <div className="absolute top-1/2 -translate-y-1/2 left-6 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background md:left-1/2"></div>
+                                <div className="absolute top-2 left-6 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background md:left-1/2"></div>
 
                                 {/* Task Card */}
                                 <div className={cn(
-                                    "relative ml-12 md:ml-0 w-full md:w-[300px] lg:w-[400px]",
-                                    index % 2 === 0 ? 'md:col-start-2 md:pl-8' : 'md:col-start-1 md:text-right md:pr-8'
+                                    "ml-12 md:ml-0",
+                                    index % 2 === 0 ? 'md:col-start-2 md:pl-8' : 'md:col-start-1 md:pr-8'
                                 )}>
                                      {/* Mobile: Date above card */}
                                     <p className="font-semibold text-primary mb-1 md:hidden">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
                                     
                                     <div className={cn(
-                                        "bg-card border rounded-lg shadow-md p-4 space-y-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                                        task.completed && 'bg-muted/60 opacity-80'
+                                        "bg-card border rounded-lg shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg",
+                                        task.completed && 'bg-muted/60 opacity-70'
                                     )}>
-                                        <div className="flex items-start gap-3">
+                                        <div className="flex items-start gap-4">
                                             <Checkbox 
                                                 id={`task-${task.id}`}
                                                 checked={task.completed}
                                                 onCheckedChange={() => handleTaskCheck(task.id)}
-                                                className="h-5 w-5 mt-1"
+                                                className="h-5 w-5 mt-0.5"
                                             />
                                             
                                             <div className="flex-1">
@@ -425,21 +425,20 @@ function EventPlannerContent() {
                                                 )}
                                                 <p className="text-sm text-muted-foreground">${task.estimatedCost.toLocaleString()}</p>
                                             </div>
-                                        </div>
-                                        
-                                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                             {editingTaskId === task.id ? (
-                                                <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600 hover:bg-green-100 hover:text-green-700">
-                                                    <Save className="h-4 w-4" />
+                                             <div className="flex items-center gap-1">
+                                                 {editingTaskId === task.id ? (
+                                                    <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-7 w-7 text-green-600 hover:bg-green-100 hover:text-green-700">
+                                                        <Save className="h-4 w-4" />
+                                                    </Button>
+                                                ) : (
+                                                    <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-7 w-7">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-destructive hover:bg-red-100">
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
-                                            ) : (
-                                                <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-7 w-7">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                            <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-destructive hover:bg-red-100">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            </div>
                                         </div>
 
                                         {task.suggestedVendorCategory && !task.assignedVendor && (
@@ -482,7 +481,7 @@ function EventPlannerContent() {
                         </div>
                         {/* "Add Task" button between items */}
                         <div className="relative h-8">
-                             <div className="absolute left-6 w-0.5 h-full bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div>
+                             <div className="absolute left-6 w-0.5 h-full bg-border md:left-1/2 md:-translate-x-1/2"></div>
                              <div className="absolute left-6 top-1/2 -translate-y-1/2 -translate-x-1/2 md:left-1/2">
                                 <Button size="icon" variant="secondary" className="rounded-full h-7 w-7" onClick={() => handleAddTask(index + 1)}>
                                     <PlusCircle className="h-4 w-4" />

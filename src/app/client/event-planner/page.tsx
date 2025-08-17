@@ -373,31 +373,27 @@ function EventPlannerContent() {
             <CardContent>
                 <div className="relative mt-8">
                     {/* The timeline line */}
-                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border md:left-1/2 md:-translate-x-1/2"></div>
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-border"></div>
                     
                     {timeline.map((task, index) => (
                        <div key={task.id}>
                         <div className="relative mb-8 group">
-                            <div className="grid items-start md:grid-cols-2">
-                                {/* Desktop: Date on the left for even, right for odd */}
+                            <div className="grid grid-cols-2 items-start gap-x-8">
+                                {/* Date / Deadline */}
                                 <div className={cn(
-                                    "hidden md:block text-right",
-                                    index % 2 === 0 ? 'pr-8' : 'pl-8 col-start-2'
+                                    "text-right",
+                                    index % 2 === 0 ? 'pr-2' : 'pl-2 col-start-2 text-left'
                                 )}>
-                                    <p className={cn("font-semibold text-primary", index % 2 !== 0 && "text-left")}>{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
+                                    <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
                                 </div>
 
                                 {/* Connector dot */}
-                                <div className="absolute top-2 left-6 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background md:left-1/2"></div>
+                                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background"></div>
 
                                 {/* Task Card */}
                                 <div className={cn(
-                                    "ml-12 md:ml-0",
-                                    index % 2 === 0 ? 'md:col-start-2 md:pl-8' : 'md:col-start-1 md:pr-8'
+                                    index % 2 === 0 ? 'col-start-2 pl-2' : 'col-start-1 pr-2'
                                 )}>
-                                     {/* Mobile: Date above card */}
-                                    <p className="font-semibold text-primary mb-1 md:hidden">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}</p>
-                                    
                                     <div className={cn(
                                         "bg-card border rounded-lg shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg",
                                         task.completed && 'bg-muted/60 opacity-70'
@@ -481,8 +477,8 @@ function EventPlannerContent() {
                         </div>
                         {/* "Add Task" button between items */}
                         <div className="relative h-8">
-                             <div className="absolute left-6 w-0.5 h-full bg-border md:left-1/2 md:-translate-x-1/2"></div>
-                             <div className="absolute left-6 top-1/2 -translate-y-1/2 -translate-x-1/2 md:left-1/2">
+                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-border"></div>
+                             <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
                                 <Button size="icon" variant="secondary" className="rounded-full h-7 w-7" onClick={() => handleAddTask(index + 1)}>
                                     <PlusCircle className="h-4 w-4" />
                                 </Button>

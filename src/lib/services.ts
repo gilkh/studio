@@ -3,6 +3,7 @@
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage } from './types';
+import { formatItemForMessage } from './utils';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -250,53 +251,67 @@ export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offe
 }
 
 // Quote Request Services
-export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'createdAt'>) {
-    // This function can also create a new chat
+export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'createdAt' | 'status'> & { item: ServiceOrOffer }) {
+    const { message, item, ...restOfRequest } = request;
+    
+    const formattedMessage = formatItemForMessage(item, message);
+
     const chatId = [request.clientId, request.vendorId].sort().join('_');
     const chatRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatRef);
 
-    const batch = writeBatch(db);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const chatSnap = await transaction.get(chatRef);
 
-    if (!chatSnap.exists()) {
-        const clientProfile = await getUserProfile(request.clientId);
-        const vendorProfile = await getVendorProfile(request.vendorId);
+            if (!chatSnap.exists()) {
+                const clientProfile = await getUserProfile(request.clientId);
+                const vendorProfile = await getVendorProfile(request.vendorId);
+        
+                const newChat: Omit<Chat, 'id'> = {
+                    participantIds: [request.clientId, request.vendorId],
+                    participants: [
+                        { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: `https://i.pravatar.cc/150?u=${request.clientId}` },
+                        { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: `https://i.pravatar.cc/150?u=${request.vendorId}` }
+                    ],
+                    lastMessage: `Inquiry about: ${item.title}`,
+                    lastMessageTimestamp: new Date(),
+                    lastMessageSenderId: request.clientId
+                }
+                transaction.set(chatRef, newChat);
+            } else {
+                 transaction.update(chatRef, { 
+                    lastMessage: `Inquiry about: ${item.title}`,
+                    lastMessageTimestamp: new Date(),
+                    lastMessageSenderId: request.clientId
+                });
+            }
 
-        const newChat: Omit<Chat, 'id'> = {
-            participantIds: [request.clientId, request.vendorId],
-            participants: [
-                { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: `https://i.pravatar.cc/150?u=${request.clientId}` },
-                { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: `https://i.pravatar.cc/150?u=${request.vendorId}` }
-            ],
-            lastMessage: request.message,
-            lastMessageTimestamp: new Date(),
-            lastMessageSenderId: request.clientId
-        }
-        batch.set(chatRef, newChat);
-    } else {
-        batch.update(chatRef, { 
-            lastMessage: request.message,
-            lastMessageTimestamp: new Date(),
-            lastMessageSenderId: request.clientId
+            // Add the formatted message to the chat
+            const messagesRef = collection(db, `chats/${chatId}/messages`);
+            const newMessage: Omit<ChatMessage, 'id'> = {
+                senderId: request.clientId,
+                text: formattedMessage,
+                timestamp: new Date()
+            };
+            transaction.set(doc(messagesRef), newMessage);
+
+            // Create the quote request document
+            const quoteRef = collection(db, 'quoteRequests');
+            const newQuoteRequest: Omit<QuoteRequest, 'id'> = {
+                ...restOfRequest,
+                serviceTitle: item.title,
+                message: message, // Save the original, unformatted message here
+                status: 'pending',
+                createdAt: serverTimestamp()
+            }
+            transaction.set(doc(quoteRef), newQuoteRequest);
         });
+    } catch (error) {
+        console.error("Transaction failed: ", error);
+        throw error;
     }
-
-    const messagesRef = collection(db, `chats/${chatId}/messages`);
-    const newMessage: Omit<ChatMessage, 'id'> = {
-        senderId: request.clientId,
-        text: request.message,
-        timestamp: new Date()
-    };
-    batch.set(doc(messagesRef), newMessage);
-
-    const quoteRef = collection(db, 'quoteRequests');
-    batch.set(doc(quoteRef), {
-        ...request,
-        createdAt: serverTimestamp(),
-    });
-
-    await batch.commit();
 }
+
 
 export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteRequest[]> {
      if (!vendorId) return [];
@@ -561,7 +576,7 @@ export async function sendMessage(chatId: string, senderId: string, text: string
     const batch = writeBatch(db);
     batch.set(doc(messagesRef), newMessage);
     batch.update(chatRef, {
-        lastMessage: text,
+        lastMessage: text.startsWith("## Inquiry About:") ? text.split('\n')[0] : text,
         lastMessageTimestamp: newMessage.timestamp,
         lastMessageSenderId: senderId
     });

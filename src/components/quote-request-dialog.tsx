@@ -14,14 +14,14 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Service, UserProfile } from '@/lib/types';
+import type { Service, UserProfile, Offer } from '@/lib/types';
 import { createQuoteRequest, getUserProfile } from '@/lib/services';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 interface QuoteRequestDialogProps {
   children: React.ReactNode;
-  service: Service;
+  service: Service | Offer;
 }
 
 export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProps) {
@@ -59,7 +59,8 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
             serviceTitle: service.title,
             message,
             eventDate,
-            status: 'pending'
+            status: 'pending',
+            item: service, // Pass the full service/offer object
         });
 
         toast({
@@ -76,13 +77,16 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        if (isSending) return;
+        setOpen(isOpen)
+    }}>
+      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Request a Quote</DialogTitle>
           <DialogDescription>
-            Send a message to {service.vendorName} about the service: "{service.title}". This will start a new conversation in your messages.
+            Send a message to {service.vendorName} about their service: "{service.title}". This will start a new conversation in your messages.
           </DialogDescription>
         </DialogHeader>
         <form id="quote-form" onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -113,8 +117,8 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
           </div>
         </form>
         <DialogFooter>
-          <Button type="submit" form="quote-form" disabled={isSending}>
-            {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" form="quote-form" disabled={isSending} className="w-full sm:w-auto">
+            {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
             Send Message
           </Button>
         </DialogFooter>

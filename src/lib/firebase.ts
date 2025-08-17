@@ -1,6 +1,6 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore, enableNetwork, disableNetwork, terminate, connectFirestoreEmulator, CACHE_SIZE_UNLIMITED, memoryLocalCache } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -17,15 +17,24 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-// Initialize Firebase
-if (getApps().length === 0) {
+if (typeof window !== 'undefined' && getApps().length === 0) {
+  // We are on the client, initialize the app
   app = initializeApp(firebaseConfig);
-} else {
+  db = initializeFirestore(app, {
+    localCache: memoryLocalCache({ cacheSizeBytes: CACHE_SIZE_UNLIMITED }),
+  });
+  auth = getAuth(app);
+} else if (getApps().length > 0) {
+  // App is already initialized, get the existing instance
   app = getApp();
+  db = getFirestore(app);
+  auth = getAuth(app);
+} else {
+  // We are on the server, initialize a server-side instance
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
 }
-
-db = getFirestore(app);
-auth = getAuth(app);
 
 
 export { app, db, auth };

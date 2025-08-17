@@ -1,4 +1,5 @@
 
+'use client';
 import { getServicesAndOffers } from '@/lib/services';
 import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -6,35 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QuoteRequestDialog } from '@/components/quote-request-dialog';
-
-
-// This function tells Next.js which pages to pre-render at build time.
-export async function generateStaticParams() {
-  const allItems = await getServicesAndOffers();
-  const services = allItems.filter(item => item.type === 'service');
-  return services.map((service) => ({
-    id: service.id,
-  }));
-}
-
-
-// Mock Data - In a real app, this would be fetched from the DB
-const mockPortfolio = [
-    {id: 1, src: 'https://placehold.co/600x400.png', hint: 'event photography'},
-    {id: 2, src: 'https://placehold.co/600x400.png', hint: 'wedding photography'},
-    {id: 3, src: 'https://placehold.co/600x400.png', hint: 'portrait photography'},
-    {id: 4, src: 'https://placehold.co/600x400.png', hint: 'event photography'},
-];
-
-const mockReviews = [
-    { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely stunning photos! Timeless Snaps captured our wedding day perfectly.'},
-    { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
-]
 
 // This is the client component that renders the UI
 function ServiceDetailView({ service }: { service: Service | null }) {
@@ -49,6 +25,19 @@ function ServiceDetailView({ service }: { service: Service | null }) {
       </div>
     );
   }
+
+    // Mock Data - In a real app, this would be fetched from the DB
+    const mockPortfolio = [
+        {id: 1, src: 'https://placehold.co/600x400.png', hint: 'event photography'},
+        {id: 2, src: 'https://placehold.co/600x400.png', hint: 'wedding photography'},
+        {id: 3, src: 'https://placehold.co/600x400.png', hint: 'portrait photography'},
+        {id: 4, src: 'https://placehold.co/600x400.png', hint: 'event photography'},
+    ];
+
+    const mockReviews = [
+        { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely stunning photos! Timeless Snaps captured our wedding day perfectly.'},
+        { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
+    ]
 
   return (
     <div className="space-y-8">
@@ -167,9 +156,20 @@ function ServiceDetailView({ service }: { service: Service | null }) {
 
 
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
-export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
+async function ServiceDetailPage({ params }: { params: { id: string } }) {
   const allItems = await getServicesAndOffers();
   const service = allItems.find((item) => item.id === params.id && item.type === 'service') as Service | undefined;
   
   return <ServiceDetailView service={service ?? null} />;
 }
+
+// This function tells Next.js which pages to pre-render at build time.
+export async function generateStaticParams() {
+  const allItems = await getServicesAndOffers();
+  const services = allItems.filter(item => item.type === 'service');
+  return services.map((service) => ({
+    id: service.id,
+  }));
+}
+
+export default ServiceDetailPage;

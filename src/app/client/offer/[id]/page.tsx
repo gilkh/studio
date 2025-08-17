@@ -1,4 +1,5 @@
 
+'use client';
 import { getServicesAndOffers } from '@/lib/services';
 import type { Offer } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -6,33 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Star, Clock, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOfferDialog } from '@/components/book-offer-dialog';
-
-// This function tells Next.js which pages to pre-render at build time.
-export async function generateStaticParams() {
-  const allItems = await getServicesAndOffers();
-  const offers = allItems.filter(item => item.type === 'offer');
-  return offers.map((offer) => ({
-    id: offer.id,
-  }));
-}
-
-// Mock Data - In a real app, this would be fetched from the DB
-const mockPortfolio = [
-    {id: 1, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
-    {id: 2, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
-    {id: 3, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
-    {id: 4, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
-];
-
-const mockReviews = [
-    { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely amazing! The catering was the talk of the party.'},
-    { id: 2, author: 'Bob Williams', rating: 5, comment: 'Punctual, professional, and delicious. Worth every penny!'}
-]
 
 // This is the client component that renders the UI
 // It receives data as props from the server component below.
@@ -48,6 +26,20 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
       </div>
     );
   }
+
+    // Mock Data - In a real app, this would be fetched from the DB
+    const mockPortfolio = [
+        {id: 1, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
+        {id: 2, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
+        {id: 3, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
+        {id: 4, src: 'https://placehold.co/600x400.png', hint: 'event offer'},
+    ];
+
+    const mockReviews = [
+        { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely amazing! The catering was the talk of the party.'},
+        { id: 2, author: 'Bob Williams', rating: 5, comment: 'Punctual, professional, and delicious. Worth every penny!'}
+    ]
+
 
   return (
     <div className="space-y-8">
@@ -180,11 +172,22 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
   );
 }
 
-
 // THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
-export default async function OfferDetailPage({ params }: { params: { id: string } }) {
+async function OfferDetailPage({ params }: { params: { id: string } }) {
   const allItems = await getServicesAndOffers();
   const offer = allItems.find((item) => item.id === params.id && item.type === 'offer') as Offer | undefined;
   
   return <OfferDetailView offer={offer ?? null} />;
 }
+
+
+// This function tells Next.js which pages to pre-render at build time.
+export async function generateStaticParams() {
+  const allItems = await getServicesAndOffers();
+  const offers = allItems.filter(item => item.type === 'offer');
+  return offers.map((offer) => ({
+    id: offer.id,
+  }));
+}
+
+export default OfferDetailPage;

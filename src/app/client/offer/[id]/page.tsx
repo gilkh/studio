@@ -171,23 +171,7 @@ function OfferDetailView({ offer }: { offer: Offer | null }) {
   );
 }
 
-// SERVER COMPONENT LOGIC
-// No 'use client'
-
-export async function generateStaticParams() {
-    const allItems = await getServicesAndOffers();
-    const offers = allItems.filter((item) => item.type === 'offer');
-    return offers.map((offer) => ({
-        id: offer.id,
-    }));
-}
-
-async function getOffer(id: string): Promise<Offer | null> {
-    const allItems = await getServicesAndOffers();
-    const offer = allItems.find((item) => item.id === id && item.type === 'offer') as Offer | undefined;
-    return offer ?? null;
-}
-
+// THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
 export default function OfferDetailPage({ params }: { params: { id: string } }) {
   const [offer, setOffer] = useState<Offer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -195,8 +179,9 @@ export default function OfferDetailPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     async function loadOffer() {
         setIsLoading(true);
-        const fetchedOffer = await getOffer(params.id);
-        setOffer(fetchedOffer);
+        const allItems = await getServicesAndOffers();
+        const fetchedOffer = allItems.find((item) => item.id === params.id && item.type === 'offer') as Offer | undefined;
+        setOffer(fetchedOffer ?? null);
         setIsLoading(false);
     }
     loadOffer();

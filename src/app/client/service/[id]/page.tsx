@@ -156,23 +156,7 @@ function ServiceDetailView({ service }: { service: Service | null }) {
 }
 
 
-// SERVER COMPONENT LOGIC
-// No 'use client'
-
-export async function generateStaticParams() {
-    const allItems = await getServicesAndOffers();
-    const services = allItems.filter((item) => item.type === 'service');
-    return services.map((service) => ({
-        id: service.id,
-    }));
-}
-
-async function getService(id: string): Promise<Service | null> {
-    const allItems = await getServicesAndOffers();
-    const service = allItems.find((item) => item.id === id && item.type === 'service') as Service | undefined;
-    return service ?? null;
-}
-
+// THIS IS THE MAIN SERVER COMPONENT FOR THE PAGE
 export default function ServiceDetailPage({ params }: { params: { id: string } }) {
   const [service, setService] = useState<Service | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -180,8 +164,9 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
   useEffect(() => {
     async function loadService() {
         setIsLoading(true);
-        const fetchedService = await getService(params.id);
-        setService(fetchedService);
+        const allItems = await getServicesAndOffers();
+        const fetchedService = allItems.find((item) => item.id === params.id && item.type === 'service') as Service | undefined;
+        setService(fetchedService ?? null);
         setIsLoading(false);
     }
     loadService();

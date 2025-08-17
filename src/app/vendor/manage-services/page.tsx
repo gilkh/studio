@@ -74,7 +74,7 @@ export default function ManageServicesPage() {
             : <ServiceCard service={item} role="vendor" onListingUpdate={fetchListings} />;
 
         return (
-            <div className="relative group">
+            <div key={item.id} className="relative group">
                 {card}
                 <AlertDialog>
                     <AlertDialogTrigger asChild>

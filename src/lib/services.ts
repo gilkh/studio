@@ -544,6 +544,12 @@ export async function resetAllPasswords() {
     return { success: true, message: "Password reset simulation complete. In a real app, emails would be sent." };
 }
 
+export async function updateUserPassword(userId: string, newPassword: string): Promise<void> {
+    const hashedPassword = await hashPassword(newPassword);
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { password: hashedPassword });
+}
+
 
 // --- Real-time Messaging Services ---
 

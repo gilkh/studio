@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
+import { ResetPasswordDialog } from '@/components/reset-password-dialog';
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'] };
 
@@ -115,10 +116,6 @@ export default function AdminHomePage() {
     } catch (error) {
         toast({ title: "Error", description: "Failed to delete the code.", variant: "destructive" });
     }
-  }
-
-  const handleResetPassword = (email: string) => {
-    toast({ title: "Password Reset Simulated", description: `A password reset email would be sent to ${email}.` });
   }
 
   const copyToClipboard = (text: string) => {
@@ -218,10 +215,12 @@ export default function AdminHomePage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleResetPassword(user.email)}>
-                                                    <UserCog className="mr-2 h-4 w-4" />
-                                                    Reset Password
-                                                </DropdownMenuItem>
+                                                <ResetPasswordDialog user={user}>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                        <UserCog className="mr-2 h-4 w-4" />
+                                                        Reset Password
+                                                    </DropdownMenuItem>
+                                                </ResetPasswordDialog>
                                                 {user.status === 'active' ? (
                                                     <DropdownMenuItem onClick={() => handleStatusChange(user, 'disabled')}>
                                                         <Ban className="mr-2 h-4 w-4" />

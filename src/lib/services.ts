@@ -4,6 +4,7 @@ import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, Docu
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
+import { hashPassword, verifyPassword } from './crypto';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -17,9 +18,13 @@ export async function createNewUser(data: {
     const { accountType, firstName, lastName, email, password, businessName, vendorCode } = data;
     const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/\s+/g, '-');
 
-    // In a real app, you would hash the password here before storing it.
-    // e.g., const hashedPassword = await bcrypt.hash(password, 10);
-    // For this demo, we are storing it in plaintext which is NOT secure.
+    if (!password) {
+        throw new Error("Password is required to create a new user.");
+    }
+    
+    // Hash the password securely before storing it.
+    const hashedPassword = await hashPassword(password);
+
     const userProfile: Omit<UserProfile, 'id'> = {
         firstName,
         lastName,
@@ -28,7 +33,7 @@ export async function createNewUser(data: {
         createdAt: new Date(),
         savedItemIds: [],
         status: 'active',
-        password: password, // Storing plaintext password for demo purposes.
+        password: hashedPassword,
     };
 
     if (accountType === 'client') {
@@ -94,9 +99,16 @@ export async function signInUser(email: string, password?: string): Promise<{ ro
         if (!userSnapshot.empty) {
              const userDoc = userSnapshot.docs[0];
              const userData = userDoc.data() as UserProfile;
+             
+             if (!password || !userData.password) {
+                 console.warn(`Login attempt without password for user: ${email}`);
+                 return null;
+             }
 
-             // Password check
-             if (userData.password !== password) {
+             // Verify the supplied password against the stored hash.
+             const isPasswordCorrect = await verifyPassword(userData.password, password);
+
+             if (!isPasswordCorrect) {
                  console.warn(`Password mismatch for user: ${email}`);
                  return null; // Invalid password
              }

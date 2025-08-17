@@ -89,7 +89,7 @@ export async function createNewUser(data: {
 export async function signInUser(email: string, password?: string): Promise<{ role: 'client' | 'vendor' | 'admin'; userId: string } | null> {
     
     if (email.toLowerCase() === 'admin@tradecraft.com') {
-        if (password === 'admin') {
+        if (password === 'admin@tradecraft.com') {
             return { role: 'admin', userId: 'admin-user' };
         } else {
             return null; // Correct email, wrong password for admin

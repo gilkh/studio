@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { AppHeader } from '@/components/header';
 
 export default function AdminLayout({
   children,
@@ -16,8 +17,9 @@ export default function AdminLayout({
   const { role, isLoading } = useAuth();
   const router = useRouter();
 
+  // With middleware in place, this client-side check is now a secondary layer of defense
+  // and handles the UI state while the user is being redirected.
   useEffect(() => {
-    // If auth is done loading and the user is not an admin, redirect them.
     if (!isLoading && role !== 'admin') {
       router.replace('/login');
     }

@@ -14,6 +14,17 @@ import { signInUser } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
 import { logout } from '@/hooks/use-auth';
 
+function setCookie(name: string, value: string, days: number) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+
+
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
         <div className="flex flex-col items-center p-6 text-center bg-card rounded-xl shadow-md transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
@@ -48,6 +59,8 @@ export default function LoginPage() {
             // Save user info to localStorage to simulate a session
             localStorage.setItem('userId', result.userId);
             localStorage.setItem('role', result.role);
+            // Set cookie for middleware
+            setCookie('role', result.role, 7);
 
             toast({
                 title: 'Sign In Successful!',

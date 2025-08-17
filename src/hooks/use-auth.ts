@@ -3,6 +3,13 @@
 
 import { useState, useEffect } from 'react';
 
+function getCookie(name: string) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+}
+
+
 interface AuthInfo {
     userId: string | null;
     role: 'client' | 'vendor' | 'admin' | null;
@@ -40,6 +47,8 @@ export function logout() {
     try {
         localStorage.removeItem('userId');
         localStorage.removeItem('role');
+        // Clear cookie for middleware
+        document.cookie = 'role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     } catch (error) {
         console.error("Could not access localStorage to log out.", error);
     }

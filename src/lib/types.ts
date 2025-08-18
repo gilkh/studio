@@ -171,3 +171,13 @@ export interface ForwardedItem {
   guestCount?: number;
   phone?: string;
 }
+
+export interface UpgradeRequest {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  currentTier: VendorProfile['accountTier'];
+  phone: string;
+  requestedAt: Date;
+  status: 'pending' | 'contacted';
+}

@@ -12,6 +12,7 @@ import type { Booking, QuoteRequest, ServiceOrOffer, VendorProfile } from '@/lib
 import { getBookingsForVendor, getVendorQuoteRequests, getServicesAndOffers, getVendorProfile } from '@/lib/services';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
 
 const StatCard = memo(({ title, value, icon: Icon, linkHref, linkText, isLoading }: { title: string, value: string | number, icon: React.ElementType, linkHref?: string, linkText?: string, isLoading: boolean }) => (
     <Card>
@@ -159,11 +160,13 @@ export default function VendorHomePage() {
                         <CardDescription className="mt-2 text-lg">Here's what's happening with your business today.</CardDescription>
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-                        {vendorProfile?.accountTier && (
-                             <Badge variant="outline" className="text-lg capitalize border-green-600 bg-green-50 text-green-700 gap-2 p-3 w-full justify-center md:w-auto">
-                                <Gem className="h-5 w-5" />
-                                {vendorProfile.accountTier} Tier
-                            </Badge>
+                        {vendorProfile && (
+                            <RequestUpgradeDialog vendor={vendorProfile}>
+                                <Badge variant="outline" className="text-lg capitalize border-green-600 bg-green-50 text-green-700 gap-2 p-3 w-full justify-center md:w-auto cursor-pointer hover:bg-green-100">
+                                    <Gem className="h-5 w-5" />
+                                    {vendorProfile.accountTier} Tier
+                                </Badge>
+                            </RequestUpgradeDialog>
                         )}
                         <Link href="/vendor/manage-services" className="w-full md:w-auto">
                             <Button size="lg" className="w-full">

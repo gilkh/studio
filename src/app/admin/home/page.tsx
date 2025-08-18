@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser } from '@/lib/services';
-import type { VendorCode, UserProfile, VendorProfile } from '@/lib/types';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests } from '@/lib/services';
+import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +39,7 @@ type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: str
 export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
   const [users, setUsers] = useState<DisplayUser[]>([]);
+  const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -51,12 +52,14 @@ export default function AdminHomePage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [vendorCodes, allUsers] = await Promise.all([
+      const [vendorCodes, allUsers, requests] = await Promise.all([
         getVendorCodes(),
-        getAllUsersAndVendors()
+        getAllUsersAndVendors(),
+        getUpgradeRequests(),
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
+      setUpgradeRequests(requests);
     } catch (error) {
       toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
     } finally {
@@ -135,6 +138,10 @@ export default function AdminHomePage() {
       <Tabs defaultValue="users">
         <TabsList>
             <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="upgrades">
+                Upgrade Requests
+                {upgradeRequests.length > 0 && <Badge className="ml-2">{upgradeRequests.length}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="codes">Vendor Codes</TabsTrigger>
             <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
@@ -262,6 +269,58 @@ export default function AdminHomePage() {
                      </Table>
                 </CardContent>
             </Card>
+        </TabsContent>
+        
+        <TabsContent value="upgrades" className="mt-4">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Account Upgrade Requests</CardTitle>
+                    <CardDescription>Vendors interested in upgrading their account tier.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Vendor</TableHead>
+                                <TableHead>Current Tier</TableHead>
+                                <TableHead>Contact Phone</TableHead>
+                                <TableHead>Date Requested</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(2)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-6 w-36" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                                </TableRow>
+                                ))
+                            ) : upgradeRequests.length > 0 ? upgradeRequests.map(req => (
+                                <TableRow key={req.id}>
+                                    <TableCell className="font-medium">{req.vendorName}</TableCell>
+                                    <TableCell><Badge variant="secondary" className="capitalize">{req.currentTier}</Badge></TableCell>
+                                    <TableCell className="text-muted-foreground">{req.phone}</TableCell>
+                                    <TableCell>{format(req.requestedAt, 'PPP p')}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm">
+                                            <Phone className="mr-2 h-4 w-4" />
+                                            Mark as Contacted
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">No pending upgrade requests.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+             </Card>
         </TabsContent>
 
         <TabsContent value="codes" className="mt-4">

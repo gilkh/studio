@@ -21,6 +21,7 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
 
 
 const profileFormSchema = z.object({
@@ -190,10 +191,12 @@ export default function VendorProfilePage() {
                                 Verified Vendor
                             </Badge>
                             {vendor?.accountTier && (
-                               <Badge variant="outline" className="capitalize border-green-600 bg-green-50 text-green-700 gap-1.5 pl-2">
-                                    <Gem className="h-4 w-4" />
-                                    {vendor.accountTier} Tier
-                                </Badge>
+                                <RequestUpgradeDialog vendor={vendor}>
+                                   <Badge variant="outline" className="capitalize border-green-600 bg-green-50 text-green-700 gap-1.5 pl-2 cursor-pointer hover:bg-green-100">
+                                        <Gem className="h-4 w-4" />
+                                        {vendor.accountTier} Tier
+                                    </Badge>
+                                </RequestUpgradeDialog>
                             )}
                         </div>
                     </div>

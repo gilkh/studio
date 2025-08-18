@@ -9,9 +9,10 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit, increment } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
 
@@ -709,6 +710,29 @@ export async function changeUserPassword(userId: string, oldPassword: string, ne
     }
 
     await updateUserPassword(userId, newPassword);
+}
+
+export async function createUpgradeRequest(request: Omit<UpgradeRequest, 'id'| 'requestedAt' | 'status'>) {
+  const docRef = await addDoc(collection(db, 'upgradeRequests'), {
+    ...request,
+    requestedAt: serverTimestamp(),
+    status: 'pending',
+  });
+  return docRef.id;
+}
+
+export async function getUpgradeRequests(): Promise<UpgradeRequest[]> {
+    const q = query(collection(db, 'upgradeRequests'), where('status', '==', 'pending'), orderBy('requestedAt', 'desc'));
+    const transform = (data: DocumentData): UpgradeRequest => ({
+        id: data.id,
+        vendorId: data.vendorId,
+        vendorName: data.vendorName,
+        currentTier: data.currentTier,
+        phone: data.phone,
+        status: data.status,
+        requestedAt: data.requestedAt?.toDate ? data.requestedAt.toDate() : new Date(),
+    });
+    return await fetchCollection<UpgradeRequest>('upgradeRequests', q, transform);
 }
 
 

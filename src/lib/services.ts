@@ -19,6 +19,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
@@ -709,13 +710,14 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
 
 export async function getReviewsForVendor(vendorId: string): Promise<Review[]> {
     if (!vendorId) return [];
-    const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId));
     const transform = (data: DocumentData): Review => ({
         id: data.id,
         ...data,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
     } as Review);
-    return fetchCollection<Review>('reviews', q, transform);
+    const reviews = await fetchCollection<Review>('reviews', q, transform);
+    return reviews.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 // Admin Services
@@ -950,12 +952,14 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
 
         recentUsersSnapshot.forEach(doc => {
             const data = doc.data() as UserProfile;
-            const monthKey = format(data.createdAt.toDate(), 'MMM');
-            if (monthlyData[monthKey]) {
-                 if (vendorIds.has(doc.id)) {
-                    monthlyData[monthKey].Vendors++;
-                } else {
-                    monthlyData[monthKey].Clients++;
+            if (data.createdAt) { // Defensive check
+                const monthKey = format(data.createdAt.toDate(), 'MMM');
+                if (monthlyData[monthKey]) {
+                    if (vendorIds.has(doc.id)) {
+                        monthlyData[monthKey].Vendors++;
+                    } else {
+                        monthlyData[monthKey].Clients++;
+                    }
                 }
             }
         });

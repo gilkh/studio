@@ -114,6 +114,7 @@ export default function ClientRequestsPage() {
 
     useEffect(() => {
         fetchRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, isAuthLoading]);
 
     const pageIsLoading = isLoading || isAuthLoading;

@@ -238,8 +238,8 @@ export function AdminUserManagement({ initialUser, initialVendor, initialListing
                     <CardContent>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                             <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                            <span className="font-bold text-base">{vendor.rating.toFixed(1)}</span>
-                            <span>({vendor.reviewCount} reviews)</span>
+                            <span className="font-bold text-base">{(vendor.rating || 0).toFixed(1)}</span>
+                            <span>({vendor.reviewCount || 0} reviews)</span>
                         </div>
                         <FormProvider {...vendorForm}>
                              <form onSubmit={vendorForm.handleSubmit(onVendorSubmit)} className="space-y-6 max-w-2xl">

@@ -59,7 +59,8 @@ export default function AdminHomePage() {
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
-      setUpgradeRequests(requests);
+      // Sort requests here on the client-side
+      setUpgradeRequests(requests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
     } catch (error) {
       toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
     } finally {

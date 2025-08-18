@@ -10,7 +10,8 @@
 
 
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit, increment } from 'firebase/firestore';
+
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
@@ -722,7 +723,7 @@ export async function createUpgradeRequest(request: Omit<UpgradeRequest, 'id'| '
 }
 
 export async function getUpgradeRequests(): Promise<UpgradeRequest[]> {
-    const q = query(collection(db, 'upgradeRequests'), where('status', '==', 'pending'), orderBy('requestedAt', 'desc'));
+    const q = query(collection(db, 'upgradeRequests'), where('status', '==', 'pending'));
     const transform = (data: DocumentData): UpgradeRequest => ({
         id: data.id,
         vendorId: data.vendorId,

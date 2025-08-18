@@ -12,7 +12,7 @@ import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVe
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +37,7 @@ import { AdminAnalyticsChart } from '@/components/admin-analytics-chart';
 import { AdminStatCard } from '@/components/admin-stat-card';
 
 
-type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'] };
+type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number };
 
 export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
@@ -178,6 +178,7 @@ export default function AdminHomePage() {
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Tier</TableHead>
+                                <TableHead>Rating</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Date Joined</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -191,6 +192,7 @@ export default function AdminHomePage() {
                                     <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-28" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
@@ -224,6 +226,15 @@ export default function AdminHomePage() {
                                                     ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
+                                        ) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.role === 'vendor' ? (
+                                             <div className="flex items-center gap-1.5">
+                                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                                <span className="font-medium">{(user.rating || 0).toFixed(1)}</span>
+                                                <span className="text-xs text-muted-foreground">({user.reviewCount || 0})</span>
+                                            </div>
                                         ) : 'N/A'}
                                     </TableCell>
                                     <TableCell>

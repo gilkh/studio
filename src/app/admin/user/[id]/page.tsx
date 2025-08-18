@@ -364,10 +364,3 @@ export default function AdminUserManagementPage({ params }: { params: { id: stri
      </div>
   )
 }
-
-export async function generateStaticParams() {
-    const allUsers = await getAllUsersAndVendors();
-    return allUsers.map((user) => ({
-        id: user.id,
-    }));
-}

@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft } from 'lucide-react';
+import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft, Calendar, Users, Phone, PencilRuler } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import type { Chat, ChatMessage, ForwardedItem } from '@/lib/types';
 import { getChatsForUser, getMessagesForChat, sendMessage, markChatAsRead } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
 import { parseForwardedMessage } from '@/lib/utils';
 import Image from 'next/image';
@@ -40,6 +40,47 @@ function ForwardedItemBubble({ item }: { item: ForwardedItem }) {
     )
 }
 
+function QuoteRequestBubble({ item }: { item: ForwardedItem }) {
+    return (
+        <div className="bg-background border-2 border-primary/50 rounded-lg p-4 max-w-md w-full shadow-lg">
+            <div className="flex items-center gap-3 mb-3 border-b pb-3">
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary">
+                    <PencilRuler className="h-5 w-5" />
+                </div>
+                <div>
+                    <h3 className="font-bold text-lg">Quote Request</h3>
+                    <p className="text-sm text-muted-foreground">For "{item.title}"</p>
+                </div>
+            </div>
+
+            <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                    <p className="text-muted-foreground font-medium w-24">Message</p>
+                    <p className="flex-1">"{item.userMessage}"</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <p><span className="text-muted-foreground">Event Date:</span> {item.eventDate ? format(new Date(item.eventDate), 'PPP') : 'Not specified'}</p>
+                </div>
+                 <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <p><span className="text-muted-foreground">Guests:</span> ~{item.guestCount || 'Not specified'}</p>
+                </div>
+                 <div className="flex items-center gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <p><span className="text-muted-foreground">Contact:</span> {item.phone || 'Not provided'}</p>
+                </div>
+            </div>
+             <Link href="/vendor/client-requests">
+                <Button className="w-full mt-4">
+                    Respond to Request
+                </Button>
+            </Link>
+        </div>
+    )
+}
+
+
 function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isOwnMessage: boolean, chat: Chat | null }) {
     const { userId } = useAuth();
     const otherParticipant = chat?.participants.find(p => p.id !== userId);
@@ -47,6 +88,13 @@ function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isO
     const forwardedItem = parseForwardedMessage(message.text);
 
     if (forwardedItem) {
+         if (forwardedItem.isQuoteRequest && !isOwnMessage) {
+            return (
+                <div className="flex justify-start w-full">
+                     <QuoteRequestBubble item={forwardedItem} />
+                </div>
+            )
+        }
         return (
              <div className={cn("flex items-end gap-2", isOwnMessage && "justify-end")}>
                  {!isOwnMessage && (
@@ -74,7 +122,7 @@ function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isO
             )}
             <div
                 className={cn(
-                    "max-w-xs rounded-lg p-3",
+                    "max-w-xs rounded-lg p-3 whitespace-pre-wrap",
                     isOwnMessage ? "bg-primary text-primary-foreground" : "bg-muted"
                 )}
             >
@@ -92,7 +140,7 @@ function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isO
 
 
 export function MessagingPanel() {
-  const { userId } = useAuth();
+  const { userId, role } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -160,8 +208,14 @@ export function MessagingPanel() {
     const sender = chat.lastMessageSenderId === userId ? 'You: ' : '';
     const isUnread = (chat.unreadCount?.[userId] || 0) > 0;
 
-
     if (forwarded) {
+        if(forwarded.isQuoteRequest) {
+            return (
+                 <span className={cn("flex items-center gap-1.5", isUnread && 'text-foreground font-medium')}>
+                    {sender} <PencilRuler className="h-4 w-4" /> Quote Request
+                </span>
+            )
+        }
         return (
             <span className={cn("flex items-center gap-1.5", isUnread && 'text-foreground font-medium')}>
                 {sender} <FileQuestion className="h-4 w-4" /> Inquiry about service
@@ -170,7 +224,7 @@ export function MessagingPanel() {
     }
 
     return (
-         <span className={cn(isUnread && 'text-foreground font-medium')}>
+         <span className={cn("truncate", isUnread && 'text-foreground font-medium')}>
             {sender}{chat.lastMessage}
         </span>
     );

@@ -48,8 +48,12 @@ export interface QuoteRequest {
   serviceTitle: string;
   message: string;
   eventDate: string;
-  status: 'pending' | 'approved' | 'declined';
+  guestCount: number;
+  phone: string;
+  status: 'pending' | 'responded' | 'approved' | 'declined';
   createdAt: Date;
+  quotePrice?: number;
+  quoteResponse?: string;
 }
 
 export interface Booking {
@@ -154,6 +158,7 @@ export interface VendorCode {
 
 export interface ForwardedItem {
   isForwarded: true;
+  isQuoteRequest: boolean;
   title: string;
   image: string;
   vendorName: string;
@@ -161,6 +166,8 @@ export interface ForwardedItem {
   userMessage: string;
   itemId: string;
   itemType: ServiceType;
+  // Quote request specific fields
+  eventDate?: string;
+  guestCount?: number;
+  phone?: string;
 }
-
-    

@@ -5,6 +5,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit, increment } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem } from './types';
@@ -373,7 +374,7 @@ export async function deleteServiceOrOffer(itemId: string, itemType: 'service' |
 export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'createdAt' | 'status'> & { item: ServiceOrOffer }) {
     const { message, item, ...restOfRequest } = request;
     
-    const formattedMessage = formatItemForMessage(item, message);
+    const formattedMessage = formatItemForMessage(item, message, true, request);
 
     const chatId = [request.clientId, request.vendorId].sort().join('_');
     const chatRef = doc(db, 'chats', chatId);
@@ -456,6 +457,43 @@ export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteReq
         throw e;
     }
 }
+
+export async function respondToQuote(requestId: string, vendorId: string, clientId: string, price: number, response: string) {
+    const quoteRef = doc(db, 'quoteRequests', requestId);
+    const chatId = [clientId, vendorId].sort().join('_');
+    const chatRef = doc(db, 'chats', chatId);
+
+    const responseMessage = `QUOTE RESPONSE:
+Price: $${price}
+Message: ${response}`;
+    
+    await runTransaction(db, async (transaction) => {
+        // 1. Update the quote request itself
+        transaction.update(quoteRef, {
+            status: 'responded',
+            quotePrice: price,
+            quoteResponse: response,
+        });
+        
+        // 2. Send a message to the chat
+        const messagesRef = collection(db, `chats/${chatId}/messages`);
+        const newMessage: Omit<ChatMessage, 'id'> = {
+            senderId: vendorId,
+            text: responseMessage,
+            timestamp: new Date()
+        };
+        transaction.set(doc(messagesRef), newMessage);
+        
+        // 3. Update the chat's last message info
+        transaction.update(chatRef, {
+            lastMessage: "You received a quote response.",
+            lastMessageTimestamp: newMessage.timestamp,
+            lastMessageSenderId: vendorId,
+            [`unreadCount.${clientId}`]: increment(1)
+        });
+    });
+}
+
 
 
 // Booking Services
@@ -719,7 +757,13 @@ export async function sendMessage(chatId: string, senderId: string, text: string
             }
 
             const isForwarded = parseForwardedMessage(text);
-            const lastMessageText = isForwarded ? "Forwarded an item" : text;
+            let lastMessageText = text;
+
+            if (isForwarded?.isQuoteRequest) {
+                 lastMessageText = "You sent a quote request."
+            } else if (isForwarded) {
+                 lastMessageText = "You forwarded an item."
+            }
 
             // Add new message
             transaction.set(doc(messagesRef), newMessage);

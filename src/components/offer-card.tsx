@@ -26,7 +26,7 @@ import {
 
 interface OfferCardProps {
   offer: Offer;
-  role: 'client' | 'vendor';
+  role: 'client' | 'vendor' | 'admin';
   onListingUpdate?: () => void;
 }
 

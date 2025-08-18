@@ -35,6 +35,7 @@ import { ResetPasswordDialog } from '@/components/reset-password-dialog';
 import { AdminAnalyticsChart } from '@/components/admin-analytics-chart';
 import { AdminStatCard } from '@/components/admin-stat-card';
 import { MessagingPanel } from '@/components/messaging-panel';
+import Link from 'next/link';
 
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number };
@@ -204,7 +205,9 @@ export default function AdminHomePage() {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             {user.role === 'client' ? <User className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                                            <span className="font-medium">{user.role === 'vendor' ? user.businessName : `${user.firstName} ${user.lastName}`}</span>
+                                            <Link href={`/admin/user/${user.id}`} className="font-medium hover:underline">
+                                                {user.role === 'vendor' ? user.businessName : `${user.firstName} ${user.lastName}`}
+                                            </Link>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">{user.email}</TableCell>

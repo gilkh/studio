@@ -25,7 +25,7 @@ import {
 
 interface ServiceCardProps {
   service: Service;
-  role: 'client' | 'vendor';
+  role: 'client' | 'vendor' | 'admin';
   onListingUpdate?: () => void;
 }
 

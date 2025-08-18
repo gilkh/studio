@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Users, Briefcase, CalendarClock, PlusCircle } from 'lucide-react';
+import { Users, Briefcase, CalendarClock, PlusCircle, Gem } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState, memo } from 'react';
@@ -158,12 +158,20 @@ export default function VendorHomePage() {
                         </CardTitle>
                         <CardDescription className="mt-2 text-lg">Here's what's happening with your business today.</CardDescription>
                     </div>
-                    <Link href="/vendor/manage-services">
-                        <Button size="lg" className="w-full md:w-auto">
-                            <PlusCircle className="mr-2" />
-                            Create New Listing
-                        </Button>
-                    </Link>
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                        {vendorProfile?.accountTier && (
+                             <Badge variant="outline" className="text-lg capitalize border-green-600 bg-green-50 text-green-700 gap-2 p-3 w-full justify-center md:w-auto">
+                                <Gem className="h-5 w-5" />
+                                {vendorProfile.accountTier} Tier
+                            </Badge>
+                        )}
+                        <Link href="/vendor/manage-services" className="w-full md:w-auto">
+                            <Button size="lg" className="w-full">
+                                <PlusCircle className="mr-2" />
+                                Create New Listing
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </CardHeader>
         </Card>

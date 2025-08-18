@@ -189,6 +189,12 @@ export default function VendorProfilePage() {
                                 <ShieldCheck className="h-4 w-4 text-green-600" />
                                 Verified Vendor
                             </Badge>
+                            {vendor?.accountTier && (
+                               <Badge variant="outline" className="capitalize border-green-600 bg-green-50 text-green-700 gap-1.5 pl-2">
+                                    <Gem className="h-4 w-4" />
+                                    {vendor.accountTier} Tier
+                                </Badge>
+                            )}
                         </div>
                     </div>
                 </div>

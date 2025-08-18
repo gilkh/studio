@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests } from '@/lib/services';
-import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest } from '@/lib/types';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics } from '@/lib/services';
+import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,9 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { ResetPasswordDialog } from '@/components/reset-password-dialog';
+import { AdminAnalyticsChart } from '@/components/admin-analytics-chart';
+import { AdminStatCard } from '@/components/admin-stat-card';
+
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'] };
 
@@ -40,6 +43,7 @@ export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
   const [users, setUsers] = useState<DisplayUser[]>([]);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
+  const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -52,15 +56,16 @@ export default function AdminHomePage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [vendorCodes, allUsers, requests] = await Promise.all([
+      const [vendorCodes, allUsers, requests, platformAnalytics] = await Promise.all([
         getVendorCodes(),
         getAllUsersAndVendors(),
         getUpgradeRequests(),
+        getPlatformAnalytics(),
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
-      // Sort requests here on the client-side
       setUpgradeRequests(requests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+      setAnalytics(platformAnalytics);
     } catch (error) {
       toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
     } finally {
@@ -132,12 +137,13 @@ export default function AdminHomePage() {
       <Card>
         <CardHeader>
           <CardTitle>Admin Dashboard</CardTitle>
-          <CardDescription>Manage users, vendor registrations, and perform administrative tasks.</CardDescription>
+          <CardDescription>Manage users, vendor registrations, and view platform analytics.</CardDescription>
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="users">
+      <Tabs defaultValue="overview">
         <TabsList>
+            <TabsTrigger value="overview">Platform Overview</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="upgrades">
                 Upgrade Requests
@@ -147,6 +153,17 @@ export default function AdminHomePage() {
             <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
         
+        <TabsContent value="overview" className="mt-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <AdminStatCard title="Total Users" value={analytics?.totalUsers} icon={User} isLoading={isLoading} />
+            <AdminStatCard title="Total Vendors" value={analytics?.totalVendors} icon={Building} isLoading={isLoading} />
+            <AdminStatCard title="Total Bookings" value={analytics?.totalBookings} icon={CalendarCheck} isLoading={isLoading} />
+          </div>
+          <div className="mt-4">
+            <AdminAnalyticsChart data={analytics?.userSignups} isLoading={isLoading} />
+          </div>
+        </TabsContent>
+
         <TabsContent value="users" className="mt-4">
             <Card>
                 <CardHeader>

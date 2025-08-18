@@ -12,9 +12,10 @@
 
 
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction } from 'firebase/firestore';
+
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
 import { subMonths, format, startOfMonth } from 'date-fns';
@@ -796,6 +797,62 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
     }
     throw e;
   }
+}
+
+
+export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
+    const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
+
+    try {
+        const [usersSnapshot, vendorsSnapshot, bookingsSnapshot, recentUsersSnapshot, recentVendorsSnapshot] = await Promise.all([
+            getCountFromServer(collection(db, "users")),
+            getCountFromServer(collection(db, "vendors")),
+            getCountFromServer(collection(db, "bookings")),
+            getDocs(query(collection(db, "users"), where("createdAt", ">=", sixMonthsAgo))),
+            getDocs(query(collection(db, "vendors"), where("createdAt", ">=", sixMonthsAgo)))
+        ]);
+
+        const monthlyData: { [key: string]: { Clients: number; Vendors: number } } = {};
+
+        // Initialize last 6 months
+        for (let i = 0; i < 6; i++) {
+            const monthDate = subMonths(new Date(), i);
+            const monthKey = format(monthDate, 'MMM');
+            monthlyData[monthKey] = { Clients: 0, Vendors: 0 };
+        }
+
+        const vendorIds = new Set(recentVendorsSnapshot.docs.map(d => d.id));
+
+        recentUsersSnapshot.forEach(doc => {
+            const data = doc.data() as UserProfile;
+            const monthKey = format(data.createdAt.toDate(), 'MMM');
+            if (monthlyData[monthKey]) {
+                 if (vendorIds.has(doc.id)) {
+                    monthlyData[monthKey].Vendors++;
+                } else {
+                    monthlyData[monthKey].Clients++;
+                }
+            }
+        });
+
+        const userSignups = Object.entries(monthlyData)
+            .map(([month, data]) => ({ month, ...data }))
+            .reverse();
+            
+        return {
+            totalUsers: usersSnapshot.data().count,
+            totalVendors: vendorsSnapshot.data().count,
+            totalBookings: bookingsSnapshot.data().count,
+            userSignups,
+        };
+
+    } catch (e) {
+        console.warn("Firebase error getting platform analytics:", e);
+        if ((e as any).code === 'unavailable') {
+            return { totalUsers: 0, totalVendors: 0, totalBookings: 0, userSignups: [] };
+        }
+        throw e;
+    }
 }
 
 

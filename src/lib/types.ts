@@ -187,3 +187,10 @@ export interface VendorAnalyticsData {
     quotes: number;
     bookings: number;
 }
+
+export interface PlatformAnalytics {
+    totalUsers: number;
+    totalVendors: number;
+    totalBookings: number;
+    userSignups: { month: string; Clients: number; Vendors: number }[];
+}

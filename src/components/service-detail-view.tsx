@@ -1,7 +1,7 @@
 
 'use client';
 import { getServiceOrOfferById } from '@/lib/services';
-import type { Service, MediaItem } from '@/lib/types';
+import type { Service, MediaItem, Review } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,18 +19,29 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { getReviewsForVendor } from '@/lib/services';
 
 
 // This is the client component that renders the UI
 export function ServiceDetailView({ service: initialService, id }: { service: Service | null, id: string }) {
     const [service, setService] = useState(initialService);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         async function fetchService() {
             if(!initialService) {
                 const foundService = (await getServiceOrOfferById(id)) as Service | null;
                 setService(foundService ?? null);
+                if (foundService) {
+                    const vendorReviews = await getReviewsForVendor(foundService.vendorId);
+                    setReviews(vendorReviews);
+                }
+            } else {
+                 const vendorReviews = await getReviewsForVendor(initialService.vendorId);
+                 setReviews(vendorReviews);
             }
+            setIsLoading(false);
         }
         fetchService();
     }, [initialService, id]);
@@ -46,13 +57,6 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
       </div>
     );
   }
-
-    // Mock Data - In a real app, this would be fetched from the DB
-    const mockReviews = [
-        { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely stunning photos! Timeless Snaps captured our wedding day perfectly.'},
-        { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
-    ]
-
     const mediaItems = service.media && service.media.length > 0 ? service.media : [{ url: service.image, type: 'image' as const, isThumbnail: true }];
 
 
@@ -165,29 +169,37 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
 
             <div className="lg:col-span-2 space-y-6">
                 <Card>
-                    <CardHeader><CardTitle>Reviews ({service.reviewCount})</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Reviews ({reviews.length})</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
-                        {mockReviews.map((review, index) => (
+                         {isLoading ? (
+                            <p className="text-muted-foreground">Loading reviews...</p>
+                        ) : reviews.length > 0 ? reviews.map((review, index) => (
                             <div key={review.id}>
                                 <div className="flex items-start gap-4">
                                     <Avatar className="h-10 w-10">
-                                        <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
+                                         <AvatarImage src={review.clientAvatar} />
+                                        <AvatarFallback>{review.clientName.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex-grow">
                                         <div className="flex items-center justify-between">
-                                            <p className="font-semibold">{review.author}</p>
+                                            <p className="font-semibold">{review.clientName}</p>
                                             <div className="flex items-center gap-0.5">
                                                 {[...Array(review.rating)].map((_, i) => (
                                                     <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                                ))}
+                                                {[...Array(5-review.rating)].map((_, i) => (
+                                                    <Star key={i} className="h-4 w-4 fill-muted text-muted-foreground" />
                                                 ))}
                                             </div>
                                         </div>
                                         <p className="text-muted-foreground mt-1">"{review.comment}"</p>
                                     </div>
                                 </div>
-                                {index < mockReviews.length -1 && <Separator className="mt-6" />}
+                                {index < reviews.length -1 && <Separator className="mt-6" />}
                             </div>
-                        ))}
+                        )) : (
+                             <p className="text-center text-muted-foreground py-8">This vendor doesn't have any reviews yet.</p>
+                        )}
                     </CardContent>
                 </Card>
             </div>

@@ -1,7 +1,7 @@
 
 'use client';
 import { getServiceOrOfferById } from '@/lib/services';
-import type { Offer, MediaItem } from '@/lib/types';
+import type { Offer, MediaItem, Review } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,17 +20,28 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { getReviewsForVendor } from '@/lib/services';
 
 // This is the client component that renders the UI
 export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | null, id: string }) {
   const [offer, setOffer] = useState(initialOffer);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     async function fetchOffer() {
         if(!initialOffer) {
             const foundOffer = (await getServiceOrOfferById(id)) as Offer | null;
             setOffer(foundOffer ?? null);
+            if (foundOffer) {
+                const vendorReviews = await getReviewsForVendor(foundOffer.vendorId);
+                setReviews(vendorReviews);
+            }
+        } else {
+             const vendorReviews = await getReviewsForVendor(initialOffer.vendorId);
+             setReviews(vendorReviews);
         }
+        setIsLoading(false);
     }
     fetchOffer();
   }, [initialOffer, id]);
@@ -46,12 +57,6 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
       </div>
     );
   }
-
-    // Mock Data - In a real app, this would be fetched from the DB
-    const mockReviews = [
-        { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely amazing! The catering was the talk of the party.'},
-        { id: 2, author: 'Bob Williams', rating: 5, comment: 'Punctual, professional, and delicious. Worth every penny!'}
-    ]
 
     const mediaItems = offer.media && offer.media.length > 0 ? offer.media : [{ url: offer.image, type: 'image' as const, isThumbnail: true }];
 
@@ -182,29 +187,37 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
 
             <div className="lg:col-span-2 space-y-6">
                  <Card>
-                    <CardHeader><CardTitle>Reviews ({offer.reviewCount})</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Reviews ({reviews.length})</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
-                        {mockReviews.map((review, index) => (
+                        {isLoading ? (
+                            <p className="text-muted-foreground">Loading reviews...</p>
+                        ) : reviews.length > 0 ? reviews.map((review, index) => (
                             <div key={review.id}>
                                 <div className="flex items-start gap-4">
                                     <Avatar className="h-10 w-10">
-                                        <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={review.clientAvatar} />
+                                        <AvatarFallback>{review.clientName.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex-grow">
                                         <div className="flex items-center justify-between">
-                                            <p className="font-semibold">{review.author}</p>
+                                            <p className="font-semibold">{review.clientName}</p>
                                             <div className="flex items-center gap-0.5">
                                                 {[...Array(review.rating)].map((_, i) => (
                                                     <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                                ))}
+                                                {[...Array(5-review.rating)].map((_, i) => (
+                                                    <Star key={i} className="h-4 w-4 fill-muted text-muted-foreground" />
                                                 ))}
                                             </div>
                                         </div>
                                         <p className="text-muted-foreground mt-1">"{review.comment}"</p>
                                     </div>
                                 </div>
-                                {index < mockReviews.length -1 && <Separator className="mt-6" />}
+                                {index < reviews.length -1 && <Separator className="mt-6" />}
                             </div>
-                        ))}
+                        )) : (
+                             <p className="text-center text-muted-foreground py-8">This vendor doesn't have any reviews yet.</p>
+                        )}
                     </CardContent>
                 </Card>
             </div>

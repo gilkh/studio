@@ -81,9 +81,12 @@ function QuoteRequestBubble({ item }: { item: ForwardedItem }) {
 }
 
 
-function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isOwnMessage: boolean, chat: Chat | null }) {
+function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessage; isOwnMessage: boolean, chat: Chat | null, role: 'client' | 'vendor' | 'admin' | null }) {
     const { userId } = useAuth();
-    const otherParticipant = chat?.participants.find(p => p.id !== userId);
+    
+    const sender = chat?.participants.find(p => p.id === message.senderId);
+    const otherParticipant = chat?.participants.find(p => p.id !== (role === 'admin' ? sender?.id : userId));
+
 
     const forwardedItem = parseForwardedMessage(message.text);
 
@@ -115,8 +118,8 @@ function ChatBubble({ message, isOwnMessage, chat }: { message: ChatMessage; isO
             {!isOwnMessage && (
                  <Link href={`/vendor/${otherParticipant?.id}`}>
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={otherParticipant?.avatar} />
-                        <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={sender?.avatar} />
+                        <AvatarFallback>{sender?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                 </Link>
             )}
@@ -148,14 +151,15 @@ export function MessagingPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const isAdmin = role === 'admin';
 
   useEffect(() => {
-    if (!userId) return;
+    // Admins don't need a user ID to fetch all chats
+    if (!userId && !isAdmin) return;
 
     setIsLoading(true);
-    const unsubscribe = getChatsForUser(userId, (loadedChats) => {
+    const unsubscribe = getChatsForUser(isAdmin ? undefined : userId, (loadedChats) => {
         setChats(loadedChats);
-        // Don't auto-select on mobile to show the list first
         if (!isMobile && !selectedChat && loadedChats.length > 0) {
             handleSelectChat(loadedChats[0]);
         }
@@ -163,7 +167,7 @@ export function MessagingPanel() {
     });
 
     return () => unsubscribe();
-  }, [userId, selectedChat, isMobile]);
+  }, [userId, selectedChat, isMobile, isAdmin]);
 
 
   useEffect(() => {
@@ -200,13 +204,20 @@ export function MessagingPanel() {
   };
   
   const getOtherParticipant = (chat: Chat) => {
+      if (isAdmin) {
+          // For admin view, we just show both participants
+          return {
+              p1: chat.participants[0],
+              p2: chat.participants[1],
+          }
+      }
       return chat.participants.find(p => p.id !== userId);
   }
 
   const renderLastMessage = (chat: Chat) => {
     const forwarded = parseForwardedMessage(chat.lastMessage);
     const sender = chat.lastMessageSenderId === userId ? 'You: ' : '';
-    const isUnread = (chat.unreadCount?.[userId] || 0) > 0;
+    const isUnread = (chat.unreadCount?.[userId || ''] || 0) > 0;
 
     if (forwarded) {
         if(forwarded.isQuoteRequest) {
@@ -235,16 +246,19 @@ export function MessagingPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-shrink-0 border-b p-4">
-        <h2 className="text-xl font-semibold">Messages</h2>
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search messages..." className="pl-10" />
+       {!isAdmin && (
+        <div className="flex-shrink-0 border-b p-4">
+            <h2 className="text-xl font-semibold">Messages</h2>
+            <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search messages..." className="pl-10" />
+            </div>
         </div>
-      </div>
+       )}
       <div className="flex flex-grow overflow-hidden">
         <aside className={cn(
-            "h-full w-full flex-col border-r sm:flex sm:w-1/3",
+            "h-full w-full flex-col border-r sm:flex",
+            isAdmin ? "sm:w-1/2 md:w-1/3" : "sm:w-1/3",
             showChatList ? 'flex' : 'hidden'
         )}>
             <ScrollArea>
@@ -259,6 +273,7 @@ export function MessagingPanel() {
                     chats.map((chat) => {
                         const otherParticipant = getOtherParticipant(chat);
                         const unreadForUser = chat.unreadCount?.[userId || ''] || 0;
+                        const p = Array.isArray(otherParticipant) ? otherParticipant[0] : otherParticipant;
                         return (
                             <button
                                 key={chat.id}
@@ -268,22 +283,21 @@ export function MessagingPanel() {
                                 selectedChat?.id === chat.id && 'bg-muted'
                                 )}
                             >
-                                <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()}>
-                                    <Avatar className="h-10 w-10">
-                                    <AvatarImage src={otherParticipant?.avatar} alt={otherParticipant?.name} />
-                                    <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                </Link>
+                                <Avatar className="h-10 w-10">
+                                <AvatarImage src={p?.avatar} alt={p?.name} />
+                                <AvatarFallback>{p?.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                
                                 <div className="flex-grow overflow-hidden">
                                     <div className="flex justify-between items-center">
-                                        <Link href={`/vendor/${otherParticipant?.id}`} onClick={(e) => e.stopPropagation()} className="font-semibold truncate hover:underline">{otherParticipant?.name}</Link>
-                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
+                                        <p className="font-semibold truncate">{Array.isArray(otherParticipant) ? `${otherParticipant.p1.name} & ${otherParticipant.p2.name}` : otherParticipant?.name}</p>
+                                        <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
                                     </div>
                                     <p className="text-sm truncate text-muted-foreground">
                                     {renderLastMessage(chat)}
                                     </p>
                                 </div>
-                                {unreadForUser > 0 && (
+                                {unreadForUser > 0 && !isAdmin && (
                                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                                         {unreadForUser}
                                     </div>
@@ -308,36 +322,39 @@ export function MessagingPanel() {
                     <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setSelectedChat(null)}>
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <Link href={`/vendor/${getOtherParticipant(selectedChat)?.id}`}>
-                        <Avatar className="h-10 w-10">
-                            <AvatarImage src={getOtherParticipant(selectedChat)?.avatar} alt={getOtherParticipant(selectedChat)?.name} />
-                            <AvatarFallback>{getOtherParticipant(selectedChat)?.name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                    </Link>
+                     <Avatar className="h-10 w-10">
+                        <AvatarImage src={(getOtherParticipant(selectedChat) as any)?.avatar} alt={(getOtherParticipant(selectedChat) as any)?.name} />
+                        <AvatarFallback>{(getOtherParticipant(selectedChat) as any)?.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    
                     <div>
-                        <Link href={`/vendor/${getOtherParticipant(selectedChat)?.id}`} className="font-semibold hover:underline">{getOtherParticipant(selectedChat)?.name}</Link>
+                         <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : (getOtherParticipant(selectedChat) as any)?.name}</p>
                         <p className="text-sm text-muted-foreground">Online</p>
                     </div>
                 </div>
                 <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
                     <div className="flex flex-col gap-4">
                     {messages.map((message) => (
-                        <ChatBubble key={message.id} message={message} isOwnMessage={message.senderId === userId} chat={selectedChat} />
+                        <ChatBubble key={message.id} message={message} isOwnMessage={message.senderId === userId} chat={selectedChat} role={role} />
                     ))}
                     </div>
                 </ScrollArea>
                 <div className="flex-shrink-0 border-t p-4 bg-background">
-                    <form onSubmit={handleSendMessage} className="relative">
-                        <Input 
-                            placeholder="Type a message..." 
-                            className="pr-12"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                         />
-                        <Button type="submit" size="icon" className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2">
-                            <SendHorizonal className="h-4 w-4" />
-                        </Button>
-                    </form>
+                    {isAdmin ? (
+                         <div className="text-center text-sm text-muted-foreground">Admin view is read-only</div>
+                    ) : (
+                        <form onSubmit={handleSendMessage} className="relative">
+                            <Input 
+                                placeholder="Type a message..." 
+                                className="pr-12"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                            />
+                            <Button type="submit" size="icon" className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2">
+                                <SendHorizonal className="h-4 w-4" />
+                            </Button>
+                        </form>
+                    )}
                 </div>
                 </>
             ) : (

@@ -15,6 +15,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review } from './types';
@@ -935,8 +936,14 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
 
 // --- Real-time Messaging Services ---
 
-export function getChatsForUser(userId: string, callback: (chats: Chat[]) => void): () => void {
-    const q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId));
+export function getChatsForUser(userId: string | undefined, callback: (chats: Chat[]) => void): () => void {
+    let q;
+    if (userId) {
+        q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId));
+    } else {
+        // For admin, get all chats
+        q = query(collection(db, 'chats'));
+    }
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const chats = querySnapshot.docs.map(doc => {

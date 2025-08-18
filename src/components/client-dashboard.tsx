@@ -9,7 +9,7 @@ import { Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { ServiceOrOffer, Service, Offer } from '@/lib/types';
 import { getServicesAndOffers } from '@/lib/services';
 import { Skeleton } from './ui/skeleton';
@@ -17,6 +17,8 @@ import { Skeleton } from './ui/skeleton';
 export function ClientDashboard() {
   const [allItems, setAllItems] = useState<ServiceOrOffer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
 
   useEffect(() => {
     async function loadItems() {
@@ -35,8 +37,21 @@ export function ClientDashboard() {
 
 
   const categories = ['All Categories', ...Array.from(new Set(allItems.map((s) => s.category)))];
-  const services = allItems.filter(item => item.type === 'service') as Service[];
-  const offers = allItems.filter(item => item.type === 'offer') as Offer[];
+  
+  const filteredItems = useMemo(() => {
+    return allItems
+      .filter(item => 
+        selectedCategory === 'All Categories' || item.category === selectedCategory
+      )
+      .filter(item => 
+        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+  }, [allItems, searchTerm, selectedCategory]);
+
+  const services = filteredItems.filter(item => item.type === 'service') as Service[];
+  const offers = filteredItems.filter(item => item.type === 'offer') as Offer[];
 
   const renderSkeletons = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -55,9 +70,14 @@ export function ClientDashboard() {
           <div className="flex flex-col sm:flex-row gap-4 max-w-2xl">
             <div className="relative flex-grow">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Search for 'Catering', 'Photography', etc." className="pl-12 h-12 text-base" />
+              <Input 
+                placeholder="Search for 'Catering', 'Photography', etc." 
+                className="pl-12 h-12 text-base"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-             <Select defaultValue="All Categories">
+             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-full sm:w-[220px] h-12 text-base">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
@@ -69,21 +89,20 @@ export function ClientDashboard() {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="lg" className="h-12 text-base w-full sm:w-auto">Search</Button>
           </div>
         </CardContent>
       </Card>
       
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="offers">Offers</TabsTrigger>
+          <TabsTrigger value="all">All ({filteredItems.length})</TabsTrigger>
+          <TabsTrigger value="services">Services ({services.length})</TabsTrigger>
+          <TabsTrigger value="offers">Offers ({offers.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
             {isLoading ? renderSkeletons() : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {allItems.map((item) =>
+                    {filteredItems.map((item) =>
                     item.type === 'service' ? (
                         <ServiceCard key={item.id} service={item} role="client" />
                     ) : (

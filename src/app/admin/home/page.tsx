@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,7 +11,7 @@ import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVe
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +34,7 @@ import {
 import { ResetPasswordDialog } from '@/components/reset-password-dialog';
 import { AdminAnalyticsChart } from '@/components/admin-analytics-chart';
 import { AdminStatCard } from '@/components/admin-stat-card';
+import { MessagingPanel } from '@/components/messaging-panel';
 
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number };
@@ -145,6 +145,7 @@ export default function AdminHomePage() {
         <TabsList>
             <TabsTrigger value="overview">Platform Overview</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="upgrades">
                 Upgrade Requests
                 {upgradeRequests.length > 0 && <Badge className="ml-2">{upgradeRequests.length}</Badge>}
@@ -300,6 +301,14 @@ export default function AdminHomePage() {
             </Card>
         </TabsContent>
         
+        <TabsContent value="messages" className="mt-4 h-[calc(100vh-20rem)]">
+            <Card className="h-full">
+                <CardContent className="p-0 h-full">
+                    <MessagingPanel />
+                </CardContent>
+            </Card>
+        </TabsContent>
+
         <TabsContent value="upgrades" className="mt-4">
              <Card>
                 <CardHeader>

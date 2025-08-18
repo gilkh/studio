@@ -11,11 +11,13 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
+import { subMonths, format, startOfMonth } from 'date-fns';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -734,6 +736,66 @@ export async function getUpgradeRequests(): Promise<UpgradeRequest[]> {
         requestedAt: data.requestedAt?.toDate ? data.requestedAt.toDate() : new Date(),
     });
     return await fetchCollection<UpgradeRequest>('upgradeRequests', q, transform);
+}
+
+export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyticsData[]> {
+  if (!vendorId) return [];
+  const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
+
+  const quotesQuery = query(
+    collection(db, "quoteRequests"),
+    where("vendorId", "==", vendorId),
+    where("createdAt", ">=", sixMonthsAgo)
+  );
+
+  const bookingsQuery = query(
+    collection(db, "bookings"),
+    where("vendorId", "==", vendorId),
+    where("date", ">=", sixMonthsAgo)
+  );
+
+  try {
+    const [quoteSnapshot, bookingSnapshot] = await Promise.all([
+      getDocs(quotesQuery),
+      getDocs(bookingsQuery)
+    ]);
+
+    const monthlyData: { [key: string]: { quotes: number; bookings: number } } = {};
+
+    // Initialize last 6 months
+    for (let i = 0; i < 6; i++) {
+      const monthDate = subMonths(new Date(), i);
+      const monthKey = format(monthDate, 'MMM');
+      monthlyData[monthKey] = { quotes: 0, bookings: 0 };
+    }
+
+    quoteSnapshot.forEach(doc => {
+      const data = doc.data() as QuoteRequest;
+      const monthKey = format(data.createdAt, 'MMM');
+      if (monthlyData[monthKey]) {
+        monthlyData[monthKey].quotes++;
+      }
+    });
+
+    bookingSnapshot.forEach(doc => {
+      const data = doc.data() as Booking;
+      const monthKey = format(data.date, 'MMM');
+      if (monthlyData[monthKey]) {
+        monthlyData[monthKey].bookings++;
+      }
+    });
+
+    return Object.entries(monthlyData)
+      .map(([month, data]) => ({ month, ...data }))
+      .reverse(); // To have the current month last
+
+  } catch (e) {
+    console.warn("Firebase error getting vendor analytics:", e);
+    if ((e as any).code === 'unavailable') {
+      return [];
+    }
+    throw e;
+  }
 }
 
 

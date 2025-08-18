@@ -6,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 import { Users, Briefcase, CalendarClock, PlusCircle, Gem } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState, memo } from 'react';
-import type { Booking, QuoteRequest, ServiceOrOffer, VendorProfile } from '@/lib/types';
-import { getBookingsForVendor, getVendorQuoteRequests, getServicesAndOffers, getVendorProfile } from '@/lib/services';
+import type { Booking, QuoteRequest, ServiceOrOffer, VendorProfile, VendorAnalyticsData } from '@/lib/types';
+import { getBookingsForVendor, getVendorQuoteRequests, getServicesAndOffers, getVendorProfile, getVendorAnalytics } from '@/lib/services';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
+import { VendorAnalyticsChart } from '@/components/vendor-analytics-chart';
 
 const StatCard = memo(({ title, value, icon: Icon, linkHref, linkText, isLoading }: { title: string, value: string | number, icon: React.ElementType, linkHref?: string, linkText?: string, isLoading: boolean }) => (
     <Card>
@@ -28,47 +28,6 @@ const StatCard = memo(({ title, value, icon: Icon, linkHref, linkText, isLoading
     </Card>
 ));
 StatCard.displayName = 'StatCard';
-
-const RecentActivityList = memo(({ activities, isLoading }: { activities: any[], isLoading: boolean }) => {
-    if (isLoading) {
-        return (
-            <div className="space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-            </div>
-        )
-    }
-
-    if (activities.length === 0) {
-        return <p className="text-center text-muted-foreground py-4">No recent activity.</p>
-    }
-
-    return (
-        <ul className="space-y-4">
-            {activities.map((activity, index) => (
-                <li key={index} className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-                        {activity.type === 'request' && <Users className="h-5 w-5 text-secondary-foreground" />}
-                        {activity.type === 'booking' && <CalendarClock className="h-5 w-5 text-secondary-foreground" />}
-                    </div>
-                    <div className="flex-grow">
-                        {activity.type === 'request' && (
-                            <p>New quote request from <span className="font-semibold">{(activity.data as QuoteRequest).clientName}</span>.</p>
-                        )}
-                        {activity.type === 'booking' && (
-                            <p>New booking confirmed with <span className="font-semibold">{(activity.data as Booking).with}</span>.</p>
-                        )}
-                        <p className="text-sm text-muted-foreground">{formatDistanceToNow(activity.time, { addSuffix: true })}</p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                        View Details
-                    </Button>
-                </li>
-            ))}
-        </ul>
-    );
-});
-RecentActivityList.displayName = 'RecentActivityList';
 
 
 const UpcomingBookingsCard = memo(({ bookings, isLoading }: { bookings: Booking[], isLoading: boolean }) => (
@@ -112,6 +71,7 @@ export default function VendorHomePage() {
   const [listings, setListings] = useState<ServiceOrOffer[]>([]);
   const [pendingRequests, setPendingRequests] = useState<QuoteRequest[]>([]);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<VendorAnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -122,16 +82,18 @@ export default function VendorHomePage() {
         }
         setIsLoading(true);
         try {
-            const [profile, vendorListings, requests, bookings] = await Promise.all([
+            const [profile, vendorListings, requests, bookings, analytics] = await Promise.all([
                 getVendorProfile(vendorId),
                 getServicesAndOffers(vendorId), // Fetch only this vendor's listings
                 getVendorQuoteRequests(vendorId),
                 getBookingsForVendor(vendorId),
+                getVendorAnalytics(vendorId)
             ]);
             setVendorProfile(profile);
             setListings(vendorListings);
             setPendingRequests(requests.filter(r => r.status === 'pending'));
             setUpcomingBookings(bookings.filter(b => b.date >= new Date()).slice(0,2));
+            setAnalyticsData(analytics);
         } catch (error) {
             console.error("Failed to load vendor dashboard:", error);
         } finally {
@@ -140,11 +102,6 @@ export default function VendorHomePage() {
     }
     loadDashboardData();
   }, [vendorId, isAuthLoading]);
-
-  const recentActivity = [
-      ...pendingRequests.slice(0, 1).map(r => ({ type: 'request', data: r, time: new Date(r.createdAt) })),
-      ...upcomingBookings.slice(0, 1).map(b => ({ type: 'booking', data: b, time: new Date(b.date) })),
-  ].filter(activity => activity.data).sort((a, b) => b.time.getTime() - a.time.getTime());
 
   const pageIsLoading = isLoading || isAuthLoading;
 
@@ -207,15 +164,7 @@ export default function VendorHomePage() {
 
         <div className="grid gap-8 lg:grid-cols-5">
             <div className="lg:col-span-3">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
-                        <CardDescription>A summary of your latest notifications and tasks.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <RecentActivityList activities={recentActivity} isLoading={pageIsLoading} />
-                    </CardContent>
-                </Card>
+                 <VendorAnalyticsChart data={analyticsData} isLoading={pageIsLoading} />
             </div>
             <div className="lg:col-span-2">
                 <UpcomingBookingsCard bookings={upcomingBookings} isLoading={pageIsLoading} />

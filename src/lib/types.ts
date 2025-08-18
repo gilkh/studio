@@ -181,3 +181,9 @@ export interface UpgradeRequest {
   requestedAt: Date;
   status: 'pending' | 'contacted';
 }
+
+export interface VendorAnalyticsData {
+    month: string;
+    quotes: number;
+    bookings: number;
+}

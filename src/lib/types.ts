@@ -64,6 +64,8 @@ export interface Booking {
   vendorId: string;
   date: Date;
   time: string;
+  serviceId: string; // The ID of the service or offer that was booked
+  serviceType: ServiceType;
 }
 
 export interface ChatMessage {
@@ -145,6 +147,8 @@ export interface VendorProfile {
     createdAt: Date;
     portfolio?: string[];
     status: 'active' | 'disabled';
+    rating: number;
+    reviewCount: number;
 }
 
 export interface VendorCode {
@@ -193,4 +197,17 @@ export interface PlatformAnalytics {
     totalVendors: number;
     totalBookings: number;
     userSignups: { month: string; Clients: number; Vendors: number }[];
+}
+
+export interface Review {
+    id: string;
+    bookingId: string;
+    vendorId: string;
+    clientId: string;
+    clientName: string;
+    clientAvatar: string;
+    serviceId: string;
+    rating: number;
+    comment: string;
+    createdAt: Date;
 }

@@ -13,9 +13,10 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review } from './types';
 import { formatItemForMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
 import { subMonths, format, startOfMonth } from 'date-fns';
@@ -78,6 +79,8 @@ export async function createNewUser(data: {
             accountTier: 'free',
             createdAt: new Date(),
             status: 'active',
+            rating: 0,
+            reviewCount: 0,
         };
 
         const batch = writeBatch(db);
@@ -364,7 +367,11 @@ export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer 
 
 export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offer, 'id'>) {
     const collectionName = item.type === 'service' ? 'services' : 'offers';
-    await addDoc(collection(db, collectionName), item);
+    await addDoc(collection(db, collectionName), {
+        ...item,
+        rating: 0,
+        reviewCount: 0,
+    });
 }
 
 export async function updateServiceOrOffer(itemId: string, itemData: Partial<ServiceOrOffer>) {
@@ -507,7 +514,16 @@ Message: ${response}`;
 
 // Booking Services
 export async function createBooking(booking: Omit<Booking, 'id'>) {
-    await addDoc(collection(db, 'bookings'), booking);
+    const offer = await getServiceOrOfferById(booking.serviceId);
+    if (!offer) throw new Error("Service or offer not found");
+
+    const bookingWithDetails = {
+        ...booking,
+        serviceId: offer.id,
+        serviceType: offer.type,
+    }
+
+    await addDoc(collection(db, 'bookings'), bookingWithDetails);
 }
 
 export const getBookingsForUser = async(userId: string) => {
@@ -595,6 +611,62 @@ export async function toggleSavedItem(userId: string, itemId: string) {
         console.error("Error toggling saved item, creating user profile as fallback", error);
         await setDoc(userRef, { savedItemIds: [itemId] }, { merge: true });
     }
+}
+
+// Review Services
+export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>) {
+    const { vendorId, serviceId, rating } = reviewData;
+
+    const reviewRef = collection(db, 'reviews');
+    const vendorRef = doc(db, 'vendors', vendorId);
+    const serviceRef = doc(db, 'services', serviceId); // Assuming serviceId can be for both services and offers
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const vendorDoc = await transaction.get(vendorRef);
+            const serviceDoc = await transaction.get(serviceRef);
+
+            if (!vendorDoc.exists()) throw new Error("Vendor not found!");
+            if (!serviceDoc.exists()) throw new Error("Service/Offer not found!");
+            
+            const vendorData = vendorDoc.data() as VendorProfile;
+            const serviceData = serviceDoc.data() as ServiceOrOffer;
+
+            // Add the new review
+            const newReview = { ...reviewData, createdAt: serverTimestamp() };
+            transaction.set(doc(reviewRef), newReview);
+
+            // Update vendor's aggregate rating
+            const newVendorReviewCount = (vendorData.reviewCount || 0) + 1;
+            const newVendorRating = ((vendorData.rating || 0) * (vendorData.reviewCount || 0) + rating) / newVendorReviewCount;
+            transaction.update(vendorRef, { 
+                reviewCount: newVendorReviewCount,
+                rating: newVendorRating 
+            });
+
+            // Update service's aggregate rating
+            const newServiceReviewCount = (serviceData.reviewCount || 0) + 1;
+            const newServiceRating = ((serviceData.rating || 0) * (serviceData.reviewCount || 0) + rating) / newServiceReviewCount;
+            transaction.update(serviceRef, { 
+                reviewCount: newServiceReviewCount, 
+                rating: newServiceRating 
+            });
+        });
+    } catch (e) {
+        console.error("Review creation transaction failed: ", e);
+        throw e;
+    }
+}
+
+export async function getReviewsForVendor(vendorId: string): Promise<Review[]> {
+    if (!vendorId) return [];
+    const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
+    const transform = (data: DocumentData): Review => ({
+        id: data.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+    } as Review);
+    return fetchCollection<Review>('reviews', q, transform);
 }
 
 // Admin Services
@@ -772,7 +844,8 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
 
     quoteSnapshot.forEach(doc => {
       const data = doc.data() as QuoteRequest;
-      const monthKey = format(data.createdAt, 'MMM');
+      const createdAtDate = data.createdAt instanceof Date ? data.createdAt : data.createdAt.toDate();
+      const monthKey = format(createdAtDate, 'MMM');
       if (monthlyData[monthKey]) {
         monthlyData[monthKey].quotes++;
       }
@@ -780,7 +853,8 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
 
     bookingSnapshot.forEach(doc => {
       const data = doc.data() as Booking;
-      const monthKey = format(data.date, 'MMM');
+      const date = data.date instanceof Date ? data.date : data.date.toDate();
+      const monthKey = format(date, 'MMM');
       if (monthlyData[monthKey]) {
         monthlyData[monthKey].bookings++;
       }

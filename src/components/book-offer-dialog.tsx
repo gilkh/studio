@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import {
   Dialog,
@@ -13,7 +14,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
-import type { Offer } from '@/lib/types';
+import type { Offer, ServiceOrOffer } from '@/lib/types';
 import { Calendar } from './ui/calendar';
 import { Clock, CreditCard, Loader2, Lock } from 'lucide-react';
 import { Separator } from './ui/separator';
@@ -68,6 +69,8 @@ export function BookOfferDialog({ children, offer }: BookOfferDialogProps) {
                 vendorId: offer.vendorId,
                 date: date,
                 time: time,
+                serviceId: offer.id,
+                serviceType: 'offer',
             });
             
             toast({

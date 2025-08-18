@@ -1,18 +1,21 @@
 
+
 'use client'
 
-import { useState } from 'react';
-import type { VendorProfile, ServiceOrOffer, Service, Offer } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import type { VendorProfile, ServiceOrOffer, Service, Offer, Review } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Star, ShieldCheck, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { ServiceCard } from '@/components/service-card';
 import { OfferCard } from '@/components/offer-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getReviewsForVendor } from '@/lib/services';
+import { Separator } from './ui/separator';
 
 interface VendorPublicProfileProps {
     vendor: VendorProfile | null;
@@ -22,7 +25,20 @@ interface VendorPublicProfileProps {
 export function VendorPublicProfile({ vendor: initialVendor, listings: initialListings }: VendorPublicProfileProps) {
   const [vendor] = useState<VendorProfile | null>(initialVendor);
   const [listings] = useState<ServiceOrOffer[]>(initialListings);
-  const [isLoading, setIsLoading] = useState(false); // Kept for potential future client-side fetching logic
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (initialVendor) {
+        setIsLoading(true);
+        getReviewsForVendor(initialVendor.id)
+            .then(setReviews)
+            .finally(() => setIsLoading(false));
+    } else {
+        setIsLoading(false);
+    }
+  }, [initialVendor]);
+
 
   if (!vendor) {
     return (
@@ -54,8 +70,8 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm">
                 <div className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold">5.0</span>
-                  <span className="text-muted-foreground">(150 reviews)</span>
+                  <span className="font-bold">{vendor.rating.toFixed(1)}</span>
+                  <span className="text-muted-foreground">({vendor.reviewCount} reviews)</span>
                 </div>
                 <Badge variant="secondary" className="gap-1.5 pl-2">
                   <ShieldCheck className="h-4 w-4 text-green-600" />
@@ -78,44 +94,92 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
         </CardContent>
       </Card>
       
-      <Card>
-            <CardHeader>
-                <CardTitle>Portfolio & Services</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Tabs defaultValue="offers" className="w-full">
-                    <TabsList className="mb-4">
-                        <TabsTrigger value="offers">Offers ({myOffers.length})</TabsTrigger>
-                        <TabsTrigger value="services">Services ({myServices.length})</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="offers">
-                        {myOffers.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {myOffers.map((offer) => (
-                                    <OfferCard key={offer.id} offer={offer} role="client" />
-                                ))}
+       <Tabs defaultValue="services" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex mb-4">
+                <TabsTrigger value="services">Services & Offers</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews ({vendor.reviewCount})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="services">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Portfolio</CardTitle>
+                        <CardDescription>Browse all services and special offers from {vendor.businessName}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="offers" className="w-full">
+                            <TabsList className="mb-4">
+                                <TabsTrigger value="offers">Offers ({myOffers.length})</TabsTrigger>
+                                <TabsTrigger value="services">Services ({myServices.length})</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="offers">
+                                {myOffers.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {myOffers.map((offer) => (
+                                            <OfferCard key={offer.id} offer={offer} role="client" />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-muted-foreground py-8">This vendor currently has no special offers.</p>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="services">
+                                {myServices.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {myServices.map((service) => (
+                                            <ServiceCard key={service.id} service={service} role="client" />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-muted-foreground py-8">This vendor currently has no quote-based services.</p>
+                                )}
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="reviews">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Client Feedback</CardTitle>
+                         <CardDescription>Read what past clients have to say.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {isLoading ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-20 w-full" />
+                                <Skeleton className="h-20 w-full" />
                             </div>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-8">This vendor currently has no special offers.</p>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="services">
-                        {myServices.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {myServices.map((service) => (
-                                    <ServiceCard key={service.id} service={service} role="client" />
-                                ))}
+                        ) : reviews.length > 0 ? reviews.map((review, index) => (
+                            <div key={review.id}>
+                                <div className="flex items-start gap-4">
+                                    <Avatar className="h-10 w-10">
+                                         <AvatarImage src={review.clientAvatar} alt={review.clientName} />
+                                        <AvatarFallback>{review.clientName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-grow">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-semibold">{review.clientName}</p>
+                                            <div className="flex items-center gap-0.5">
+                                                {[...Array(review.rating)].map((_, i) => (
+                                                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                                ))}
+                                                {[...Array(5 - review.rating)].map((_, i) => (
+                                                    <Star key={i} className="h-4 w-4 fill-muted text-muted-foreground" />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <p className="text-muted-foreground mt-1">"{review.comment}"</p>
+                                    </div>
+                                </div>
+                                {index < reviews.length -1 && <Separator className="mt-6" />}
                             </div>
-                        ) : (
-                             <p className="text-center text-muted-foreground py-8">This vendor currently has no quote-based services.</p>
+                        )) : (
+                            <p className="text-center text-muted-foreground py-8">This vendor doesn't have any reviews yet.</p>
                         )}
-                    </TabsContent>
-                </Tabs>
-            </CardContent>
-      </Card>
-
+                    </CardContent>
+                </Card>
+            </TabsContent>
+       </Tabs>
     </div>
   );
 }
-
-    

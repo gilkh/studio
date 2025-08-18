@@ -16,6 +16,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review } from './types';
@@ -33,7 +34,7 @@ export async function createNewUser(data: {
     vendorCode?: string;
 }) {
     const { accountType, firstName, lastName, email, password, businessName, vendorCode } = data;
-    const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/\s+/g, '-');
+    const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
     if (!password) {
         throw new Error("Password is required to create a new user.");
@@ -388,7 +389,7 @@ export async function deleteServiceOrOffer(itemId: string, itemType: 'service' |
 
 
 // Quote Request Services
-export async function createQuoteRequest(request: Omit<QuoteRequest, 'id' | 'createdAt' | 'status'> & { item: ServiceOrOffer }) {
+export async function createQuoteRequest(request: Omit<QuoteRequest, 'id'| 'status' | 'createdAt'> & { item: ServiceOrOffer }) {
     const { message, item, ...restOfRequest } = request;
     
     const formattedMessage = formatItemForMessage(item, message, true, request);

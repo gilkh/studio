@@ -18,10 +18,11 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review } from './types';
-import { formatItemForMessage, parseForwardedMessage } from './utils';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
+import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
 import { subMonths, format, startOfMonth } from 'date-fns';
 
@@ -478,21 +479,25 @@ export async function getVendorQuoteRequests(vendorId: string): Promise<QuoteReq
     }
 }
 
-export async function respondToQuote(requestId: string, vendorId: string, clientId: string, price: number, response: string) {
+export async function respondToQuote(requestId: string, vendorId: string, clientId: string, total: number, response: string, lineItems: LineItem[]) {
     const quoteRef = doc(db, 'quoteRequests', requestId);
     const chatId = [clientId, vendorId].sort().join('_');
     const chatRef = doc(db, 'chats', chatId);
 
-    const responseMessage = `QUOTE RESPONSE:
-Price: $${price}
-Message: ${response}`;
     
     await runTransaction(db, async (transaction) => {
+        const quoteSnap = await transaction.get(quoteRef);
+        if (!quoteSnap.exists()) throw new Error("Quote request not found");
+        const quoteData = quoteSnap.data() as QuoteRequest;
+
+        const responseMessage = formatQuoteResponseMessage(requestId, quoteData.serviceTitle, quoteData.serviceTitle, lineItems, total, response);
+
         // 1. Update the quote request itself
         transaction.update(quoteRef, {
             status: 'responded',
-            quotePrice: price,
+            quotePrice: total,
             quoteResponse: response,
+            lineItems: lineItems
         });
         
         // 2. Send a message to the chat
@@ -506,7 +511,7 @@ Message: ${response}`;
         
         // 3. Update the chat's last message info
         transaction.update(chatRef, {
-            lastMessage: "You received a quote response.",
+            lastMessage: responseMessage,
             lastMessageTimestamp: newMessage.timestamp,
             lastMessageSenderId: vendorId,
             [`unreadCount.${clientId}`]: increment(1)
@@ -514,6 +519,39 @@ Message: ${response}`;
     });
 }
 
+
+export async function approveQuote(quoteRequestId: string) {
+    const quoteRef = doc(db, 'quoteRequests', quoteRequestId);
+    
+    await runTransaction(db, async(transaction) => {
+        const quoteSnap = await transaction.get(quoteRef);
+        if (!quoteSnap.exists()) throw new Error("Quote request not found");
+
+        const quote = quoteSnap.data() as QuoteRequest;
+        
+        if (quote.status !== 'responded') throw new Error("This quote has already been actioned.");
+
+        // Update quote status
+        transaction.update(quoteRef, { status: 'approved' });
+
+        // Create booking
+        const service = await getServiceOrOfferById(quote.serviceId);
+        if (!service) throw new Error("Original service/offer not found");
+
+        const bookingData: Omit<Booking, 'id'> = {
+            title: quote.serviceTitle,
+            with: quote.clientName,
+            clientId: quote.clientId,
+            vendorId: quote.vendorId,
+            date: new Date(quote.eventDate),
+            time: 'N/A', // Time not captured in quote, can be updated later
+            serviceId: quote.serviceId,
+            serviceType: service.type,
+        };
+        const bookingRef = doc(collection(db, 'bookings'));
+        transaction.set(bookingRef, bookingData);
+    });
+}
 
 
 // Booking Services
@@ -623,18 +661,25 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
 
     const reviewRef = collection(db, 'reviews');
     const vendorRef = doc(db, 'vendors', vendorId);
-    const serviceRef = doc(db, 'services', serviceId); // Assuming serviceId can be for both services and offers
+    
+    // The serviceId could be for a service OR an offer, we need to check both
+    const serviceDocRef = doc(db, 'services', serviceId);
+    const offerDocRef = doc(db, 'offers', serviceId);
+
 
     try {
         await runTransaction(db, async (transaction) => {
             const vendorDoc = await transaction.get(vendorRef);
-            const serviceDoc = await transaction.get(serviceRef);
+            const serviceDoc = await transaction.get(serviceDocRef);
+            const offerDoc = await transaction.get(offerDocRef);
 
             if (!vendorDoc.exists()) throw new Error("Vendor not found!");
-            if (!serviceDoc.exists()) throw new Error("Service/Offer not found!");
+            
+            const listingDoc = serviceDoc.exists() ? serviceDoc : offerDoc.exists() ? offerDoc : null;
+            if (!listingDoc) throw new Error("Service/Offer not found!");
             
             const vendorData = vendorDoc.data() as VendorProfile;
-            const serviceData = serviceDoc.data() as ServiceOrOffer;
+            const listingData = listingDoc.data() as ServiceOrOffer;
 
             // Add the new review
             const newReview = { ...reviewData, createdAt: serverTimestamp() };
@@ -648,12 +693,12 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
                 rating: newVendorRating 
             });
 
-            // Update service's aggregate rating
-            const newServiceReviewCount = (serviceData.reviewCount || 0) + 1;
-            const newServiceRating = ((serviceData.rating || 0) * (serviceData.reviewCount || 0) + rating) / newServiceReviewCount;
-            transaction.update(serviceRef, { 
-                reviewCount: newServiceReviewCount, 
-                rating: newServiceRating 
+            // Update service's/offer's aggregate rating
+            const newListingReviewCount = (listingData.reviewCount || 0) + 1;
+            const newListingRating = ((listingData.rating || 0) * (listingData.reviewCount || 0) + rating) / newListingReviewCount;
+            transaction.update(listingDoc.ref, { 
+                reviewCount: newListingReviewCount, 
+                rating: newListingRating 
             });
         });
     } catch (e) {

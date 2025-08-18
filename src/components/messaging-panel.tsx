@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft, Calendar, Users, Phone, PencilRuler } from 'lucide-react';
+import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft, Calendar, Users, Phone, PencilRuler, Check, CreditCard } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
-import type { Chat, ChatMessage, ForwardedItem } from '@/lib/types';
-import { getChatsForUser, getMessagesForChat, sendMessage, markChatAsRead } from '@/lib/services';
+import type { Chat, ChatMessage, ForwardedItem, LineItem, QuoteRequest } from '@/lib/types';
+import { getChatsForUser, getMessagesForChat, sendMessage, markChatAsRead, approveQuote } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
@@ -18,14 +18,18 @@ import { parseForwardedMessage } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useIsMobile } from '@/hooks/use-mobile';
-
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from './ui/separator';
 
 function ForwardedItemBubble({ item }: { item: ForwardedItem }) {
+    if (!item.itemId || !item.itemType) {
+        return null;
+    }
     return (
         <div className="bg-background border rounded-lg p-3 max-w-xs w-full shadow-md">
             <Link href={`/client/${item.itemType}/${item.itemId}`} className="block">
                 <div className="relative aspect-video rounded-md overflow-hidden mb-2">
-                    <Image src={item.image} alt={item.title} layout="fill" className="object-cover" />
+                    <Image src={item.image!} alt={item.title} layout="fill" className="object-cover" />
                 </div>
                 <h4 className="font-bold text-sm">{item.title}</h4>
                 <p className="text-xs text-muted-foreground">by {item.vendorName}</p>
@@ -81,6 +85,69 @@ function QuoteRequestBubble({ item }: { item: ForwardedItem }) {
 }
 
 
+function QuoteResponseBubble({ item, isOwnMessage }: { item: ForwardedItem, isOwnMessage: boolean }) {
+  const { toast } = useToast();
+  const [isPaying, setIsPaying] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+
+  const handleApprove = async () => {
+    if (!item.quoteRequestId) return;
+    setIsPaying(true);
+    try {
+        await approveQuote(item.quoteRequestId);
+        toast({
+            title: "Quote Approved & Booked!",
+            description: "A booking has been created and the vendor has been notified.",
+        });
+        setIsApproved(true);
+    } catch(error) {
+        console.error("Failed to approve quote:", error);
+        toast({ title: "Error", description: "Could not approve the quote.", variant: "destructive" });
+    } finally {
+        setIsPaying(false);
+    }
+  }
+
+  return (
+    <div className="bg-background border-2 border-green-600/50 rounded-lg p-4 max-w-md w-full shadow-lg">
+      <div className="flex items-center gap-3 mb-3 border-b pb-3">
+        <div className="flex items-center justify-center h-10 w-10 rounded-full bg-green-600/10 text-green-700">
+          <Check className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-lg">{item.title}</h3>
+          <p className="text-sm text-muted-foreground">From {item.vendorName}</p>
+        </div>
+      </div>
+      <div className="space-y-1 my-3">
+        {item.lineItems?.map((line, index) => (
+          <div key={index} className="flex justify-between items-center text-sm">
+            <p>{line.description}</p>
+            <p className="font-medium">${line.price.toFixed(2)}</p>
+          </div>
+        ))}
+      </div>
+      <Separator />
+      <div className="flex justify-between items-center font-bold text-lg my-2">
+        <p>Total</p>
+        <p>${item.total?.toFixed(2)}</p>
+      </div>
+      {item.userMessage && (
+        <div className="text-sm text-muted-foreground bg-muted p-2 rounded-md">
+            <p>"{item.userMessage}"</p>
+        </div>
+      )}
+      {!isOwnMessage && (
+        <Button className="w-full mt-4" onClick={handleApprove} disabled={isPaying || isApproved}>
+          {isPaying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+          {isApproved ? 'Approved & Booked' : `Pay & Confirm Booking`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+
 function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessage; isOwnMessage: boolean, chat: Chat | null, role: 'client' | 'vendor' | 'admin' | null }) {
     const { userId } = useAuth();
     
@@ -91,6 +158,13 @@ function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessag
     const forwardedItem = parseForwardedMessage(message.text);
 
     if (forwardedItem) {
+        if(forwardedItem.isQuoteResponse) {
+            return (
+                 <div className="flex justify-start w-full">
+                     <QuoteResponseBubble item={forwardedItem} isOwnMessage={isOwnMessage} />
+                </div>
+            )
+        }
          if (forwardedItem.isQuoteRequest && !isOwnMessage) {
             return (
                 <div className="flex justify-start w-full">
@@ -220,6 +294,13 @@ export function MessagingPanel() {
     const isUnread = (chat.unreadCount?.[userId || ''] || 0) > 0;
 
     if (forwarded) {
+        if (forwarded.isQuoteResponse) {
+             return (
+                 <span className={cn("flex items-center gap-1.5", isUnread && 'text-foreground font-medium')}>
+                    {sender} <Check className="h-4 w-4 text-green-600" /> Quote Response Sent
+                </span>
+            )
+        }
         if(forwarded.isQuoteRequest) {
             return (
                  <span className={cn("flex items-center gap-1.5", isUnread && 'text-foreground font-medium')}>

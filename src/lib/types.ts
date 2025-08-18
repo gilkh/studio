@@ -54,6 +54,7 @@ export interface QuoteRequest {
   createdAt: Date;
   quotePrice?: number;
   quoteResponse?: string;
+  lineItems?: LineItem[];
 }
 
 export interface Booking {
@@ -160,21 +161,32 @@ export interface VendorCode {
     usedAt?: Date;
 }
 
+export interface LineItem {
+  description: string;
+  price: number;
+}
+
 export interface ForwardedItem {
   isForwarded: true;
   isQuoteRequest: boolean;
+  isQuoteResponse: boolean;
   title: string;
-  image: string;
+  image?: string;
   vendorName: string;
   price?: number;
   userMessage: string;
-  itemId: string;
-  itemType: ServiceType;
+  itemId?: string;
+  itemType?: ServiceType;
   // Quote request specific fields
   eventDate?: string;
   guestCount?: number;
   phone?: string;
+  // Quote response specific fields
+  lineItems?: LineItem[];
+  total?: number;
+  quoteRequestId?: string;
 }
+
 
 export interface UpgradeRequest {
   id: string;

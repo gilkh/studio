@@ -213,3 +213,5 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
     </div>
   );
 }
+
+    

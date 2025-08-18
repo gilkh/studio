@@ -117,3 +117,5 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
     </div>
   );
 }
+
+    

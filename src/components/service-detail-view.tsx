@@ -195,3 +195,5 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
     </div>
   );
 }
+
+    

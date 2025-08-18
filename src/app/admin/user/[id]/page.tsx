@@ -13,7 +13,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getUserProfile, getVendorProfile, createOrUpdateUserProfile, createOrUpdateVendorProfile, getServicesAndOffers, deleteServiceOrOffer } from '@/lib/services';
+import { getUserProfile, getVendorProfile, createOrUpdateUserProfile, createOrUpdateVendorProfile, getServicesAndOffers, deleteServiceOrOffer, getAllUsersAndVendors } from '@/lib/services';
 import type { UserProfile, VendorProfile, ServiceOrOffer, Service, Offer } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -363,4 +363,11 @@ export default function AdminUserManagementPage({ params }: { params: { id: stri
         )}
      </div>
   )
+}
+
+export async function generateStaticParams() {
+    const allUsers = await getAllUsersAndVendors();
+    return allUsers.map((user) => ({
+        id: user.id,
+    }));
 }

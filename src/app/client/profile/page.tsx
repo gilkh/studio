@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Camera, Heart, Loader2 } from 'lucide-react';
+import { Camera, Heart, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -16,6 +16,7 @@ import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { ChangePasswordDialog } from '@/components/change-password-dialog';
 
 
 const profileFormSchema = z.object({
@@ -116,7 +117,7 @@ export default function ClientProfilePage() {
     )
   }
 
-  if (!user) {
+  if (!user || !userId) {
     return (
         <Card>
             <CardHeader>
@@ -159,66 +160,76 @@ export default function ClientProfilePage() {
             <div className="max-w-3xl">
               <h3 className="text-lg font-semibold mb-4">My Account</h3>
               <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="grid md:grid-cols-2 gap-6">
-                       <FormField
-                          control={form.control}
-                          name="firstName"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>First Name</FormLabel>
-                              <FormControl>
-                                  <Input placeholder="John" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                           <FormField
-                          control={form.control}
-                          name="lastName"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>Last Name</FormLabel>
-                              <FormControl>
-                                  <Input placeholder="Doe" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                      <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                              <FormItem className="md:col-span-2">
-                              <FormLabel>Email Address</FormLabel>
-                              <FormControl>
-                                  <Input type="email" placeholder="john.doe@example.com" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                      <FormField
-                          control={form.control}
-                          name="phone"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>Phone Number</FormLabel>
-                              <FormControl>
-                                  <Input type="tel" placeholder="(123) 456-7890" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                      <div className="md:col-span-2 flex justify-between items-center">
-                           <Link href="/client/saved">
-                              <Button variant="outline">
-                                <Heart className="mr-2 h-4 w-4" />
-                                My Saved Items
-                              </Button>
-                            </Link>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                       <div className="grid md:grid-cols-2 gap-6">
+                            <FormField
+                            control={form.control}
+                            name="firstName"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>First Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="John" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name="lastName"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Last Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Doe" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem className="md:col-span-2">
+                                    <FormLabel>Email Address</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="john.doe@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                        <Input type="tel" placeholder="(123) 456-7890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                       </div>
+                      <div className="flex justify-between items-center gap-4">
+                            <div>
+                                <Link href="/client/saved">
+                                    <Button variant="outline">
+                                        <Heart className="mr-2 h-4 w-4" />
+                                        My Saved Items
+                                    </Button>
+                                </Link>
+                                 <ChangePasswordDialog userId={userId}>
+                                    <Button variant="outline" className="ml-2">
+                                        <KeyRound className="mr-2 h-4 w-4" />
+                                        Change Password
+                                    </Button>
+                                </ChangePasswordDialog>
+                            </div>
                           <Button type="submit" disabled={form.formState.isSubmitting}>
                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                               Save Changes

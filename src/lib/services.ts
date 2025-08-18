@@ -8,6 +8,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, arrayUnion, arrayRemove, writeBatch, runTransaction, onSnapshot, limit, increment } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem } from './types';
@@ -693,6 +694,21 @@ export async function updateUserPassword(userId: string, newPassword: string): P
     const hashedPassword = await hashPassword(newPassword);
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, { password: hashedPassword });
+}
+
+export async function changeUserPassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+    const userProfile = await getUserProfile(userId);
+    if (!userProfile || !userProfile.password) {
+        throw new Error("User not found or password not set.");
+    }
+
+    const isOldPasswordCorrect = await verifyPassword(userProfile.password, oldPassword);
+
+    if (!isOldPasswordCorrect) {
+        throw new Error("The current password you entered is incorrect.");
+    }
+
+    await updateUserPassword(userId, newPassword);
 }
 
 

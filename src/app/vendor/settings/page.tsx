@@ -8,8 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { ChangePasswordDialog } from '@/components/change-password-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { KeyRound } from 'lucide-react';
 
 export default function VendorSettingsPage() {
+  const { userId } = useAuth();
+  
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
         <Card>
@@ -28,7 +33,14 @@ export default function VendorSettingsPage() {
                         <Input id="email" type="email" defaultValue="jane.smith@timeless-snaps.com" disabled/>
                     </div>
                 </div>
-                <Button variant="outline">Change Password</Button>
+                {userId && (
+                    <ChangePasswordDialog userId={userId}>
+                        <Button variant="outline">
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Change Password
+                        </Button>
+                    </ChangePasswordDialog>
+                )}
             </CardContent>
         </Card>
 

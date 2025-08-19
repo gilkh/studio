@@ -389,27 +389,9 @@ function EventPlannerContent() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="relative mt-8 px-4">
-                    {/* Desktop timeline line - straight down the middle */}
-                    <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-primary/50 via-primary to-primary/50"></div>
-                    
-                    {/* Mobile S-curve timeline */}
-                    <svg className="lg:hidden absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
-                        <defs>
-                            <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                                <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="1" />
-                                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                            </linearGradient>
-                        </defs>
-                        <path
-                            d={`M 20 0 Q 80 ${timeline.length > 0 ? 100 : 50} 20 ${timeline.length > 1 ? 200 : 100} Q 80 ${timeline.length > 2 ? 300 : 200} 20 ${timeline.length > 3 ? 400 : 300} Q 80 ${timeline.length > 4 ? 500 : 400} 20 ${timeline.length * 120}`}
-                            stroke="url(#timelineGradient)"
-                            strokeWidth="3"
-                            fill="none"
-                            className="drop-shadow-sm"
-                        />
-                    </svg>
+                <div className="relative mt-8">
+                    {/* The timeline line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-border"></div>
                     
                     <AnimatePresence>
                     {timeline.map((task, index) => (
@@ -421,222 +403,97 @@ function EventPlannerContent() {
                         custom={index}
                         exit="hidden"
                         >
-                        <div className="relative mb-12 group">
-                            {/* Desktop Layout - Alternating sides */}
-                            <div className="hidden lg:grid lg:grid-cols-2 items-start gap-x-8">
-                                {/* Connector dot for desktop */}
-                                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/70 border-4 border-background flex items-center justify-center shadow-lg z-10">
-                                    <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                        <div className="relative mb-8 group">
+                            <div className="grid grid-cols-2 items-start gap-x-8">
+                                {/* Date / Deadline */}
+                                <div className={cn(
+                                    "text-right",
+                                    index % 2 === 0 ? "text-right" : "col-start-2 text-left"
+                                )}>
+                                   
                                 </div>
 
-                                {/* Task Card for desktop */}
+                                {/* Connector dot */}
+                                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary/30 border-4 border-background flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                                </div>
+
+                                {/* Task Card */}
                                 <div className={cn(
                                     "col-start-2",
                                     index % 2 === 0 ? 'col-start-2' : 'col-start-1 row-start-1'
                                 )}>
                                     <motion.div
                                         animate={{ 
-                                            background: task.completed ? 'linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--background)))' : 'hsl(var(--card))',
-                                            opacity: task.completed ? 0.8 : 1,
-                                            scale: task.completed ? 0.98 : 1
+                                            background: task.completed ? 'linear-gradient(to right, hsl(var(--primary) / 0.1), hsl(var(--background)))' : 'hsl(var(--card))',
+                                            opacity: task.completed ? 0.7 : 1
                                         }}
                                         className={cn(
-                                        "bg-card border-2 rounded-2xl shadow-lg p-6 space-y-4 transition-all duration-500 hover:shadow-2xl hover:border-primary/30 relative overflow-hidden group/card",
-                                        task.completed && "border-primary/30"
+                                        "bg-card border rounded-xl shadow-sm p-4 space-y-3 transition-all duration-300 hover:shadow-lg relative"
                                     )}>
-                                        {/* Gradient overlay for completed tasks */}
-                                        {task.completed && (
-                                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                                        )}
-                                        
-                                        <div className="flex items-start justify-between gap-4 relative z-10">
-                                            <div className='flex items-start gap-4'>
-                                                <div className="relative">
-                                                    <Checkbox 
-                                                        id={`task-${task.id}`}
-                                                        checked={task.completed}
-                                                        onCheckedChange={() => handleTaskCheck(task.id)}
-                                                        className="h-6 w-6 mt-1 border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                                    />
-                                                    {task.completed && (
-                                                        <div className="absolute -inset-1 bg-primary/20 rounded-full animate-ping" />
-                                                    )}
-                                                </div>
-                                                
-                                                <div className="flex-1">
-                                                     {editingTaskId === task.id ? (
-                                                        <Input 
-                                                            value={editedTaskLabel}
-                                                            onChange={(e) => setEditedTaskLabel(e.target.value)}
-                                                            className="flex-grow text-lg h-10 font-semibold border-primary/50 focus:border-primary"
-                                                            onKeyDown={(e) => e.key === 'Enter' && handleSaveTask(task.id)}
-                                                        />
-                                                    ) : (
-                                                        <h4 className={cn("font-bold text-lg leading-tight", task.completed && 'line-through text-muted-foreground')}>
-                                                            {task.task}
-                                                        </h4>
-                                                    )}
-                                                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                                                         <p className="font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                                                            {new Date(task.deadline).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
-                                                        </p>
-                                                        {task.estimatedCost > 0 && (
-                                                            <p className="font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                                                                ${task.estimatedCost.toLocaleString()}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                             <div className="flex items-center gap-1">
-                                                 {editingTaskId === task.id ? (
-                                                    <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-10 w-10 text-green-600 hover:bg-green-100 hover:text-green-700 rounded-full">
-                                                        <Save className="h-5 w-5" />
-                                                    </Button>
-                                                ) : (
-                                                    <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-10 w-10 hover:bg-primary/10 rounded-full">
-                                                        <Edit className="h-5 w-5" />
-                                                    </Button>
-                                                )}
-                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-10 w-10 text-destructive hover:bg-red-100 rounded-full">
-                                                    <Trash2 className="h-5 w-5" />
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {task.suggestedVendorCategory && !task.assignedVendor && (
-                                            <div className="pt-4 border-t border-dashed border-primary/20 relative z-10">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                         <Button variant="outline" size="sm" className="w-full border-primary/30 hover:bg-primary/5 hover:border-primary/50">
-                                                            <Building className="mr-2 h-4 w-4" />
-                                                            Find a {task.suggestedVendorCategory}
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent>
-                                                        {services.filter(s => s.category === task.suggestedVendorCategory).map(vendor => (
-                                                             <DropdownMenuItem key={vendor.id} onSelect={() => handleLinkVendor(task.id, vendor)}>
-                                                                <Avatar className="h-6 w-6 mr-2">
-                                                                    <AvatarImage src={vendor.vendorAvatar} />
-                                                                    <AvatarFallback>{vendor.vendorName.charAt(0)}</AvatarFallback>
-                                                                </Avatar>
-                                                                <span>{vendor.vendorName}</span>
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-                                        )}
-                                        {task.assignedVendor && (
-                                            <div className="pt-4 border-t border-dashed border-green-200 flex items-center justify-between relative z-10">
-                                                <div className="flex items-center gap-3 text-sm">
-                                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-                                                        <Link2 className="h-4 w-4 text-green-600" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-foreground">{task.assignedVendor.name}</p>
-                                                        <p className="text-xs text-green-600">Vendor linked</p>
-                                                    </div>
-                                                </div>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100" onClick={() => handleUnlinkVendor(task.id)}>
-                                                    <X className="h-4 w-4 text-red-500" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                </div>
-                            </div>
-
-                            {/* Mobile Layout - S-curve with alternating sides */}
-                            <div className="lg:hidden">
-                                {/* Mobile connector dot */}
-                                <div className={cn(
-                                    "absolute top-6 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/70 border-4 border-background flex items-center justify-center shadow-lg z-20",
-                                    index % 2 === 0 ? "left-4" : "right-4"
-                                )}>
-                                    <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                                </div>
-
-                                {/* Mobile Task Card */}
-                                <div className={cn(
-                                    "w-full",
-                                    index % 2 === 0 ? "pl-16 pr-4" : "pr-16 pl-4"
-                                )}>
-                                    <motion.div
-                                        animate={{ 
-                                            background: task.completed ? 'linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--background)))' : 'hsl(var(--card))',
-                                            opacity: task.completed ? 0.8 : 1,
-                                            scale: task.completed ? 0.98 : 1
-                                        }}
-                                        className={cn(
-                                        "bg-card border-2 rounded-2xl shadow-lg p-6 space-y-4 transition-all duration-500 hover:shadow-2xl hover:border-primary/30 relative overflow-hidden group/card",
-                                        task.completed && "border-primary/30"
-                                    )}>
-                                        {/* Gradient overlay for completed tasks */}
-                                        {task.completed && (
-                                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                                        )}
-                                        
                                         <div className="flex items-start justify-between gap-4">
                                             <div className='flex items-start gap-4'>
-                                                <div className="relative">
-                                                    <Checkbox 
-                                                        id={`task-${task.id}-mobile`}
-                                                        checked={task.completed}
-                                                        onCheckedChange={() => handleTaskCheck(task.id)}
-                                                        className="h-6 w-6 mt-1 border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                                    />
-                                                    {task.completed && (
-                                                        <div className="absolute -inset-1 bg-primary/20 rounded-full animate-ping" />
-                                                    )}
-                                                </div>
+                                                <Checkbox 
+                                                    id={`task-${task.id}`}
+                                                    checked={task.completed}
+                                                    onCheckedChange={() => handleTaskCheck(task.id)}
+                                                    className="h-5 w-5 mt-0.5"
+                                                />
                                                 
                                                 <div className="flex-1">
                                                      {editingTaskId === task.id ? (
                                                         <Input 
                                                             value={editedTaskLabel}
                                                             onChange={(e) => setEditedTaskLabel(e.target.value)}
-                                                            className="flex-grow text-lg h-10 font-semibold border-primary/50 focus:border-primary"
+                                                            className="flex-grow text-base h-8"
                                                             onKeyDown={(e) => e.key === 'Enter' && handleSaveTask(task.id)}
                                                         />
                                                     ) : (
-                                                        <h4 className={cn("font-bold text-lg leading-tight", task.completed && 'line-through text-muted-foreground')}>
+                                                        <h4 className={cn("font-semibold", task.completed && 'line-through text-muted-foreground')}>
                                                             {task.task}
                                                         </h4>
                                                     )}
-                                                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-2">
-                                                         <p className="font-bold text-primary bg-primary/10 px-3 py-1 rounded-full text-xs">
-                                                            {new Date(task.deadline).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
-                                                        </p>
-                                                        {task.estimatedCost > 0 && (
-                                                            <p className="font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs">
-                                                                ${task.estimatedCost.toLocaleString()}
-                                                            </p>
-                                                        )}
+                                                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                                         <p className="font-semibold text-primary">{new Date(task.deadline).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}, {new Date(task.deadline).getFullYear()}</p>
                                                     </div>
                                                 </div>
                                             </div>
-                                             <div className="flex items-center gap-1">
+                                             <div className="hidden sm:flex items-center gap-1">
                                                  {editingTaskId === task.id ? (
-                                                    <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-10 w-10 text-green-600 hover:bg-green-100 hover:text-green-700 rounded-full">
+                                                    <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700">
                                                         <Save className="h-5 w-5" />
                                                     </Button>
                                                 ) : (
-                                                    <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-10 w-10 hover:bg-primary/10 rounded-full">
+                                                    <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8">
                                                         <Edit className="h-5 w-5" />
                                                     </Button>
                                                 )}
-                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-10 w-10 text-destructive hover:bg-red-100 rounded-full">
+                                                <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-8 w-8 text-destructive hover:bg-red-100">
                                                     <Trash2 className="h-5 w-5" />
                                                 </Button>
                                             </div>
                                         </div>
 
+                                        <div className="absolute bottom-2 left-2 flex flex-col sm:hidden items-center gap-1">
+                                            {editingTaskId === task.id ? (
+                                                <Button size="icon" variant="ghost" onClick={() => handleSaveTask(task.id)} className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700">
+                                                    <Save className="h-5 w-5" />
+                                                </Button>
+                                            ) : (
+                                                <Button size="icon" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8">
+                                                    <Edit className="h-5 w-5" />
+                                                </Button>
+                                            )}
+                                            <Button size="icon" variant="ghost" onClick={() => handleDeleteTask(task.id)} className="h-8 w-8 text-destructive hover:bg-red-100">
+                                                <Trash2 className="h-5 w-5" />
+                                            </Button>
+                                        </div>
+
                                         {task.suggestedVendorCategory && !task.assignedVendor && (
-                                            <div className="pt-4 border-t border-dashed border-primary/20">
+                                            <div className="pt-2 border-t border-dashed">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                         <Button variant="outline" size="sm" className="w-full border-primary/30 hover:bg-primary/5 hover:border-primary/50">
+                                                         <Button variant="outline" size="sm" className="w-full">
                                                             <Building className="mr-2 h-4 w-4" />
                                                             Find a {task.suggestedVendorCategory}
                                                         </Button>
@@ -656,41 +513,28 @@ function EventPlannerContent() {
                                             </div>
                                         )}
                                         {task.assignedVendor && (
-                                            <div className="pt-4 border-t border-dashed border-green-200 flex items-center justify-between">
-                                                <div className="flex items-center gap-3 text-sm">
-                                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-                                                        <Link2 className="h-4 w-4 text-green-600" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-foreground">{task.assignedVendor.name}</p>
-                                                        <p className="text-xs text-green-600">Vendor linked</p>
-                                                    </div>
+                                            <div className="pt-2 border-t border-dashed flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <Link2 className="h-4 w-4 text-green-600" />
+                                                    <span>Linked: <span className="font-semibold text-foreground">{task.assignedVendor.name}</span></span>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100" onClick={() => handleUnlinkVendor(task.id)}>
-                                                    <X className="h-4 w-4 text-red-500" />
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleUnlinkVendor(task.id)}>
+                                                    <X className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         )}
                                     </motion.div>
                                 </div>
                             </div>
-                            </div>
-                        
-                        {/* "Add Task" button between items - Desktop */}
-                        <div className="hidden lg:block relative h-12">
-                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-gradient-to-b from-primary to-primary/50"></div>
+                        </div>
+                        {/* "Add Task" button between items */}
+                        <div className="relative h-8">
+                             <div className="absolute left-1/2 w-0.5 h-full -translate-x-1/2 bg-border"></div>
                              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2">
-                                <Button size="icon" variant="secondary" className="rounded-full h-10 w-10 z-10 border-2 border-primary/20 hover:border-primary/50 hover:bg-primary/10" onClick={() => handleAddTask(index + 1)}>
-                                    <PlusCircle className="h-5 w-5 text-primary" />
+                                <Button size="icon" variant="secondary" className="rounded-full h-8 w-8 z-10" onClick={() => handleAddTask(index + 1)}>
+                                    <PlusCircle className="h-5 w-5" />
                                 </Button>
                              </div>
-                        </div>
-                        
-                        {/* "Add Task" button between items - Mobile */}
-                        <div className="lg:hidden relative h-8 flex justify-center">
-                             <Button size="icon" variant="secondary" className="rounded-full h-8 w-8 z-20 border-2 border-primary/20 hover:border-primary/50 hover:bg-primary/10" onClick={() => handleAddTask(index + 1)}>
-                                <PlusCircle className="h-4 w-4 text-primary" />
-                            </Button>
                         </div>
                        </motion.div>
                     ))}

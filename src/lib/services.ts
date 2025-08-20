@@ -20,6 +20,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
@@ -868,23 +869,22 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
   if (!vendorId) return [];
   const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
 
-  const quotesQuery = query(
-    collection(db, "quoteRequests"),
-    where("vendorId", "==", vendorId),
-    where("createdAt", ">=", sixMonthsAgo)
-  );
-
-  const bookingsQuery = query(
-    collection(db, "bookings"),
-    where("vendorId", "==", vendorId),
-    where("date", ">=", sixMonthsAgo)
-  );
-
   try {
-    const [quoteSnapshot, bookingSnapshot] = await Promise.all([
-      getDocs(quotesQuery),
-      getDocs(bookingsQuery)
+    const [quotes, bookings] = await Promise.all([
+        getVendorQuoteRequests(vendorId),
+        getBookingsForVendor(vendorId)
     ]);
+    
+    const quotesInDateRange = quotes.filter(q => {
+        const createdAtDate = q.createdAt instanceof Date ? q.createdAt : q.createdAt.toDate();
+        return createdAtDate >= sixMonthsAgo;
+    });
+
+    const bookingsInDateRange = bookings.filter(b => {
+        const bookingDate = b.date instanceof Date ? b.date : b.date.toDate();
+        return bookingDate >= sixMonthsAgo;
+    });
+    
 
     const monthlyData: { [key: string]: { quotes: number; bookings: number } } = {};
 
@@ -895,18 +895,16 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
       monthlyData[monthKey] = { quotes: 0, bookings: 0 };
     }
 
-    quoteSnapshot.forEach(doc => {
-      const data = doc.data() as QuoteRequest;
-      const createdAtDate = data.createdAt instanceof Date ? data.createdAt : data.createdAt.toDate();
+    quotesInDateRange.forEach(q => {
+      const createdAtDate = q.createdAt instanceof Date ? q.createdAt : q.createdAt.toDate();
       const monthKey = format(createdAtDate, 'MMM');
       if (monthlyData[monthKey]) {
         monthlyData[monthKey].quotes++;
       }
     });
 
-    bookingSnapshot.forEach(doc => {
-      const data = doc.data() as Booking;
-      const date = data.date instanceof Date ? data.date : data.date.toDate();
+    bookingsInDateRange.forEach(b => {
+      const date = b.date instanceof Date ? b.date : b.date.toDate();
       const monthKey = format(date, 'MMM');
       if (monthlyData[monthKey]) {
         monthlyData[monthKey].bookings++;
@@ -953,7 +951,8 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
         recentUsersSnapshot.forEach(doc => {
             const data = doc.data() as UserProfile;
             if (data.createdAt) { // Defensive check
-                const monthKey = format(data.createdAt.toDate(), 'MMM');
+                const createdAtDate = data.createdAt instanceof Date ? data.createdAt : data.createdAt.toDate();
+                const monthKey = format(createdAtDate, 'MMM');
                 if (monthlyData[monthKey]) {
                     if (vendorIds.has(doc.id)) {
                         monthlyData[monthKey].Vendors++;

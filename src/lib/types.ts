@@ -1,12 +1,48 @@
 
 
 export type ServiceType = 'service' | 'offer';
+export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
+
 
 export interface MediaItem {
   url: string;
   type: 'image' | 'video';
   isThumbnail?: boolean;
 }
+
+export interface ServiceInclusions {
+  // Venues
+  hasParking?: boolean;
+  hasValet?: boolean;
+  hasOnSiteCatering?: boolean;
+  isOutdoors?: boolean;
+  hasPool?: boolean;
+
+  // Catering & Sweets
+  offersTastings?: boolean;
+  servesAlcohol?: boolean;
+  hasVeganOptions?: boolean;
+  hasGlutenFreeOptions?: boolean;
+
+  // Entertainment
+  providesOwnSoundSystem?: boolean;
+  providesOwnLighting?: boolean;
+
+  // Photography & Videography
+  offersDroneFootage?: boolean;
+  offersSameDayEdit?: boolean;
+
+  // Decoration
+  providesSetup?: boolean;
+  providesCleanup?: boolean;
+
+  // Beauty & Grooming
+  travelsToClient?: boolean;
+  offersTrials?: boolean;
+
+  [key: string]: boolean | undefined;
+}
+
 
 export interface BaseService {
   id: string;
@@ -16,11 +52,12 @@ export interface BaseService {
   vendorAvatar: string;
   title: string;
   description: string;
-  category: string;
+  category: ServiceCategory;
   rating: number;
   reviewCount: number;
   image: string;
   media?: MediaItem[];
+  inclusions?: ServiceInclusions;
 }
 
 export interface Service extends BaseService {
@@ -138,7 +175,7 @@ export interface UserProfile {
 export interface VendorProfile {
     id: string;
     businessName: string;
-    category: string;
+    category: ServiceCategory;
     tagline: string;
     description: string;
     email: string;

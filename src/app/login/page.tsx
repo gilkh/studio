@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { logout } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { VendorInquiryDialog } from '@/components/vendor-inquiry-dialog';
 
 function setCookie(name: string, value: string, days: number) {
     let expires = "";
@@ -120,13 +121,15 @@ export default function LoginPage() {
           <p className="max-w-3xl mx-auto mt-4 text-lg md:text-xl text-white/90">
             Your all-in-one marketplace for discovering, booking, and managing elite services for your next unforgettable event.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
-            <Button size="lg" className="text-lg h-12 px-8" onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                Get Started
+          <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+            <Button size="lg" className="text-lg h-12 px-8 w-full sm:w-auto" onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                Plan Your Event
             </Button>
-            <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-transparent border-white text-white hover:bg-white hover:text-primary" onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                Learn More
-            </Button>
+            <VendorInquiryDialog>
+                <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-transparent border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto">
+                    Become a Vendor
+                </Button>
+            </VendorInquiryDialog>
           </div>
         </div>
       </section>

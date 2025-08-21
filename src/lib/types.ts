@@ -2,6 +2,7 @@
 
 
 
+
 export type ServiceType = 'service' | 'offer';
 export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
 
@@ -238,6 +239,17 @@ export interface UpgradeRequest {
   currentTier: VendorProfile['accountTier'];
   phone: string;
   requestedAt: Date;
+  status: 'pending' | 'contacted';
+}
+
+export interface VendorInquiry {
+  id: string;
+  firstName: string;
+  lastName: string;
+  businessName: string;
+  phone: string;
+  message: string;
+  createdAt: Date;
   status: 'pending' | 'contacted';
 }
 

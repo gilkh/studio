@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification } from '@/lib/services';
-import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics } from '@/lib/types';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus } from '@/lib/services';
+import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,7 @@ export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
   const [users, setUsers] = useState<DisplayUser[]>([]);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
+  const [vendorInquiries, setVendorInquiries] = useState<VendorInquiry[]>([]);
   const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -57,15 +59,17 @@ export default function AdminHomePage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [vendorCodes, allUsers, requests, platformAnalytics] = await Promise.all([
+      const [vendorCodes, allUsers, requests, platformAnalytics, inquiries] = await Promise.all([
         getVendorCodes(),
         getAllUsersAndVendors(),
         getUpgradeRequests(),
         getPlatformAnalytics(),
+        getVendorInquiries(),
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
       setUpgradeRequests(requests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+      setVendorInquiries(inquiries.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime()));
       setAnalytics(platformAnalytics);
     } catch (error) {
       toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
@@ -153,6 +157,21 @@ export default function AdminHomePage() {
     }
   };
 
+  const handleInquiryStatusChange = async (inquiryId: string, newStatus: VendorInquiry['status']) => {
+    try {
+      await updateVendorInquiryStatus(inquiryId, newStatus);
+      setVendorInquiries(prev => prev.map(req => 
+        req.id === inquiryId ? { ...req, status: newStatus } : req
+      ));
+      toast({
+        title: 'Inquiry Updated',
+        description: `Inquiry marked as ${newStatus}.`
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Could not update the inquiry status.", variant: "destructive" });
+    }
+  };
+
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -169,10 +188,14 @@ export default function AdminHomePage() {
       </Card>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3 sm:flex sm:w-auto">
             <TabsTrigger value="overview">Platform Overview</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
+             <TabsTrigger value="inquiries">
+                Inquiries
+                {vendorInquiries.filter(r => r.status === 'pending').length > 0 && <Badge className="ml-2">{vendorInquiries.filter(r => r.status === 'pending').length}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="upgrades">
                 Upgrade Requests
                 {upgradeRequests.filter(r => r.status === 'pending').length > 0 && <Badge className="ml-2">{upgradeRequests.filter(r => r.status === 'pending').length}</Badge>}
@@ -356,6 +379,80 @@ export default function AdminHomePage() {
                     <MessagingPanel />
                 </CardContent>
             </Card>
+        </TabsContent>
+
+        <TabsContent value="inquiries" className="mt-4">
+             <Card>
+                <CardHeader>
+                    <CardTitle>New Vendor Inquiries</CardTitle>
+                    <CardDescription>Potential vendors who have requested to join the platform.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Applicant</TableHead>
+                                <TableHead>Business Name</TableHead>
+                                <TableHead>Contact Phone</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Date Received</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(2)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-6 w-36" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                                </TableRow>
+                                ))
+                            ) : vendorInquiries.length > 0 ? vendorInquiries.map(req => (
+                                <TableRow key={req.id} className={req.status === 'contacted' ? 'bg-muted/50' : ''}>
+                                    <TableCell className="font-medium">{req.firstName} {req.lastName}</TableCell>
+                                    <TableCell>{req.businessName}</TableCell>
+                                    <TableCell className="text-muted-foreground">{req.phone}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={req.status === 'pending' ? 'default' : 'secondary'} className={req.status === 'pending' ? 'bg-amber-500' : ''}>
+                                            {req.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{format(req.createdAt, 'PPP p')}</TableCell>
+                                    <TableCell className="text-right">
+                                      {req.status === 'pending' ? (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => handleInquiryStatusChange(req.id, 'contacted')}
+                                        >
+                                            <Phone className="mr-2 h-4 w-4" />
+                                            Mark as Contacted
+                                        </Button>
+                                      ) : (
+                                        <Button 
+                                            variant="secondary" 
+                                            size="sm"
+                                            onClick={() => handleInquiryStatusChange(req.id, 'pending')}
+                                        >
+                                            <PhoneOff className="mr-2 h-4 w-4" />
+                                            Mark as Pending
+                                        </Button>
+                                      )}
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">No pending inquiries.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+             </Card>
         </TabsContent>
 
         <TabsContent value="upgrades" className="mt-4">

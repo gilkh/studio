@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
+import { VendorInquiryDialog } from '@/components/vendor-inquiry-dialog';
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -313,7 +314,12 @@ export default function SignupPage() {
                                     name="vendorCode"
                                     render={({ field }) => (
                                         <FormItem>
-                                        <FormLabel>Vendor Registration Code</FormLabel>
+                                        <div className="flex justify-between items-center">
+                                            <FormLabel>Vendor Registration Code</FormLabel>
+                                            <VendorInquiryDialog>
+                                                <button type="button" className="text-xs text-primary hover:underline">Request a code</button>
+                                            </VendorInquiryDialog>
+                                        </div>
                                         <FormControl>
                                             <Input placeholder="Enter code provided by admin" {...field} />
                                         </FormControl>

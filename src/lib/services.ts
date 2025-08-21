@@ -1,7 +1,8 @@
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
 import { subMonths, format, startOfMonth } from 'date-fns';
@@ -980,6 +981,30 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
     }
 }
 
+export async function createVendorInquiry(inquiry: Omit<VendorInquiry, 'id' | 'createdAt' | 'status'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'vendorInquiries'), {
+        ...inquiry,
+        createdAt: serverTimestamp(),
+        status: 'pending',
+    });
+    return docRef.id;
+}
+
+export async function getVendorInquiries(): Promise<VendorInquiry[]> {
+    const q = query(collection(db, 'vendorInquiries'), orderBy('createdAt', 'desc'));
+    const transform = (data: DocumentData): VendorInquiry => ({
+        id: data.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+    } as VendorInquiry);
+    return await fetchCollection<VendorInquiry>('vendorInquiries', q, transform);
+}
+
+export async function updateVendorInquiryStatus(inquiryId: string, status: VendorInquiry['status']) {
+    if (!inquiryId) return;
+    const inquiryRef = doc(db, 'vendorInquiries', inquiryId);
+    await updateDoc(inquiryRef, { status });
+}
 
 // --- Real-time Messaging Services ---
 

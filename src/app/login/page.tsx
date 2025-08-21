@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -46,7 +45,7 @@ const categories = [
     { name: 'Catering & Sweets', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1974&auto=format&fit=crop', hint: 'catering food'},
     { name: 'Entertainment', image: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=2070&auto=format&fit=crop', hint: 'DJ party'},
     { name: 'Lighting & Sound', image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1974&auto=format&fit=crop', hint: 'concert stage'},
-    { name: 'Photography & Videography', image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?q=80&w=2071&auto=format&fit=crop', hint: 'wedding photographer'},
+    { name: 'Photography & Videography', image: 'https://images.unsplash.com/photo-1504196658116-b9a55a850f39?q=80&w=2070&auto=format&fit=crop', hint: 'birthday photography'},
     { name: 'Decoration', image: 'https://images.unsplash.com/photo-1522158637959-30385a09e0da?q=80&w=2070&auto=format&fit=crop', hint: 'wedding decor'},
     { name: 'Beauty & Grooming', image: 'https://images.unsplash.com/photo-1632329583196-9d3635f35e98?q=80&w=2070&auto=format&fit=crop', hint: 'makeup artist'},
     { name: 'Transportation', image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=2070&auto=format&fit=crop', hint: 'luxury car'},

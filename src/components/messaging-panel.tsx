@@ -324,6 +324,8 @@ export function MessagingPanel() {
 
   const showChatList = !isMobile || (isMobile && !selectedChat);
   const showChatWindow = !isMobile || (isMobile && selectedChat);
+  const currentOtherParticipant = selectedChat ? getOtherParticipant(selectedChat) as ChatParticipant : null;
+
 
   return (
     <div className="flex h-full flex-col">
@@ -408,15 +410,15 @@ export function MessagingPanel() {
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={(getOtherParticipant(selectedChat) as ChatParticipant)?.avatar} alt={(getOtherParticipant(selectedChat) as ChatParticipant)?.name} />
-                        <AvatarFallback>{(getOtherParticipant(selectedChat) as ChatParticipant)?.name?.substring(0,2)}</AvatarFallback>
+                        <AvatarImage src={currentOtherParticipant?.avatar} alt={currentOtherParticipant?.name} />
+                        <AvatarFallback>{currentOtherParticipant?.name?.substring(0,2)}</AvatarFallback>
                     </Avatar>
                     
                     <div>
                          <div className="flex items-center gap-1.5">
-                            <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : (getOtherParticipant(selectedChat) as ChatParticipant)?.name}</p>
-                            {(getOtherParticipant(selectedChat) as ChatParticipant)?.verification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
-                            {(getOtherParticipant(selectedChat) as ChatParticipant)?.verification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                            <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : currentOtherParticipant?.name}</p>
+                            {currentOtherParticipant?.verification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                            {currentOtherParticipant?.verification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
                         </div>
                         <p className="text-sm text-muted-foreground">Online</p>
                     </div>

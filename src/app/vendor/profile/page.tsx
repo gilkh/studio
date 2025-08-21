@@ -6,15 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2 } from 'lucide-react';
+import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor } from '@/lib/services';
-import type { VendorProfile, Review } from '@/lib/types';
+import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor, getUserProfile, createOrUpdateUserProfile } from '@/lib/services';
+import type { VendorProfile, Review, UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -28,14 +28,19 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const profileFormSchema = z.object({
+  // From VendorProfile
   businessName: z.string().min(1, "Business name is required"),
   category: z.string().min(1, "Category is required"),
   tagline: z.string().min(1, "Tagline is required"),
   description: z.string().min(1, "Description is required"),
-  email: z.string().email(),
-  phone: z.string().min(10, "Please enter a valid phone number"),
   portfolio: z.array(z.string()).optional(),
   avatar: z.string().optional(),
+  
+  // From UserProfile
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email(),
+  phone: z.string().min(10, "Please enter a valid phone number"),
 });
 
 
@@ -43,6 +48,7 @@ export default function VendorProfilePage() {
     const { toast } = useToast();
     const { userId: vendorId, isLoading: isAuthLoading } = useAuth();
     const [vendor, setVendor] = useState<VendorProfile | null>(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingReviews, setIsLoadingReviews] = useState(true);
@@ -55,10 +61,12 @@ export default function VendorProfilePage() {
             category: '',
             tagline: '',
             description: '',
-            email: '',
-            phone: '',
             portfolio: [],
             avatar: '',
+            firstName: '',
+            lastName: '',
+            email: '',
+            phone: '',
         },
     });
 
@@ -72,14 +80,19 @@ export default function VendorProfilePage() {
             setIsLoadingReviews(true);
 
             try {
-                const [vendorProfile, vendorReviews] = await Promise.all([
+                const [vendorProfile, userProfile, vendorReviews] = await Promise.all([
                     getVendorProfile(vendorId),
+                    getUserProfile(vendorId),
                     getReviewsForVendor(vendorId),
                 ]);
 
-                if (vendorProfile) {
+                if (vendorProfile && userProfile) {
                     setVendor(vendorProfile);
-                    form.reset(vendorProfile);
+                    setUser(userProfile);
+                    form.reset({
+                        ...vendorProfile,
+                        ...userProfile,
+                    });
                 }
                 setReviews(vendorReviews);
 
@@ -102,8 +115,31 @@ export default function VendorProfilePage() {
     async function onSubmit(values: z.infer<typeof profileFormSchema>) {
         if (!vendorId) return;
         try {
-            await createOrUpdateVendorProfile(vendorId, values);
-            setVendor(prev => prev ? { ...prev, ...values, portfolio: values.portfolio || prev.portfolio } : null);
+            // Separate data for each profile
+            const vendorData: Partial<VendorProfile> = {
+                businessName: values.businessName,
+                category: values.category,
+                tagline: values.tagline,
+                description: values.description,
+                portfolio: values.portfolio,
+                avatar: values.avatar,
+            };
+            const userData: Partial<UserProfile> = {
+                firstName: values.firstName,
+                lastName: values.lastName,
+                email: values.email,
+                phone: values.phone,
+            }
+
+            await Promise.all([
+                createOrUpdateVendorProfile(vendorId, vendorData),
+                createOrUpdateUserProfile(vendorId, userData)
+            ]);
+            
+            // Update local state
+            setVendor(prev => prev ? { ...prev, ...vendorData } : null);
+            setUser(prev => prev ? { ...prev, ...userData} : null);
+
             toast({
                 title: "Profile Updated",
                 description: "Your business information has been saved successfully.",
@@ -225,7 +261,7 @@ export default function VendorProfilePage() {
         )
     }
 
-    if (!vendor) {
+    if (!vendor || !user) {
     return (
         <Card>
             <CardHeader>
@@ -289,6 +325,7 @@ export default function VendorProfilePage() {
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
+                        <h3 className="text-xl font-semibold border-b pb-2">Business Details</h3>
                         <div className="grid md:grid-cols-2 gap-6">
                             <FormField
                                 control={form.control}
@@ -348,13 +385,39 @@ export default function VendorProfilePage() {
                                 </FormItem>
                             )}
                         />
+
+                        <h3 className="text-xl font-semibold border-b pb-2 pt-4">Contact Details</h3>
+                         <div className="grid md:grid-cols-2 gap-6">
+                            <FormField
+                                control={form.control}
+                                name="firstName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Owner First Name</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="lastName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Owner Last Name</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <div className="grid md:grid-cols-2 gap-6">
                              <FormField
                                 control={form.control}
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Public Email Address</FormLabel>
+                                        <FormLabel>Contact Email Address</FormLabel>
                                         <FormControl><Input type="email" {...field} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -365,14 +428,14 @@ export default function VendorProfilePage() {
                                 name="phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Public Phone Number</FormLabel>
+                                        <FormLabel>Contact Phone Number</FormLabel>
                                         <FormControl><Input type="tel" {...field} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end pt-4">
                             <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                Save All Changes
@@ -467,3 +530,5 @@ export default function VendorProfilePage() {
      </div>
   )
 }
+
+    

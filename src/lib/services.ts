@@ -301,13 +301,32 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
     }
     
     try {
-        const [servicesSnapshot, offersSnapshot] = await Promise.all([
+        const [servicesSnapshot, offersSnapshot, vendorsSnapshot] = await Promise.all([
             getDocs(queries[0]),
-            getDocs(queries[1])
+            getDocs(queries[1]),
+            getDocs(collection(db, 'vendors')) // Fetch all vendors to map verification status
         ]);
 
-        const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'service' } as Service));
-        const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'offer' } as Offer));
+        const vendorsData = new Map(vendorsSnapshot.docs.map(doc => [doc.id, doc.data() as Omit<VendorProfile, 'id'>]));
+
+        const services = servicesSnapshot.docs.map(doc => {
+            const data = doc.data() as Omit<Service, 'id'>;
+            return { 
+                id: doc.id, 
+                ...data, 
+                type: 'service',
+                vendorVerification: vendorsData.get(data.vendorId)?.verification || 'none'
+            } as Service;
+        });
+        const offers = offersSnapshot.docs.map(doc => {
+            const data = doc.data() as Omit<Offer, 'id'>;
+            return { 
+                id: doc.id, 
+                ...data, 
+                type: 'offer',
+                vendorVerification: vendorsData.get(data.vendorId)?.verification || 'none'
+            } as Offer;
+        });
         
         let combined = [...services, ...offers];
         if (count) {
@@ -1117,4 +1136,3 @@ export async function markChatAsRead(chatId: string, userId: string) {
         [`unreadCount.${userId}`]: 0
     });
 }
-

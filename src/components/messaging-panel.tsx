@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft, Calendar, Users, Phone, PencilRuler, Check, CreditCard, ShieldCheck } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
-import type { Chat, ChatMessage, ForwardedItem, LineItem, QuoteRequest } from '@/lib/types';
+import type { Chat, ChatMessage, ForwardedItem, LineItem, QuoteRequest, ChatParticipant } from '@/lib/types';
 import { getChatsForUser, getMessagesForChat, sendMessage, markChatAsRead, approveQuote } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -408,15 +408,15 @@ export function MessagingPanel() {
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={(getOtherParticipant(selectedChat) as any)?.avatar} alt={(getOtherParticipant(selectedChat) as any)?.name} />
-                        <AvatarFallback>{(getOtherParticipant(selectedChat) as any)?.name?.substring(0,2)}</AvatarFallback>
+                        <AvatarImage src={(getOtherParticipant(selectedChat) as ChatParticipant)?.avatar} alt={(getOtherParticipant(selectedChat) as ChatParticipant)?.name} />
+                        <AvatarFallback>{(getOtherParticipant(selectedChat) as ChatParticipant)?.name?.substring(0,2)}</AvatarFallback>
                     </Avatar>
                     
                     <div>
                          <div className="flex items-center gap-1.5">
-                            <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : (getOtherParticipant(selectedChat) as any)?.name}</p>
-                            {(getOtherParticipant(selectedChat) as any)?.verification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
-                            {(getOtherParticipant(selectedChat) as any)?.verification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                            <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : (getOtherParticipant(selectedChat) as ChatParticipant)?.name}</p>
+                            {(getOtherParticipant(selectedChat) as ChatParticipant)?.verification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                            {(getOtherParticipant(selectedChat) as ChatParticipant)?.verification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
                         </div>
                         <p className="text-sm text-muted-foreground">Online</p>
                     </div>

@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus } from '@/lib/services';
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -127,6 +127,22 @@ export default function AdminHomePage() {
         toast({ title: "Error", description: "Failed to delete the code.", variant: "destructive" });
     }
   }
+  
+  const handleUpgradeRequestStatusChange = async (requestId: string, newStatus: UpgradeRequest['status']) => {
+    try {
+      await updateUpgradeRequestStatus(requestId, newStatus);
+      setUpgradeRequests(prev => prev.map(req => 
+        req.id === requestId ? { ...req, status: newStatus } : req
+      ));
+      toast({
+        title: 'Request Updated',
+        description: `Request marked as ${newStatus}.`
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Could not update the request status.", variant: "destructive" });
+    }
+  };
+
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -149,7 +165,7 @@ export default function AdminHomePage() {
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="upgrades">
                 Upgrade Requests
-                {upgradeRequests.length > 0 && <Badge className="ml-2">{upgradeRequests.length}</Badge>}
+                {upgradeRequests.filter(r => r.status === 'pending').length > 0 && <Badge className="ml-2">{upgradeRequests.filter(r => r.status === 'pending').length}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="codes">Vendor Codes</TabsTrigger>
             <TabsTrigger value="danger">Danger Zone</TabsTrigger>
@@ -325,6 +341,7 @@ export default function AdminHomePage() {
                                 <TableHead>Vendor</TableHead>
                                 <TableHead>Current Tier</TableHead>
                                 <TableHead>Contact Phone</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Date Requested</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -336,26 +353,47 @@ export default function AdminHomePage() {
                                     <TableCell><Skeleton className="h-6 w-36" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                                 </TableRow>
                                 ))
                             ) : upgradeRequests.length > 0 ? upgradeRequests.map(req => (
-                                <TableRow key={req.id}>
+                                <TableRow key={req.id} className={req.status === 'contacted' ? 'bg-muted/50' : ''}>
                                     <TableCell className="font-medium">{req.vendorName}</TableCell>
                                     <TableCell><Badge variant="secondary" className="capitalize">{req.currentTier}</Badge></TableCell>
                                     <TableCell className="text-muted-foreground">{req.phone}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={req.status === 'pending' ? 'default' : 'secondary'} className={req.status === 'pending' ? 'bg-amber-500' : ''}>
+                                            {req.status}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell>{format(req.requestedAt, 'PPP p')}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="outline" size="sm">
+                                      {req.status === 'pending' ? (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => handleUpgradeRequestStatusChange(req.id, 'contacted')}
+                                        >
                                             <Phone className="mr-2 h-4 w-4" />
                                             Mark as Contacted
                                         </Button>
+                                      ) : (
+                                        <Button 
+                                            variant="secondary" 
+                                            size="sm"
+                                            onClick={() => handleUpgradeRequestStatusChange(req.id, 'pending')}
+                                        >
+                                            <PhoneOff className="mr-2 h-4 w-4" />
+                                            Mark as Pending
+                                        </Button>
+                                      )}
                                     </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">No pending upgrade requests.</TableCell>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">No pending upgrade requests.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

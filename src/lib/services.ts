@@ -24,6 +24,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
@@ -859,7 +860,7 @@ export async function createUpgradeRequest(request: Omit<UpgradeRequest, 'id'| '
 }
 
 export async function getUpgradeRequests(): Promise<UpgradeRequest[]> {
-    const q = query(collection(db, 'upgradeRequests'), where('status', '==', 'pending'));
+    const q = query(collection(db, 'upgradeRequests'));
     const transform = (data: DocumentData): UpgradeRequest => ({
         id: data.id,
         vendorId: data.vendorId,
@@ -870,6 +871,12 @@ export async function getUpgradeRequests(): Promise<UpgradeRequest[]> {
         requestedAt: data.requestedAt?.toDate ? data.requestedAt.toDate() : new Date(),
     });
     return await fetchCollection<UpgradeRequest>('upgradeRequests', q, transform);
+}
+
+export async function updateUpgradeRequestStatus(requestId: string, status: UpgradeRequest['status']) {
+    if (!requestId) return;
+    const requestRef = doc(db, 'upgradeRequests', requestId);
+    await updateDoc(requestRef, { status });
 }
 
 export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyticsData[]> {

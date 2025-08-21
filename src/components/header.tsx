@@ -100,7 +100,7 @@ export function AppHeader() {
       <div className="flex items-center gap-6">
         <Link href={isVendor ? "/vendor/home" : "/client/home"} className="flex items-center gap-2 font-semibold">
             <Logo className="h-6 w-6 text-primary" />
-            <span className="hidden sm:inline-block">TradeCraft</span>
+            <span className="hidden sm:inline-block">Farhetkoun</span>
         </Link>
         
         {/* Desktop Navigation */}

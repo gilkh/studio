@@ -62,6 +62,7 @@ export default function LoginPage() {
             localStorage.setItem('role', result.role);
             // Set cookie for middleware
             setCookie('role', result.role, 7);
+            setCookie('userId', result.userId, 7);
 
             toast({
                 title: 'Sign In Successful!',
@@ -103,7 +104,7 @@ export default function LoginPage() {
             <div className="flex justify-center items-center gap-4 mb-6">
                 <Logo className="h-16 w-16 text-primary" />
                 <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter text-foreground">
-                    TradeCraft
+                    Farhetkoun
                 </h1>
             </div>
           <p className="max-w-3xl mx-auto mt-4 text-lg md:text-xl text-muted-foreground">
@@ -124,7 +125,7 @@ export default function LoginPage() {
       <section id="features-section" className="py-20 sm:py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold">Why Choose TradeCraft?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">Why Choose Farhetkoun?</h2>
             <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
               We provide the tools and connections you need to create flawless events or grow your service business.
             </p>
@@ -204,7 +205,7 @@ export default function LoginPage() {
        {/* Footer */}
        <footer className="py-8 bg-background border-t">
             <div className="container mx-auto px-4 text-center text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} TradeCraft. All Rights Reserved.</p>
+                <p>&copy; {new Date().getFullYear()} Farhetkoun. All Rights Reserved.</p>
             </div>
        </footer>
     </div>

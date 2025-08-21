@@ -40,7 +40,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen w-full flex-col bg-secondary/50">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
-            <h1 className="text-xl font-semibold">TradeCraft Admin</h1>
+            <h1 className="text-xl font-semibold">Farhetkoun Admin</h1>
             <Link href="/login">
                 <Button variant="outline" onClick={() => logout()}>Logout</Button>
             </Link>

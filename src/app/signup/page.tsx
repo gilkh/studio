@@ -89,7 +89,7 @@ export default function SignupPage() {
 
             toast({
                 title: "Account Created!",
-                description: "Welcome to TradeCraft. Redirecting you to your new dashboard.",
+                description: "Welcome to Farhetkoun. Redirecting you to your new dashboard.",
             });
 
             // Redirect to the appropriate dashboard
@@ -127,7 +127,7 @@ export default function SignupPage() {
              <Link href="/login" className="flex justify-center items-center gap-4 mb-6">
                 <Logo className="h-12 w-12 text-primary" />
                 <h1 className="text-4xl font-extrabold tracking-tighter text-foreground">
-                    TradeCraft
+                    Farhetkoun
                 </h1>
             </Link>
            <Card className="shadow-2xl">

@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'TradeCraft - Find Event Services',
+  title: 'Farhetkoun - Find Event Services',
   description: 'Your one-stop marketplace to find and book services for your next event.',
 };
 

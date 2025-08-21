@@ -14,6 +14,8 @@ import { useState } from 'react';
 import { signInUser } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
 import { logout } from '@/hooks/use-auth';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 function setCookie(name: string, value: string, days: number) {
     let expires = "";
@@ -99,22 +101,31 @@ export default function LoginPage() {
   return (
     <div className="w-full bg-background">
       {/* Hero Section */}
-      <section className="relative py-20 sm:py-32 bg-gradient-to-br from-primary/10 to-secondary/20">
-        <div className="container mx-auto px-4 text-center">
+      <section className="relative h-[60vh] sm:h-[80vh] flex items-center justify-center text-white">
+        <Image 
+            src="https://placehold.co/1920x1080.png" 
+            alt="Joyful event celebration" 
+            layout="fill" 
+            objectFit="cover" 
+            className="z-0"
+            data-ai-hint="event celebration"
+        />
+        <div className="absolute inset-0 bg-black/50 z-10"></div>
+        <div className="relative z-20 container mx-auto px-4 text-center">
             <div className="flex justify-center items-center gap-4 mb-6">
-                <Logo className="h-16 w-16 text-primary" />
-                <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter text-foreground">
+                <Logo className="h-16 w-16" />
+                <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter">
                     Farhetkoun
                 </h1>
             </div>
-          <p className="max-w-3xl mx-auto mt-4 text-lg md:text-xl text-muted-foreground">
+          <p className="max-w-3xl mx-auto mt-4 text-lg md:text-xl text-white/90">
             Your all-in-one marketplace for discovering, booking, and managing elite services for your next unforgettable event.
           </p>
           <div className="mt-8 flex justify-center gap-4">
             <Button size="lg" className="text-lg h-12 px-8" onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
                 Get Started
             </Button>
-            <Button size="lg" variant="outline" className="text-lg h-12 px-8" onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+            <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-transparent border-white text-white hover:bg-white hover:text-primary" onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
                 Learn More
             </Button>
           </div>
@@ -165,12 +176,57 @@ export default function LoginPage() {
         </div>
       </section>
 
+        {/* Photo Gallery Section */}
+      <section className="py-20 sm:py-24 bg-secondary/20">
+        <div className="container mx-auto px-4">
+           <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold">Create Your Perfect Event</h2>
+                <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
+                    From intimate gatherings to grand celebrations, find everything you need.
+                </p>
+            </div>
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                <div className="overflow-hidden rounded-xl group relative">
+                    <Image src="https://placehold.co/600x800.png" width={600} height={800} alt="Elegant wedding reception" data-ai-hint="wedding reception" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                    <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Weddings</p>
+                </div>
+                 <div className="overflow-hidden rounded-xl group relative">
+                    <Image src="https://placehold.co/600x600.png" width={600} height={600} alt="Corporate event with attendees" data-ai-hint="corporate event" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                    <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Corporate</p>
+                </div>
+                 <div className="overflow-hidden rounded-xl group relative">
+                    <Image src="https://placehold.co/600x700.png" width={600} height={700} alt="Birthday party with balloons" data-ai-hint="birthday party" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                    <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Parties</p>
+                </div>
+                 <div className="overflow-hidden rounded-xl group relative">
+                    <Image src="https://placehold.co/600x900.png" width={600} height={900} alt="Catering food display" data-ai-hint="catering food" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Catering</p>
+                </div>
+                 <div className="overflow-hidden rounded-xl group relative">
+                    <Image src="https://placehold.co/600x600.png" width={600} height={600} alt="DJ at a party" data-ai-hint="DJ party" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                    <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Entertainment</p>
+                </div>
+                 <div className="overflow-hidden rounded-xl group relative">
+                    <Image src="https://placehold.co/600x800.png" width={600} height={800} alt="Outdoor event decorations" data-ai-hint="outdoor decorations" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                    <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Decor</p>
+                </div>
+            </div>
+        </div>
+      </section>
+
       {/* Login Section */}
       <section id="login-section" className="py-20 sm:py-24 bg-secondary/50">
         <div className="container mx-auto px-4">
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">
-                    <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Sign In or Sign Up</CardTitle>
+                    <CardDescription>Start planning your event or offering your services.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
                     <form onSubmit={handleLogin}>
@@ -193,8 +249,8 @@ export default function LoginPage() {
                     </form>
                     <div className="mt-6 text-center text-sm">
                         Don&apos;t have an account?{' '}
-                        <Link href="/signup" className="underline">
-                            Sign up
+                        <Link href="/signup" className="underline font-semibold text-primary hover:text-primary/80">
+                            Sign up now
                         </Link>
                     </div>
                 </CardContent>

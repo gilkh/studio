@@ -304,7 +304,7 @@ export default function VendorProfilePage() {
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-2">
                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                                <span className="font-bold text-base">{vendor.rating.toFixed(1)}</span>
+                                <span className="font-bold text-base">{(vendor.rating || 0).toFixed(1)}</span>
                                 <span>({vendor.reviewCount} reviews)</span>
                             </div>
                             {vendor.verification === 'verified' && (

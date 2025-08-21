@@ -306,8 +306,8 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
             getDocs(queries[1])
         ]);
 
-        const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
-        const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+        const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'service' } as Service));
+        const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'offer' } as Offer));
         
         let combined = [...services, ...offers];
         if (count) {
@@ -332,7 +332,7 @@ export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer 
         let docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Service;
+            return { id: docSnap.id, ...docSnap.data(), type: 'service' } as Service;
         }
 
         // If not found in services, check offers collection
@@ -340,7 +340,7 @@ export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer 
         docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Offer;
+            return { id: docSnap.id, ...docSnap.data(), type: 'offer' } as Offer;
         }
         
         // If not found in either
@@ -695,6 +695,8 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
 
 export async function getReviewsForVendor(vendorId: string): Promise<Review[]> {
     if (!vendorId) return [];
+    // Firestore does not allow filtering by one field and ordering by another without a composite index.
+    // So we fetch all reviews for the vendor and sort them in the client.
     const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId));
     const reviews = await fetchCollection<Review>('reviews', q, (data: DocumentData) => ({
         id: data.id,
@@ -1010,21 +1012,28 @@ export async function updateVendorInquiryStatus(inquiryId: string, status: Vendo
 export function getChatsForUser(userId: string | undefined, callback: (chats: Chat[]) => void): () => void {
     let q;
     if (userId) {
-        q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId), orderBy('lastMessageTimestamp', 'desc'));
+        // The query that requires an index has been modified to remove the orderBy clause.
+        q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId));
     } else {
         // For admin, get all chats, sorted
         q = query(collection(db, 'chats'), orderBy('lastMessageTimestamp', 'desc'));
     }
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const chats = querySnapshot.docs.map(doc => {
+        let chats = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 ...data,
                 lastMessageTimestamp: data.lastMessageTimestamp.toDate(),
+                // Ensure participants have a verification status
+                participants: data.participants.map((p: any) => ({ ...p, verification: p.verification || 'none' })),
             } as Chat;
         });
+
+        // Sort the chats manually in the code
+        chats.sort((a, b) => b.lastMessageTimestamp.getTime() - a.lastMessageTimestamp.getTime());
+
         callback(chats);
     });
 
@@ -1108,3 +1117,4 @@ export async function markChatAsRead(chatId: string, userId: string) {
         [`unreadCount.${userId}`]: 0
     });
 }
+

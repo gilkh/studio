@@ -413,7 +413,11 @@ export function MessagingPanel() {
                     </Avatar>
                     
                     <div>
-                         <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : (getOtherParticipant(selectedChat) as any)?.name}</p>
+                         <div className="flex items-center gap-1.5">
+                            <p className="font-semibold">{isAdmin ? `${(getOtherParticipant(selectedChat) as any).p1.name} & ${(getOtherParticipant(selectedChat) as any).p2.name}` : (getOtherParticipant(selectedChat) as any)?.name}</p>
+                            {(getOtherParticipant(selectedChat) as any)?.verification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                            {(getOtherParticipant(selectedChat) as any)?.verification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                        </div>
                         <p className="text-sm text-muted-foreground">Online</p>
                     </div>
                 </div>

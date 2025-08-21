@@ -696,13 +696,12 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
 export async function getReviewsForVendor(vendorId: string): Promise<Review[]> {
     if (!vendorId) return [];
     const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId));
-    const transform = (data: DocumentData): Review => ({
+    const reviews = await fetchCollection<Review>('reviews', q, (data: DocumentData) => ({
         id: data.id,
         ...data,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-    } as Review);
-    const reviews = await fetchCollection<Review>('reviews', q, transform);
-    return reviews.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+    } as Review));
+    return reviews.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 // Admin Services
@@ -1011,10 +1010,10 @@ export async function updateVendorInquiryStatus(inquiryId: string, status: Vendo
 export function getChatsForUser(userId: string | undefined, callback: (chats: Chat[]) => void): () => void {
     let q;
     if (userId) {
-        q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId));
+        q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId), orderBy('lastMessageTimestamp', 'desc'));
     } else {
-        // For admin, get all chats
-        q = query(collection(db, 'chats'));
+        // For admin, get all chats, sorted
+        q = query(collection(db, 'chats'), orderBy('lastMessageTimestamp', 'desc'));
     }
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -1025,7 +1024,7 @@ export function getChatsForUser(userId: string | undefined, callback: (chats: Ch
                 ...data,
                 lastMessageTimestamp: data.lastMessageTimestamp.toDate(),
             } as Chat;
-        }).sort((a,b) => b.lastMessageTimestamp.getTime() - a.lastMessageTimestamp.getTime());
+        });
         callback(chats);
     });
 

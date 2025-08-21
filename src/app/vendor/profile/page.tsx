@@ -6,15 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem } from 'lucide-react';
+import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getVendorProfile, createOrUpdateVendorProfile } from '@/lib/services';
-import type { VendorProfile } from '@/lib/types';
+import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor } from '@/lib/services';
+import type { VendorProfile, Review } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -24,6 +24,9 @@ import Link from 'next/link';
 import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
 
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 const profileFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   category: z.string().min(1, "Category is required"),
@@ -31,27 +34,19 @@ const profileFormSchema = z.object({
   description: z.string().min(1, "Description is required"),
   email: z.string().email(),
   phone: z.string().min(10, "Please enter a valid phone number"),
-  accountTier: z.string().min(1, "Account tier is required"),
+  portfolio: z.array(z.string()).optional(),
+  avatar: z.string().optional(),
 });
 
-// Mock Data - In a real app, this would be fetched from the DB
-const mockPortfolio = [
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-];
-
-const mockReviews = [
-    { id: 1, author: 'Alice Johnson', rating: 5, comment: 'Absolutely stunning photos! Timeless Snaps captured our wedding day perfectly.'},
-    { id: 2, author: 'Bob Williams', rating: 5, comment: 'Professional, creative, and a joy to work with. Highly recommended!'}
-]
 
 export default function VendorProfilePage() {
     const { toast } = useToast();
     const { userId: vendorId, isLoading: isAuthLoading } = useAuth();
     const [vendor, setVendor] = useState<VendorProfile | null>(null);
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+    const portfolioFileRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<z.infer<typeof profileFormSchema>>({
         resolver: zodResolver(profileFormSchema),
@@ -62,35 +57,45 @@ export default function VendorProfilePage() {
             description: '',
             email: '',
             phone: '',
-            accountTier: 'free',
+            portfolio: [],
+            avatar: '',
         },
     });
 
     useEffect(() => {
-        async function fetchVendor() {
+        async function fetchVendorData() {
             if (!vendorId) {
                 if (!isAuthLoading) setIsLoading(false);
                 return;
             }
             setIsLoading(true);
+            setIsLoadingReviews(true);
+
             try {
-                let vendorProfile = await getVendorProfile(vendorId);
+                const [vendorProfile, vendorReviews] = await Promise.all([
+                    getVendorProfile(vendorId),
+                    getReviewsForVendor(vendorId),
+                ]);
+
                 if (vendorProfile) {
                     setVendor(vendorProfile);
                     form.reset(vendorProfile);
                 }
+                setReviews(vendorReviews);
+
             } catch (error) {
-                console.error("Failed to fetch vendor profile:", error);
+                console.error("Failed to fetch vendor data:", error);
                 toast({
                     title: "Error",
-                    description: "Could not load your profile. Please try again later.",
+                    description: "Could not load your profile data. Please try again later.",
                     variant: "destructive",
                 });
             } finally {
                 setIsLoading(false);
+                setIsLoadingReviews(false);
             }
         }
-        fetchVendor();
+        fetchVendorData();
     }, [vendorId, isAuthLoading, form, toast]);
 
 
@@ -98,7 +103,7 @@ export default function VendorProfilePage() {
         if (!vendorId) return;
         try {
             await createOrUpdateVendorProfile(vendorId, values);
-            setVendor(prev => prev ? { ...prev, ...values } : null);
+            setVendor(prev => prev ? { ...prev, ...values, portfolio: values.portfolio || prev.portfolio } : null);
             toast({
                 title: "Profile Updated",
                 description: "Your business information has been saved successfully.",
@@ -111,6 +116,84 @@ export default function VendorProfilePage() {
                 variant: "destructive",
             });
         }
+    }
+
+    const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = document.createElement('img');
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+    
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return reject('Could not get canvas context');
+    
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+                };
+            };
+            reader.onerror = (error) => reject(error);
+        });
+    }
+
+     const handlePortfolioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        form.control.getFieldState('portfolio').isSubmitting = true;
+
+        const compressedImages: string[] = [];
+        for (const file of Array.from(files)) {
+            if (file.size > MAX_FILE_SIZE) {
+                toast({ title: 'File too large', description: `${file.name} is over 5MB.`, variant: 'destructive' });
+                continue;
+            }
+            if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+                toast({ title: 'Invalid file type', description: `${file.name} is not a valid image type.`, variant: 'destructive' });
+                continue;
+            }
+            try {
+                const compressedDataUrl = await compressImage(file);
+                compressedImages.push(compressedDataUrl);
+            } catch (error) {
+                console.error("Image processing failed", error);
+                toast({ title: 'Image Error', description: `Could not process ${file.name}.`, variant: 'destructive' });
+            }
+        }
+        
+        const currentPortfolio = form.getValues('portfolio') || [];
+        form.setValue('portfolio', [...currentPortfolio, ...compressedImages], { shouldDirty: true });
+        form.control.getFieldState('portfolio').isSubmitting = false;
+        
+        // Auto-save after upload
+        await form.handleSubmit(onSubmit)();
+    }
+    
+    const handleRemovePortfolioImage = async (index: number) => {
+        const currentPortfolio = form.getValues('portfolio') || [];
+        const updatedPortfolio = currentPortfolio.filter((_, i) => i !== index);
+        form.setValue('portfolio', updatedPortfolio, { shouldDirty: true });
+        await form.handleSubmit(onSubmit)();
     }
     
     if (isLoading || isAuthLoading) {
@@ -158,6 +241,8 @@ export default function VendorProfilePage() {
     )
   }
 
+  const portfolioImages = form.watch('portfolio') || [];
+
   return (
      <div className="space-y-8">
         <Card>
@@ -169,8 +254,8 @@ export default function VendorProfilePage() {
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                     <div className="relative flex-shrink-0">
                         <Avatar className="h-32 w-32 border-4 border-primary/50">
-                            <AvatarImage src={`https://i.pravatar.cc/150?u=${vendorId}`} alt={vendor?.businessName} data-ai-hint="company logo" />
-                            <AvatarFallback>{vendor?.businessName?.substring(0, 2)}</AvatarFallback>
+                            <AvatarImage src={vendor?.avatar} alt={vendor?.businessName} />
+                            <AvatarFallback>{vendor?.businessName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">
                             <Camera className="h-4 w-4"/>
@@ -180,17 +265,17 @@ export default function VendorProfilePage() {
                     <div className="flex-grow text-center sm:text-left">
                         <h2 className="text-3xl font-bold">{vendor?.businessName}</h2>
                         <p className="text-muted-foreground">{vendor?.tagline}</p>
-                        <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-2">
                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                                <span className="font-bold text-base">5.0</span>
-                                <span>(150 reviews)</span>
+                                <span className="font-bold text-base">{vendor.rating.toFixed(1)}</span>
+                                <span>({vendor.reviewCount} reviews)</span>
                             </div>
                             <Badge variant="secondary" className="gap-1.5 pl-2">
                                 <ShieldCheck className="h-4 w-4 text-green-600" />
                                 Verified Vendor
                             </Badge>
-                            {vendor?.accountTier && (
+                             {vendor.accountTier && (
                                 <RequestUpgradeDialog vendor={vendor}>
                                    <Badge variant="outline" className="capitalize border-green-600 bg-green-50 text-green-700 gap-1.5 pl-2 cursor-pointer hover:bg-green-100">
                                         <Gem className="h-4 w-4" />
@@ -287,36 +372,6 @@ export default function VendorProfilePage() {
                                 )}
                             />
                         </div>
-                         <Separator />
-                          <div className="grid md:grid-cols-2 gap-6 items-end">
-                            <FormField
-                                control={form.control}
-                                name="accountTier"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Tier</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select a tier" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="free">Free</SelectItem>
-                                                <SelectItem value="vip1">VIP 1</SelectItem>
-                                                <SelectItem value="vip2">VIP 2</SelectItem>
-                                                <SelectItem value="vip3">VIP 3</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button variant="outline" className="w-full md:w-auto justify-self-start">
-                                <Gem className="mr-2 h-4 w-4" />
-                                Manage Subscription
-                            </Button>
-                        </div>
                         <div className="flex justify-end">
                             <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -335,19 +390,37 @@ export default function VendorProfilePage() {
                         <CardTitle>Portfolio Gallery</CardTitle>
                         <CardDescription>Showcase your best work to attract clients.</CardDescription>
                     </div>
-                     <Button variant="outline">
+                     <Button variant="outline" onClick={() => portfolioFileRef.current?.click()} disabled={form.control.getFieldState('portfolio').isSubmitting}>
                         <ImagePlus className="mr-2 h-4 w-4" /> Add Photos
                     </Button>
+                    <Input 
+                        type="file" 
+                        ref={portfolioFileRef} 
+                        className="hidden" 
+                        multiple 
+                        accept="image/*"
+                        onChange={handlePortfolioUpload}
+                    />
                 </div>
             </CardHeader>
             <CardContent>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {mockPortfolio.map((src, index) => (
-                        <div key={index} className="relative aspect-square overflow-hidden rounded-lg group">
-                            <Image src={src} alt={`Portfolio image ${index + 1}`} layout="fill" className="object-cover transition-transform group-hover:scale-110" />
-                        </div>
-                    ))}
-                </div>
+                {portfolioImages.length > 0 ? (
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {portfolioImages.map((src, index) => (
+                            <div key={index} className="relative aspect-square overflow-hidden rounded-lg group">
+                                <Image src={src} alt={`Portfolio image ${index + 1}`} layout="fill" className="object-cover" />
+                                <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemovePortfolioImage(index)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                        <p>No portfolio images have been added yet.</p>
+                        <Button variant="link" onClick={() => portfolioFileRef.current?.click()}>Upload your first photo</Button>
+                    </div>
+                )}
             </CardContent>
         </Card>
 
@@ -357,31 +430,40 @@ export default function VendorProfilePage() {
                 <CardDescription>Here's what your past clients have to say.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 {mockReviews.map((review, index) => (
+                 {isLoadingReviews ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-20 w-full" />
+                    </div>
+                 ) : reviews.length > 0 ? reviews.map((review, index) => (
                     <div key={review.id}>
                         <div className="flex items-start gap-4">
                              <Avatar className="h-10 w-10">
-                                <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={review.clientAvatar} alt={review.clientName} />
+                                <AvatarFallback>{review.clientName.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-grow">
                                 <div className="flex items-center justify-between">
-                                    <p className="font-semibold">{review.author}</p>
+                                    <p className="font-semibold">{review.clientName}</p>
                                      <div className="flex items-center gap-0.5">
                                         {[...Array(review.rating)].map((_, i) => (
                                             <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                        ))}
+                                         {[...Array(5 - review.rating)].map((_, i) => (
+                                            <Star key={i} className="h-4 w-4 fill-muted text-muted-foreground" />
                                         ))}
                                     </div>
                                 </div>
                                 <p className="text-muted-foreground mt-1">"{review.comment}"</p>
                             </div>
                         </div>
-                        {index < mockReviews.length -1 && <Separator className="mt-6" />}
+                        {index < reviews.length -1 && <Separator className="mt-6" />}
                     </div>
-                ))}
+                )) : (
+                     <p className="text-center text-muted-foreground py-8">You have no reviews yet.</p>
+                )}
             </CardContent>
         </Card>
      </div>
   )
 }
-
-    

@@ -23,6 +23,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
@@ -93,6 +94,7 @@ export async function createNewUser(data: {
             rating: 0,
             reviewCount: 0,
             avatar: avatar || '',
+            portfolio: [],
         };
 
         const batch = writeBatch(db);
@@ -716,7 +718,7 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
 
 export async function getReviewsForVendor(vendorId: string): Promise<Review[]> {
     if (!vendorId) return [];
-    const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId));
+    const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
     const transform = (data: DocumentData): Review => ({
         id: data.id,
         ...data,

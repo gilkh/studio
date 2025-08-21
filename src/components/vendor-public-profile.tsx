@@ -61,8 +61,8 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
         <CardHeader className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-start gap-6">
             <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-primary/50">
-              <AvatarImage src={`https://i.pravatar.cc/150?u=${vendor.id}`} alt={vendor.businessName} data-ai-hint="company logo" />
-              <AvatarFallback>{vendor.businessName?.substring(0, 2)}</AvatarFallback>
+              <AvatarImage src={vendor.avatar} alt={vendor.businessName} data-ai-hint="company logo" />
+              <AvatarFallback>{vendor.businessName?.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-grow mt-2">
               <h1 className="text-3xl md:text-4xl font-bold">{vendor.businessName}</h1>

@@ -57,7 +57,7 @@ export function LeaveReviewDialog({ booking, children, onReviewSubmit }: LeaveRe
             vendorId: booking.vendorId,
             clientId: userId,
             clientName: `${userProfile.firstName} ${userProfile.lastName}`,
-            clientAvatar: `https://i.pravatar.cc/150?u=${userId}`,
+            clientAvatar: userProfile.avatar,
             serviceId: booking.serviceId,
             rating,
             comment,

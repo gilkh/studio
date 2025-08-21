@@ -56,7 +56,7 @@ export function QuoteRequestDialog({ children, service }: QuoteRequestDialogProp
         const quoteData: Omit<QuoteRequest, 'id'| 'status' | 'createdAt'> = {
             clientId: userId,
             clientName: `${userProfile.firstName} ${userProfile.lastName}`,
-            clientAvatar: `https://i.pravatar.cc/150?u=${userId}`,
+            clientAvatar: userProfile.avatar,
             vendorId: service.vendorId,
             serviceId: service.id,
             serviceTitle: service.title,

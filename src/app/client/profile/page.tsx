@@ -143,7 +143,7 @@ export default function ClientProfilePage() {
             <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative">
                     <Avatar className="h-24 w-24 border-2 border-primary">
-                        <AvatarImage src={`https://i.pravatar.cc/150?u=${userId}`} alt={user?.firstName} data-ai-hint="user avatar" />
+                        <AvatarImage src={user?.avatar} alt={user?.firstName} data-ai-hint="user avatar" />
                         <AvatarFallback>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">

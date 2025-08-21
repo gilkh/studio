@@ -103,7 +103,7 @@ export default function LoginPage() {
       {/* Hero Section */}
       <section className="relative h-[60vh] sm:h-[80vh] flex items-center justify-center text-white">
         <Image 
-            src="https://placehold.co/1920x1080.png" 
+            src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2070&auto=format&fit=crop" 
             alt="Joyful event celebration" 
             fill
             className="z-0 object-cover"
@@ -186,32 +186,32 @@ export default function LoginPage() {
             </div>
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
                 <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://placehold.co/600x800.png" width={600} height={800} alt="Elegant wedding reception" data-ai-hint="wedding reception" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070&auto=format&fit=crop" width={600} height={800} alt="Elegant wedding reception" data-ai-hint="wedding reception" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Weddings</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://placehold.co/600x600.png" width={600} height={600} alt="Corporate event with attendees" data-ai-hint="corporate event" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" width={600} height={600} alt="Corporate event with attendees" data-ai-hint="corporate event" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Corporate</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://placehold.co/600x700.png" width={600} height={700} alt="Birthday party with balloons" data-ai-hint="birthday party" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1974&auto=format&fit=crop" width={600} height={700} alt="Birthday party with balloons" data-ai-hint="birthday party" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Parties</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://placehold.co/600x900.png" width={600} height={900} alt="Catering food display" data-ai-hint="catering food" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1616091216799-4015dc193356?q=80&w=1974&auto=format&fit=crop" width={600} height={900} alt="Catering food display" data-ai-hint="catering food" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                      <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Catering</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://placehold.co/600x600.png" width={600} height={600} alt="DJ at a party" data-ai-hint="DJ party" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=2070&auto=format&fit=crop" width={600} height={600} alt="DJ at a party" data-ai-hint="DJ party" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Entertainment</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://placehold.co/600x800.png" width={600} height={800} alt="Outdoor event decorations" data-ai-hint="outdoor decorations" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1621262078864-dd6b92b67d58?q=80&w=1964&auto=format&fit=crop" width={600} height={800} alt="Outdoor event decorations" data-ai-hint="outdoor decorations" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Decor</p>
                 </div>

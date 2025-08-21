@@ -146,8 +146,8 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
             <Link href={`/vendor/${service.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-                    <AvatarImage src={`https://i.pravatar.cc/150?u=${service.vendorId}`} alt={service.vendorName} />
-                    <AvatarFallback>{service.vendorName.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={service.vendorAvatar} alt={service.vendorName} />
+                    <AvatarFallback>{service.vendorName.substring(0,2)}</AvatarFallback>
                     </Avatar>
                     <div>
                     <p className="font-semibold text-sm group-hover/vendor:underline">{service.vendorName}</p>

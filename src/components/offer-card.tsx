@@ -144,8 +144,8 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
            <Link href={`/vendor/${offer.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mt-2">
               <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-                <AvatarImage src={`https://i.pravatar.cc/150?u=${offer.vendorId}`} alt={offer.vendorName} />
-                <AvatarFallback>{offer.vendorName.charAt(0)}</AvatarFallback>
+                <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
+                <AvatarFallback>{offer.vendorName.substring(0,2)}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-semibold text-sm group-hover/vendor:underline">{offer.vendorName}</p>

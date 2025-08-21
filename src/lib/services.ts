@@ -21,6 +21,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
@@ -47,7 +48,7 @@ export async function createNewUser(data: {
     // Hash the password securely before storing it.
     const hashedPassword = await hashPassword(password);
 
-    const userProfile: Omit<UserProfile, 'id'> = {
+    const userProfile: Omit<UserProfile, 'id' | 'avatar'> = {
         firstName,
         lastName,
         email,
@@ -75,11 +76,11 @@ export async function createNewUser(data: {
         
         const codeDoc = codeSnapshot.docs[0];
 
-        const vendorProfile: Omit<VendorProfile, 'id'> = {
+        const vendorProfile: Omit<VendorProfile, 'id' | 'avatar'> = {
             businessName: businessName || `${firstName}'s Business`,
             email,
             ownerId: userId,
-            category: '',
+            category: 'Venues', // Default category
             tagline: '',
             description: '',
             phone: '',
@@ -413,8 +414,8 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id'| 'stat
                 const newChat: Omit<Chat, 'id'> = {
                     participantIds: [request.clientId, request.vendorId],
                     participants: [
-                        { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: `https://i.pravatar.cc/150?u=${request.clientId}` },
-                        { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: `https://i.pravatar.cc/150?u=${request.vendorId}` }
+                        { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: clientProfile?.avatar || '' },
+                        { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: vendorProfile?.avatar || '' }
                     ],
                     lastMessage: formattedMessage,
                     lastMessageTimestamp: new Date(),
@@ -867,14 +868,15 @@ export async function getUpgradeRequests(): Promise<UpgradeRequest[]> {
 
 export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyticsData[]> {
   if (!vendorId) return [];
-  const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
-
+  
   try {
     const [quotes, bookings] = await Promise.all([
         getVendorQuoteRequests(vendorId),
         getBookingsForVendor(vendorId)
     ]);
     
+    const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
+
     const quotesInDateRange = quotes.filter(q => {
         const createdAtDate = q.createdAt instanceof Date ? q.createdAt : q.createdAt.toDate();
         return createdAtDate >= sixMonthsAgo;

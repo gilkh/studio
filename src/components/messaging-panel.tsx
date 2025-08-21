@@ -159,7 +159,7 @@ function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessag
 
     if (forwardedItem) {
         if(forwardedItem.isQuoteResponse) {
-            return (
+             return (
                  <div className="flex justify-start w-full">
                      <QuoteResponseBubble item={forwardedItem} isOwnMessage={isOwnMessage} />
                 </div>
@@ -178,7 +178,7 @@ function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessag
                     <Link href={`/vendor/${otherParticipant?.id}`}>
                         <Avatar className="h-8 w-8 self-start">
                             <AvatarImage src={otherParticipant?.avatar} />
-                            <AvatarFallback>{otherParticipant?.name?.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{otherParticipant?.name?.substring(0,2)}</AvatarFallback>
                         </Avatar>
                     </Link>
                 )}
@@ -193,7 +193,7 @@ function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessag
                  <Link href={`/vendor/${otherParticipant?.id}`}>
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={sender?.avatar} />
-                        <AvatarFallback>{sender?.name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{sender?.name?.substring(0,2)}</AvatarFallback>
                     </Avatar>
                 </Link>
             )}
@@ -207,8 +207,8 @@ function ChatBubble({ message, isOwnMessage, chat, role }: { message: ChatMessag
             </div>
             {isOwnMessage && (
                 <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://i.pravatar.cc/150?u=${message.senderId}`} />
-                    <AvatarFallback>Me</AvatarFallback>
+                    <AvatarImage src={sender?.avatar} />
+                    <AvatarFallback>{sender?.name?.substring(0,2)}</AvatarFallback>
                 </Avatar>
             )}
         </div>
@@ -366,7 +366,7 @@ export function MessagingPanel() {
                             >
                                 <Avatar className="h-10 w-10">
                                 <AvatarImage src={p?.avatar} alt={p?.name} />
-                                <AvatarFallback>{p?.name?.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>{p?.name?.substring(0,2)}</AvatarFallback>
                                 </Avatar>
                                 
                                 <div className="flex-grow overflow-hidden">
@@ -405,7 +405,7 @@ export function MessagingPanel() {
                     </Button>
                      <Avatar className="h-10 w-10">
                         <AvatarImage src={(getOtherParticipant(selectedChat) as any)?.avatar} alt={(getOtherParticipant(selectedChat) as any)?.name} />
-                        <AvatarFallback>{(getOtherParticipant(selectedChat) as any)?.name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{(getOtherParticipant(selectedChat) as any)?.name?.substring(0,2)}</AvatarFallback>
                     </Avatar>
                     
                     <div>

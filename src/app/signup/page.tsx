@@ -19,12 +19,12 @@ import { createNewUser } from '@/lib/services';
 import { Camera, Loader2, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 const signupFormSchema = z.object({
   accountType: z.enum(['client', 'vendor'], {
     required_error: "You need to select an account type.",
   }),
-  profilePicture: z.any().optional(),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   businessName: z.string().optional(),
@@ -57,8 +57,7 @@ const signupFormSchema = z.object({
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-
+  
   const form = useForm<z.infer<typeof signupFormSchema>>({
     resolver: zodResolver(signupFormSchema),
     defaultValues: {
@@ -113,10 +112,10 @@ export default function SignupPage() {
   
   const getInitials = () => {
     if (accountType === 'vendor' && businessName) {
-        return businessName.substring(0, 2);
+        return businessName.substring(0, 2).toUpperCase();
     }
     if (firstName && lastName) {
-        return `${firstName.charAt(0)}${lastName.charAt(0)}`;
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     }
     return <User />;
   }
@@ -169,42 +168,16 @@ export default function SignupPage() {
                                 )}
                                 />
                             
-                             <FormField
-                                control={form.control}
-                                name="profilePicture"
-                                render={({ field }) => (
-                                <FormItem className="flex flex-col items-center">
-                                    <FormLabel>Profile Picture (Optional)</FormLabel>
-                                    <FormControl>
-                                    <div className="relative mt-2">
-                                        <Avatar className="h-24 w-24 border-2 border-primary/50">
-                                            <AvatarImage src={avatarPreview || undefined} alt="Avatar preview" />
-                                            <AvatarFallback>
-                                                {getInitials()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <label htmlFor="picture-upload" className="absolute -bottom-2 -right-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-background hover:bg-accent">
-                                            <Camera className="h-4 w-4" />
-                                            <Input 
-                                                id="picture-upload"
-                                                type="file"
-                                                className="sr-only"
-                                                accept="image/*"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        setAvatarPreview(URL.createObjectURL(file));
-                                                        field.onChange(file);
-                                                    }
-                                                }}
-                                            />
-                                        </label>
-                                    </div>
-                                    </FormControl>
-                                    <FormMessage className="mt-2" />
-                                </FormItem>
-                                )}
-                            />
+                             <div className="flex flex-col items-center">
+                                <Label>Profile Picture</Label>
+                                <div className="relative mt-2">
+                                    <Avatar className="h-24 w-24 border-2 border-primary/50">
+                                        <AvatarFallback className="text-3xl">
+                                            {getInitials()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </div>
+                             </div>
 
 
                             <div className="grid grid-cols-2 gap-4">

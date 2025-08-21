@@ -49,7 +49,7 @@ export interface BaseService {
   type: ServiceType;
   vendorId: string;
   vendorName: string;
-  vendorAvatar: string;
+  vendorAvatar?: string;
   title: string;
   description: string;
   category: ServiceCategory;
@@ -79,7 +79,7 @@ export interface QuoteRequest {
   id: string;
   clientId: string;
   clientName: string;
-  clientAvatar: string;
+  clientAvatar?: string;
   vendorId: string;
   serviceId: string;
   serviceTitle: string;
@@ -140,7 +140,7 @@ export interface EventTask {
   assignedVendor?: {
     id: string;
     name: string;
-    avatar: string;
+    avatar?: string;
   };
 }
 
@@ -170,6 +170,7 @@ export interface UserProfile {
     savedItemIds?: string[];
     status: 'active' | 'disabled';
     password?: string;
+    avatar?: string;
 }
 
 export interface VendorProfile {
@@ -187,6 +188,7 @@ export interface VendorProfile {
     status: 'active' | 'disabled';
     rating: number;
     reviewCount: number;
+    avatar?: string;
 }
 
 export interface VendorCode {
@@ -254,7 +256,7 @@ export interface Review {
     vendorId: string;
     clientId: string;
     clientName: string;
-    clientAvatar: string;
+    clientAvatar?: string;
     serviceId: string;
     rating: number;
     comment: string;

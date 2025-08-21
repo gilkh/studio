@@ -87,12 +87,17 @@ export function AppHeader() {
   
   const getInitials = () => {
     if (isVendor && vendorProfile?.businessName) {
-        return vendorProfile.businessName.substring(0, 2);
+        return vendorProfile.businessName.substring(0, 2).toUpperCase();
     }
     if (userProfile?.firstName && userProfile?.lastName) {
-        return `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`;
+        return `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`.toUpperCase();
     }
     return 'U';
+  }
+
+  const getAvatarUrl = () => {
+      if(isVendor) return vendorProfile?.avatar;
+      return userProfile?.avatar;
   }
 
   return (
@@ -145,7 +150,7 @@ export function AppHeader() {
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
-                    <AvatarImage src={`https://i.pravatar.cc/150?u=${userId}`} alt="User" />
+                    <AvatarImage src={getAvatarUrl()} alt="User" />
                     <AvatarFallback>
                         {getInitials()}
                     </AvatarFallback>

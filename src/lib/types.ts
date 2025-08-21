@@ -117,6 +117,7 @@ export interface ChatParticipant {
   id: string;
   name: string;
   avatar: string;
+  verification?: 'none' | 'verified' | 'trusted';
 }
 
 export interface Chat {

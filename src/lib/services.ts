@@ -398,7 +398,7 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id'| 'stat
                     participantIds: [request.clientId, request.vendorId],
                     participants: [
                         { id: request.clientId, name: `${clientProfile?.firstName} ${clientProfile?.lastName}`, avatar: clientProfile?.avatar || '' },
-                        { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: vendorProfile?.avatar || '' }
+                        { id: request.vendorId, name: vendorProfile?.businessName || 'Vendor', avatar: vendorProfile?.avatar || '', verification: vendorProfile?.verification }
                     ],
                     lastMessage: formattedMessage,
                     lastMessageTimestamp: new Date(),

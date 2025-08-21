@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft, Calendar, Users, Phone, PencilRuler, Check, CreditCard } from 'lucide-react';
+import { Search, SendHorizonal, Loader2, FileQuestion, ArrowLeft, Calendar, Users, Phone, PencilRuler, Check, CreditCard, ShieldCheck } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import type { Chat, ChatMessage, ForwardedItem, LineItem, QuoteRequest } from '@/lib/types';
 import { getChatsForUser, getMessagesForChat, sendMessage, markChatAsRead, approveQuote } from '@/lib/services';
@@ -371,7 +371,11 @@ export function MessagingPanel() {
                                 
                                 <div className="flex-grow overflow-hidden">
                                     <div className="flex justify-between items-center">
-                                        <p className="font-semibold truncate">{Array.isArray(otherParticipant) ? `${otherParticipant.p1.name} & ${otherParticipant.p2.name}` : otherParticipant?.name}</p>
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            <p className="font-semibold truncate">{Array.isArray(otherParticipant) ? `${otherParticipant.p1.name} & ${otherParticipant.p2.name}` : otherParticipant?.name}</p>
+                                            {p?.verification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600 flex-shrink-0" />}
+                                            {p?.verification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600 flex-shrink-0" />}
+                                        </div>
                                         <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{formatDistanceToNow(chat.lastMessageTimestamp, { addSuffix: true })}</p>
                                     </div>
                                     <p className="text-sm truncate text-muted-foreground">

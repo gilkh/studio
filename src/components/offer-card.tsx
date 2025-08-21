@@ -155,8 +155,8 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold">{offer.rating.toFixed(1)}</span>
-                  <span>({offer.reviewCount} reviews)</span>
+                  <span className="font-bold">{(offer.rating || 0).toFixed(1)}</span>
+                  <span>({offer.reviewCount || 0} reviews)</span>
                 </div>
               </div>
             </div>

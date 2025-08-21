@@ -157,8 +157,8 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                            <span className="font-bold">{service.rating.toFixed(1)}</span>
-                            <span>({service.reviewCount} reviews)</span>
+                            <span className="font-bold">{(service.rating || 0).toFixed(1)}</span>
+                            <span>({service.reviewCount || 0} reviews)</span>
                         </div>
                     </div>
                 </div>

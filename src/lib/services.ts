@@ -22,6 +22,7 @@
 
 
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem } from './types';
@@ -37,8 +38,9 @@ export async function createNewUser(data: {
     password?: string;
     businessName?: string;
     vendorCode?: string;
+    avatar?: string;
 }) {
-    const { accountType, firstName, lastName, email, password, businessName, vendorCode } = data;
+    const { accountType, firstName, lastName, email, password, businessName, vendorCode, avatar } = data;
     const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
     if (!password) {
@@ -48,7 +50,7 @@ export async function createNewUser(data: {
     // Hash the password securely before storing it.
     const hashedPassword = await hashPassword(password);
 
-    const userProfile: Omit<UserProfile, 'id' | 'avatar'> = {
+    const userProfile: Omit<UserProfile, 'id'> = {
         firstName,
         lastName,
         email,
@@ -57,6 +59,7 @@ export async function createNewUser(data: {
         savedItemIds: [],
         status: 'active',
         password: hashedPassword,
+        avatar: avatar || '',
     };
 
     if (accountType === 'client') {
@@ -76,7 +79,7 @@ export async function createNewUser(data: {
         
         const codeDoc = codeSnapshot.docs[0];
 
-        const vendorProfile: Omit<VendorProfile, 'id' | 'avatar'> = {
+        const vendorProfile: Omit<VendorProfile, 'id'> = {
             businessName: businessName || `${firstName}'s Business`,
             email,
             ownerId: userId,
@@ -89,6 +92,7 @@ export async function createNewUser(data: {
             status: 'active',
             rating: 0,
             reviewCount: 0,
+            avatar: avatar || '',
         };
 
         const batch = writeBatch(db);

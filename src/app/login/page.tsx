@@ -128,7 +128,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-black/50 z-10"></div>
         <div className="relative z-20 container mx-auto px-4 text-center">
             <div className="flex justify-center items-center gap-4 mb-6">
-                <PartyPopper className="h-16 w-16" />
+                <Logo className="h-16 w-16" />
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter">
                     Farhetkoun
                 </h1>
@@ -149,51 +149,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features-section" className="py-20 sm:py-24 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold">Why Choose Farhetkoun?</h2>
-            <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
-              We provide the tools and connections you need to create flawless events or grow your service business.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard 
-                icon={<Sparkles className="w-8 h-8" />}
-                title="AI Event Planner"
-                description="Generate a complete, customized event timeline in seconds. Plan smarter, not harder."
-            />
-            <FeatureCard 
-                icon={<Search className="w-8 h-8" />}
-                title="Diverse Marketplace"
-                description="Discover a wide range of top-tier services, from catering and photography to entertainment and decor."
-            />
-             <FeatureCard 
-                icon={<Briefcase className="w-8 h-8" />}
-                title="Showcase Your Brand"
-                description="For vendors: create a stunning profile, upload your portfolio, and connect with a stream of new clients."
-            />
-            <FeatureCard 
-                icon={<FileText className="w-8 h-8" />}
-                title="Effortless Quoting"
-                description="Request custom quotes from vendors through an integrated messaging system to get the perfect fit for your needs."
-            />
-            <FeatureCard 
-                icon={<CalendarCheck className="w-8 h-8" />}
-                title="Seamless Booking"
-                description="Book fixed-price offers instantly and manage all your appointments in a centralized calendar."
-            />
-            <FeatureCard 
-                icon={<ShieldCheck className="w-8 h-8" />}
-                title="Verified & Trusted"
-                description="Work with professionals. Read authentic reviews and see vendor portfolios to make informed decisions."
-            />
-          </div>
-        </div>
-      </section>
-
-        {/* Categories Showcase Section */}
+      {/* Categories Showcase Section */}
         <section className="py-20 sm:py-24 bg-secondary/20">
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
@@ -242,6 +198,50 @@ export default function LoginPage() {
                 </ul>
             </div>
         </section>
+
+      {/* Features Section */}
+      <section id="features-section" className="py-20 sm:py-24 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold">Why Choose Farhetkoun?</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
+              We provide the tools and connections you need to create flawless events or grow your service business.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard 
+                icon={<Sparkles className="w-8 h-8" />}
+                title="AI Event Planner"
+                description="Generate a complete, customized event timeline in seconds. Plan smarter, not harder."
+            />
+            <FeatureCard 
+                icon={<Search className="w-8 h-8" />}
+                title="Diverse Marketplace"
+                description="Discover a wide range of top-tier services, from catering and photography to entertainment and decor."
+            />
+             <FeatureCard 
+                icon={<Briefcase className="w-8 h-8" />}
+                title="Showcase Your Brand"
+                description="For vendors: create a stunning profile, upload your portfolio, and connect with a stream of new clients."
+            />
+            <FeatureCard 
+                icon={<FileText className="w-8 h-8" />}
+                title="Effortless Quoting"
+                description="Request custom quotes from vendors through an integrated messaging system to get the perfect fit for your needs."
+            />
+            <FeatureCard 
+                icon={<CalendarCheck className="w-8 h-8" />}
+                title="Seamless Booking"
+                description="Book fixed-price offers instantly and manage all your appointments in a centralized calendar."
+            />
+            <FeatureCard 
+                icon={<ShieldCheck className="w-8 h-8" />}
+                title="Verified & Trusted"
+                description="Work with professionals. Read authentic reviews and see vendor portfolios to make informed decisions."
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Login Section */}
       <section id="login-section" className="py-20 sm:py-24 bg-secondary/50">

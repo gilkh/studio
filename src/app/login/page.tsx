@@ -204,7 +204,7 @@ export default function LoginPage() {
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Parties</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://images.unsplash.com/photo-1616091216799-4015dc193356?q=80&w=1974&auto=format&fit=crop" width={600} height={900} alt="Catering food display" data-ai-hint="catering food" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1974&auto=format&fit=crop" width={600} height={900} alt="Catering food display" data-ai-hint="catering food" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                      <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Catering</p>
                 </div>
@@ -214,7 +214,7 @@ export default function LoginPage() {
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Entertainment</p>
                 </div>
                  <div className="overflow-hidden rounded-xl group relative">
-                    <Image src="https://images.unsplash.com/photo-1621262078864-dd6b92b67d58?q=80&w=1964&auto=format&fit=crop" width={600} height={800} alt="Outdoor event decorations" data-ai-hint="outdoor decorations" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src="https://images.unsplash.com/photo-1532386236358-a33d8a9434e3?q=80&w=1974&auto=format&fit=crop" width={600} height={800} alt="Outdoor event decorations" data-ai-hint="outdoor decorations" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
                     <p className="absolute bottom-4 left-4 text-white font-bold text-lg">Decor</p>
                 </div>

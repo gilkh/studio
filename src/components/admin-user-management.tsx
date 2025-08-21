@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { createOrUpdateUserProfile, createOrUpdateVendorProfile, deleteServiceOrOffer, getServicesAndOffers } from '@/lib/services';
-import type { UserProfile, VendorProfile, ServiceOrOffer, Service, Offer } from '@/lib/types';
+import type { UserProfile, VendorProfile, ServiceOrOffer, Service, Offer, ServiceCategory } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -53,6 +53,7 @@ interface AdminUserManagementProps {
     initialListings: ServiceOrOffer[];
     userId: string;
 }
+const categories: ServiceCategory[] = ['Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
 
 export function AdminUserManagement({ initialUser, initialVendor, initialListings, userId }: AdminUserManagementProps) {
     const { toast } = useToast();
@@ -260,11 +261,7 @@ export function AdminUserManagement({ initialUser, initialVendor, initialListing
                                                 <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="Catering">Catering</SelectItem>
-                                                        <SelectItem value="Photography">Photography</SelectItem>
-                                                        <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
-                                                        <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
-                                                        <SelectItem value="Venue">Venue</SelectItem>
+                                                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />

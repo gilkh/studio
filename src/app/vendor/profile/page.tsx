@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor, getUserProfile, createOrUpdateUserProfile } from '@/lib/services';
-import type { VendorProfile, Review, UserProfile } from '@/lib/types';
+import type { VendorProfile, Review, UserProfile, ServiceCategory } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -43,6 +43,7 @@ const profileFormSchema = z.object({
   phone: z.string().min(10, "Please enter a valid phone number"),
 });
 
+const categories: ServiceCategory[] = ['Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
 
 export default function VendorProfilePage() {
     const { toast } = useToast();
@@ -118,7 +119,7 @@ export default function VendorProfilePage() {
             // Separate data for each profile
             const vendorData: Partial<VendorProfile> = {
                 businessName: values.businessName,
-                category: values.category,
+                category: values.category as ServiceCategory,
                 tagline: values.tagline,
                 description: values.description,
                 portfolio: values.portfolio,
@@ -305,7 +306,7 @@ export default function VendorProfilePage() {
                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                                 <span className="font-bold text-base">{(vendor.rating || 0).toFixed(1)}</span>
-                                <span>({vendor.reviewCount} reviews)</span>
+                                <span>({vendor.reviewCount || 0} reviews)</span>
                             </div>
                             {vendor.verification === 'verified' && (
                                 <Badge variant="secondary" className="gap-1.5 pl-2 border-green-600">
@@ -359,11 +360,7 @@ export default function VendorProfilePage() {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="Catering">Catering</SelectItem>
-                                                <SelectItem value="Photography">Photography</SelectItem>
-                                                <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
-                                                <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
-                                                <SelectItem value="Venue">Venue</SelectItem>
+                                                {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -538,5 +535,3 @@ export default function VendorProfilePage() {
      </div>
   )
 }
-
-    

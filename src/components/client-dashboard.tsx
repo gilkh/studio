@@ -16,7 +16,46 @@ import { Skeleton } from './ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { INCLUSIONS_MAP } from '@/components/manage-service-dialog';
+
+
+const categories: (ServiceCategory | 'All Categories')[] = ['All Categories', 'Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
+
+const INCLUSIONS_MAP: Record<ServiceCategory, { key: keyof ServiceInclusions, label: string, icon: React.ElementType }[]> = {
+    'Venues': [
+        { key: 'hasParking', label: 'Parking Available', icon: X },
+        { key: 'hasValet', label: 'Valet Service', icon: X },
+        { key: 'hasOnSiteCatering', label: 'On-site Catering', icon: X },
+        { key: 'isOutdoors', label: 'Outdoor Space', icon: X },
+        { key: 'hasPool', label: 'Pool Area', icon: X },
+    ],
+    'Catering & Sweets': [
+        { key: 'offersTastings', label: 'Offers Tastings', icon: X },
+        { key: 'servesAlcohol', label: 'Serves Alcohol', icon: X },
+        { key: 'hasVeganOptions', label: 'Vegan Options', icon: X },
+        { key: 'hasGlutenFreeOptions', label: 'Gluten-Free Options', icon: X },
+    ],
+    'Entertainment': [
+        { key: 'providesOwnSoundSystem', label: 'Includes Sound System', icon: X },
+        { key: 'providesOwnLighting', label: 'Includes Lighting', icon: X },
+    ],
+    'Photography & Videography': [
+        { key: 'offersDroneFootage', label: 'Drone Footage', icon: X },
+        { key: 'offersSameDayEdit', label: 'Same-day Edit', icon: X },
+    ],
+    'Decoration': [
+        { key: 'providesSetup', label: 'Includes Setup', icon: X },
+        { key: 'providesCleanup', label: 'Includes Cleanup', icon: X },
+    ],
+    'Beauty & Grooming': [
+        { key: 'travelsToClient', label: 'Travels to Client', icon: X },
+        { key: 'offersTrials', label: 'Offers Trials', icon: X },
+    ],
+    'Lighting & Sound': [],
+    'Transportation': [],
+    'Invitations & Printables': [],
+    'Rentals & Furniture': [],
+    'Security and Crowd Control': [],
+}
 
 
 export function ClientDashboard() {
@@ -41,9 +80,6 @@ export function ClientDashboard() {
     }
     loadItems();
   }, [])
-
-
-  const categories: (ServiceCategory | 'All Categories')[] = ['All Categories', 'Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
   
   const filteredItems = useMemo(() => {
     return allItems

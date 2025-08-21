@@ -16,7 +16,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { ServiceOrOffer, Service, Offer, VendorProfile, MediaItem } from '@/lib/types';
+import type { ServiceOrOffer, Service, Offer, VendorProfile, MediaItem, ServiceCategory } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { DollarSign, Loader2, ImagePlus, X, Video } from 'lucide-react';
 import { createServiceOrOffer, getVendorProfile, updateServiceOrOffer } from '@/lib/services';
@@ -71,6 +71,7 @@ const compressImage = (file: File): Promise<string> => {
     });
 }
 
+const categories: ServiceCategory[] = ['Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
 
 export function ManageServiceDialog({ children, service, onListingUpdate }: ManageServiceDialogProps) {
   const { userId: vendorId } = useAuth();
@@ -113,7 +114,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
     setIsSaving(true);
     const formData = new FormData(event.currentTarget);
     const title = formData.get('title') as string;
-    const category = formData.get('category') as string;
+    const category = formData.get('category') as ServiceCategory;
     const description = formData.get('description') as string;
     
     const finalMedia = media.map((item, index) => ({ ...item, isThumbnail: index === 0 }));
@@ -125,7 +126,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
             description,
             vendorId,
             vendorName: vendorProfile.businessName,
-            vendorAvatar: `https://i.pravatar.cc/150?u=${vendorId}`,
+            vendorAvatar: vendorProfile.avatar,
             rating: service?.rating || 0,
             reviewCount: service?.reviewCount || 0,
             image: finalMedia.length > 0 ? finalMedia[0].url : service?.image || 'https://placehold.co/600x400.png',
@@ -275,11 +276,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
                         <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="Catering">Catering</SelectItem>
-                        <SelectItem value="Photography">Photography</SelectItem>
-                        <SelectItem value="Decor & Floral">Decor & Floral</SelectItem>
-                        <SelectItem value="Music & Entertainment">Music & Entertainment</SelectItem>
-                        <SelectItem value="Venue">Venue</SelectItem>
+                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                     </SelectContent>
                     </Select>
                 </div>

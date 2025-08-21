@@ -105,9 +105,8 @@ export default function LoginPage() {
         <Image 
             src="https://placehold.co/1920x1080.png" 
             alt="Joyful event celebration" 
-            layout="fill" 
-            objectFit="cover" 
-            className="z-0"
+            fill
+            className="z-0 object-cover"
             data-ai-hint="event celebration"
         />
         <div className="absolute inset-0 bg-black/50 z-10"></div>

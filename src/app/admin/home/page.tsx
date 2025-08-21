@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification } from '@/lib/services';
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -38,7 +38,7 @@ import { MessagingPanel } from '@/components/messaging-panel';
 import Link from 'next/link';
 
 
-type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number };
+type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'] };
 
 export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
@@ -94,6 +94,16 @@ export default function AdminHomePage() {
         toast({ title: "Tier Updated", description: `Vendor tier has been changed to ${tier}.` });
     } catch (error) {
         toast({ title: "Error", description: "Failed to update vendor tier.", variant: "destructive" });
+    }
+  }
+  
+  const handleVerificationChange = async (vendorId: string, verification: VendorProfile['verification']) => {
+    try {
+        await updateVendorVerification(vendorId, verification);
+        setUsers(prev => prev.map(u => u.id === vendorId ? {...u, verification } : u));
+        toast({ title: "Verification Status Updated", description: `Vendor status has been changed to ${verification}.` });
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to update vendor verification status.", variant: "destructive" });
     }
   }
 
@@ -193,9 +203,9 @@ export default function AdminHomePage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>User</TableHead>
-                                <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Tier</TableHead>
+                                <TableHead>Verification</TableHead>
                                 <TableHead>Rating</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Date Joined</TableHead>
@@ -207,8 +217,8 @@ export default function AdminHomePage() {
                                 [...Array(5)].map((_, i) => (
                                 <TableRow key={i}>
                                     <TableCell><div className="flex items-center gap-2"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-6 w-32" /></div></TableCell>
-                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-28" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
@@ -221,12 +231,14 @@ export default function AdminHomePage() {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             {user.role === 'client' ? <User className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                                            <Link href={`/admin/user/${user.id}`} className="font-medium hover:underline">
-                                                {user.role === 'vendor' ? user.businessName : `${user.firstName} ${user.lastName}`}
-                                            </Link>
+                                            <div className="flex flex-col">
+                                                <Link href={`/admin/user/${user.id}`} className="font-medium hover:underline">
+                                                    {user.role === 'vendor' ? user.businessName : `${user.firstName} ${user.lastName}`}
+                                                </Link>
+                                                 <span className="text-sm text-muted-foreground">{user.email}</span>
+                                            </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
                                     <TableCell>
                                         <Badge variant={user.role === 'vendor' ? 'default' : 'secondary'}>{user.role}</Badge>
                                     </TableCell>
@@ -242,6 +254,24 @@ export default function AdminHomePage() {
                                                     {(['free', 'vip1', 'vip2', 'vip3'] as const).map(tier => (
                                                         <DropdownMenuItem key={tier} onSelect={() => handleTierChange(user.id, tier)}>
                                                             {tier}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        ) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.role === 'vendor' ? (
+                                             <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                     <Button variant="outline" size="sm" className="capitalize">
+                                                        {user.verification || 'none'}
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    {(['none', 'verified', 'trusted'] as const).map(status => (
+                                                        <DropdownMenuItem key={status} onSelect={() => handleVerificationChange(user.id, status)}>
+                                                            {status}
                                                         </DropdownMenuItem>
                                                     ))}
                                                 </DropdownMenuContent>

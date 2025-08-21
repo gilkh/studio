@@ -1,6 +1,7 @@
 
 
 
+
 export type ServiceType = 'service' | 'offer';
 export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
 
@@ -51,6 +52,7 @@ export interface BaseService {
   vendorId: string;
   vendorName: string;
   vendorAvatar?: string;
+  vendorVerification?: 'none' | 'verified' | 'trusted';
   title: string;
   description: string;
   category: ServiceCategory;
@@ -190,6 +192,7 @@ export interface VendorProfile {
     rating: number;
     reviewCount: number;
     avatar?: string;
+    verification?: 'none' | 'verified' | 'trusted';
 }
 
 export interface VendorCode {

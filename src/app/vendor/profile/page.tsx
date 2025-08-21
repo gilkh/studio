@@ -307,10 +307,18 @@ export default function VendorProfilePage() {
                                 <span className="font-bold text-base">{vendor.rating.toFixed(1)}</span>
                                 <span>({vendor.reviewCount} reviews)</span>
                             </div>
-                            <Badge variant="secondary" className="gap-1.5 pl-2">
-                                <ShieldCheck className="h-4 w-4 text-green-600" />
-                                Verified Vendor
-                            </Badge>
+                            {vendor.verification === 'verified' && (
+                                <Badge variant="secondary" className="gap-1.5 pl-2 border-green-600">
+                                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                                    Verified Vendor
+                                </Badge>
+                            )}
+                            {vendor.verification === 'trusted' && (
+                                <Badge variant="secondary" className="gap-1.5 pl-2 border-blue-600">
+                                    <ShieldCheck className="h-4 w-4 text-blue-600" />
+                                    Trusted Vendor
+                                </Badge>
+                            )}
                              {vendor.accountTier && (
                                 <RequestUpgradeDialog vendor={vendor}>
                                    <Badge variant="outline" className="capitalize border-green-600 bg-green-50 text-green-700 gap-1.5 pl-2 cursor-pointer hover:bg-green-100">

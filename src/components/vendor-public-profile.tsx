@@ -73,10 +73,18 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
                   <span className="font-bold">{vendor.rating.toFixed(1)}</span>
                   <span className="text-muted-foreground">({vendor.reviewCount} reviews)</span>
                 </div>
-                <Badge variant="secondary" className="gap-1.5 pl-2">
-                  <ShieldCheck className="h-4 w-4 text-green-600" />
-                  Verified Vendor
-                </Badge>
+                 {vendor.verification === 'verified' && (
+                    <Badge variant="secondary" className="gap-1.5 pl-2 border-green-600">
+                        <ShieldCheck className="h-4 w-4 text-green-600" />
+                        Verified Vendor
+                    </Badge>
+                )}
+                {vendor.verification === 'trusted' && (
+                    <Badge variant="secondary" className="gap-1.5 pl-2 border-blue-600">
+                        <ShieldCheck className="h-4 w-4 text-blue-600" />
+                        Trusted Vendor
+                    </Badge>
+                )}
                 <div className="flex items-center gap-1.5">
                     <Mail className="w-4 h-4 text-muted-foreground" />
                     <span>{vendor.email}</span>

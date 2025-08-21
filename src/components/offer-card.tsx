@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Clock, Heart, HeartCrack, Send, Video } from 'lucide-react';
+import { Star, Edit, Clock, Heart, HeartCrack, Send, Video, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { ManageServiceDialog } from './manage-service-dialog';
 import { BookOfferDialog } from './book-offer-dialog';
@@ -148,7 +148,11 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
                 <AvatarFallback>{offer.vendorName.substring(0,2)}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-semibold text-sm group-hover/vendor:underline">{offer.vendorName}</p>
+                <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-sm group-hover/vendor:underline">{offer.vendorName}</p>
+                    {offer.vendorVerification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                    {offer.vendorVerification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                   <span className="font-bold">{offer.rating.toFixed(1)}</span>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Heart, HeartCrack, Send, Video } from 'lucide-react';
+import { Star, Edit, Heart, HeartCrack, Send, Video, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { QuoteRequestDialog } from './quote-request-dialog';
 import { ManageServiceDialog } from './manage-service-dialog';
@@ -150,12 +150,16 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
                     <AvatarFallback>{service.vendorName.substring(0,2)}</AvatarFallback>
                     </Avatar>
                     <div>
-                    <p className="font-semibold text-sm group-hover/vendor:underline">{service.vendorName}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        <span className="font-bold">{service.rating.toFixed(1)}</span>
-                        <span>({service.reviewCount} reviews)</span>
-                    </div>
+                        <div className="flex items-center gap-1.5">
+                            <p className="font-semibold text-sm group-hover/vendor:underline">{service.vendorName}</p>
+                            {service.vendorVerification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                            {service.vendorVerification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            <span className="font-bold">{service.rating.toFixed(1)}</span>
+                            <span>({service.reviewCount} reviews)</span>
+                        </div>
                     </div>
                 </div>
             </Link>

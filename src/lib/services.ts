@@ -70,6 +70,7 @@ export async function createNewUser(data: {
             reviewCount: 0,
             avatar: avatar || '',
             portfolio: [],
+            verification: 'none',
         };
 
         const batch = writeBatch(db);
@@ -759,6 +760,7 @@ export async function getAllUsersAndVendors() {
             status: userData.status,
             rating: vendorData?.rating,
             reviewCount: vendorData?.reviewCount,
+            verification: vendorData?.verification,
         }
     });
 
@@ -769,6 +771,12 @@ export async function updateVendorTier(vendorId: string, tier: VendorProfile['ac
     if (!vendorId) return;
     const vendorRef = doc(db, 'vendors', vendorId);
     await updateDoc(vendorRef, { accountTier: tier });
+}
+
+export async function updateVendorVerification(vendorId: string, verification: VendorProfile['verification']) {
+    if (!vendorId) return;
+    const vendorRef = doc(db, 'vendors', vendorId);
+    await updateDoc(vendorRef, { verification: verification });
 }
 
 export async function updateUserStatus(userId: string, role: 'client' | 'vendor', status: 'active' | 'disabled') {

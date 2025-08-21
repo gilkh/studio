@@ -70,8 +70,8 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm">
                 <div className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold">{vendor.rating.toFixed(1)}</span>
-                  <span className="text-muted-foreground">({vendor.reviewCount} reviews)</span>
+                  <span className="font-bold">{(vendor.rating || 0).toFixed(1)}</span>
+                  <span className="text-muted-foreground">({vendor.reviewCount || 0} reviews)</span>
                 </div>
                  {vendor.verification === 'verified' && (
                     <Badge variant="secondary" className="gap-1.5 pl-2 border-green-600">
@@ -105,7 +105,7 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
        <Tabs defaultValue="services" className="w-full">
             <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex mb-4">
                 <TabsTrigger value="services">Services & Offers</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews ({vendor.reviewCount})</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews ({vendor.reviewCount || 0})</TabsTrigger>
             </TabsList>
             <TabsContent value="services">
                  <Card>

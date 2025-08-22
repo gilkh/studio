@@ -16,7 +16,6 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { changeUserPassword } from '@/lib/services';
-import type { UserProfile } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';

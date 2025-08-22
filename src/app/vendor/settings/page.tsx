@@ -14,6 +14,8 @@ import { KeyRound, Languages, Moon, Sun } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/hooks/use-theme';
 import { useState } from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const translations = {
   en: {
@@ -96,6 +98,7 @@ export default function VendorSettingsPage() {
   const { theme, setTheme } = useTheme();
   const [lang, setLang] = useState<'en' | 'fr' | 'ar'>('en');
   const t = translations[lang];
+  const { toast } = useToast();
   
   return (
     <div className="space-y-8 max-w-4xl mx-auto" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -108,7 +111,7 @@ export default function VendorSettingsPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="owner-name">{t.ownerName}</Label>
-                        <Input id="owner-name" defaultValue="Jane Smith" />
+                        <Input id="owner-name" defaultValue="Jane Smith" disabled/>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="email">{t.loginEmail}</Label>
@@ -203,7 +206,23 @@ export default function VendorSettingsPage() {
                 <CardDescription>{t.dangerDescription}</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button variant="destructive">{t.deactivateProfile}</Button>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                       <Button variant="destructive">{t.deactivateProfile}</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                               This will temporarily deactivate your profile, hiding it from public view. You can reactivate it later.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toast({ title: "Action Canceled", description: "Profile deactivation is a placeholder."})}>{t.deactivateProfile}</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
     </div>

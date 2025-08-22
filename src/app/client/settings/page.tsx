@@ -8,10 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Languages, Moon, Sun } from 'lucide-react';
+import { Languages, Moon, Sun, KeyRound } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/hooks/use-theme';
 import { useState } from 'react';
+import { ChangePasswordDialog } from '@/components/change-password-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const translations = {
   en: {
@@ -90,6 +95,8 @@ const translations = {
 
 export default function ClientSettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { userId } = useAuth();
+  const { toast } = useToast();
   const [lang, setLang] = useState<'en' | 'fr' | 'ar'>('en');
   const t = translations[lang];
 
@@ -103,9 +110,16 @@ export default function ClientSettingsPage() {
             <CardContent className="space-y-6">
                 <div className="space-y-2">
                     <Label htmlFor="email">{t.email}</Label>
-                    <Input id="email" type="email" defaultValue="john.doe@example.com" />
+                    <Input id="email" type="email" defaultValue="john.doe@example.com" disabled/>
                 </div>
-                <Button variant="outline">{t.changePassword}</Button>
+                 {userId && (
+                    <ChangePasswordDialog userId={userId}>
+                        <Button variant="outline">
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            {t.changePassword}
+                        </Button>
+                    </ChangePasswordDialog>
+                )}
             </CardContent>
         </Card>
 
@@ -190,7 +204,23 @@ export default function ClientSettingsPage() {
                 <CardDescription>{t.dangerDescription}</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button variant="destructive">{t.deleteAccount}</Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">{t.deleteAccount}</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action is permanent and cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toast({ title: "Action Canceled", description: "Account deletion is a placeholder."})}>{t.deleteAccount}</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
     </div>

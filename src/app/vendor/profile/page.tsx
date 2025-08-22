@@ -56,6 +56,7 @@ export default function VendorProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingReviews, setIsLoadingReviews] = useState(true);
     const portfolioFileRef = useRef<HTMLInputElement>(null);
+    const avatarFileRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<z.infer<typeof profileFormSchema>>({
         resolver: zodResolver(profileFormSchema),
@@ -159,7 +160,7 @@ export default function VendorProfilePage() {
         }
     }
 
-    const compressImage = (file: File): Promise<string> => {
+    const compressImage = (file: File, isAvatar: boolean): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -168,8 +169,8 @@ export default function VendorProfilePage() {
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
+                    const MAX_WIDTH = isAvatar ? 256 : 1024;
+                    const MAX_HEIGHT = isAvatar ? 256 : 1024;
                     let width = img.width;
                     let height = img.height;
     
@@ -190,7 +191,7 @@ export default function VendorProfilePage() {
                     if (!ctx) return reject('Could not get canvas context');
     
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+                    resolve(canvas.toDataURL('image/jpeg', isAvatar ? 0.9 : 0.8));
                 };
             };
             reader.onerror = (error) => reject(error);
@@ -214,7 +215,7 @@ export default function VendorProfilePage() {
                 continue;
             }
             try {
-                const compressedDataUrl = await compressImage(file);
+                const compressedDataUrl = await compressImage(file, false);
                 compressedImages.push(compressedDataUrl);
             } catch (error) {
                 console.error("Image processing failed", error);
@@ -228,6 +229,29 @@ export default function VendorProfilePage() {
         
         // Auto-save after upload
         await form.handleSubmit(onSubmit)();
+    }
+    
+     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_FILE_SIZE) {
+            toast({ title: 'File too large', description: `Image must be less than 5MB.`, variant: 'destructive' });
+            return;
+        }
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+            toast({ title: 'Invalid file type', description: 'Please select a JPG, PNG, or WEBP image.', variant: 'destructive' });
+            return;
+        }
+
+        try {
+            const compressedDataUrl = await compressImage(file, true);
+            form.setValue('avatar', compressedDataUrl, { shouldDirty: true });
+            await form.handleSubmit(onSubmit)(); // Auto-save
+        } catch (error) {
+            console.error("Avatar processing failed", error);
+            toast({ title: 'Image Error', description: 'Could not process the image.', variant: 'destructive' });
+        }
     }
     
     const handleRemovePortfolioImage = async (index: number) => {
@@ -283,6 +307,7 @@ export default function VendorProfilePage() {
   }
 
   const portfolioImages = form.watch('portfolio') || [];
+  const avatarUrl = form.watch('avatar');
 
   return (
      <div className="space-y-8">
@@ -294,18 +319,26 @@ export default function VendorProfilePage() {
             <CardContent className="space-y-8">
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                     <div className="relative flex-shrink-0">
+                         <Input 
+                            id="avatar-upload"
+                            type="file"
+                            accept="image/*"
+                            ref={avatarFileRef}
+                            onChange={handleAvatarUpload}
+                            className="hidden" 
+                        />
                         <Avatar className="h-32 w-32 border-4 border-primary/50">
-                            <AvatarImage src={vendor?.avatar} alt={vendor?.businessName} />
+                            <AvatarImage src={avatarUrl} alt={vendor?.businessName} />
                             <AvatarFallback>{vendor?.businessName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
-                        <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">
+                        <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8" onClick={() => avatarFileRef.current?.click()}>
                             <Camera className="h-4 w-4"/>
                             <span className="sr-only">Change logo</span>
                         </Button>
                     </div>
                     <div className="flex-grow text-center sm:text-left">
-                        <h2 className="text-3xl font-bold">{vendor?.businessName}</h2>
-                        <p className="text-muted-foreground">{vendor?.tagline}</p>
+                        <h2 className="text-3xl font-bold">{form.watch('businessName')}</h2>
+                        <p className="text-muted-foreground">{form.watch('tagline')}</p>
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-2">
                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <Star className="w-4 h-4 text-gold" />

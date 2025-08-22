@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Camera, Heart, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { ChangePasswordDialog } from '@/components/change-password-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const profileFormSchema = z.object({
@@ -24,13 +25,18 @@ const profileFormSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email(),
   phone: z.string().min(10, "Please enter a valid phone number"),
+  avatar: z.string().optional(),
 });
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export default function ClientProfilePage() {
   const { toast } = useToast();
   const { userId, isLoading: isAuthLoading } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -39,6 +45,7 @@ export default function ClientProfilePage() {
       lastName: '',
       email: '',
       phone: '',
+      avatar: '',
     },
   });
 
@@ -54,7 +61,10 @@ export default function ClientProfilePage() {
         let userProfile = await getUserProfile(userId);
         if (userProfile) {
             setUser(userProfile);
-            form.reset(userProfile);
+            form.reset({
+                ...userProfile,
+                avatar: userProfile.avatar || '',
+            });
         }
 
       } catch (error) {
@@ -76,7 +86,7 @@ export default function ClientProfilePage() {
     if (!userId) return;
     try {
       await createOrUpdateUserProfile(userId, values);
-      setUser(prev => prev ? { ...prev, ...values } : null);
+      setUser(prev => prev ? { ...prev, ...values } as UserProfile : null);
       toast({
         title: "Profile Updated",
         description: "Your information has been saved successfully.",
@@ -89,6 +99,67 @@ export default function ClientProfilePage() {
         variant: "destructive",
       });
     }
+  }
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = document.createElement('img');
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 256;
+                const MAX_HEIGHT = 256;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return reject('Could not get canvas context');
+
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.9));
+            };
+        };
+        reader.onerror = (error) => reject(error);
+    });
+  }
+
+   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (file.size > MAX_FILE_SIZE) {
+          toast({ title: 'File too large', description: 'Image must be less than 5MB.', variant: 'destructive' });
+          return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+          toast({ title: 'Invalid file type', description: 'Please select a JPG, PNG, or WEBP image.', variant: 'destructive' });
+          return;
+      }
+
+      try {
+        const compressedDataUrl = await compressImage(file);
+        form.setValue('avatar', compressedDataUrl, { shouldDirty: true });
+        await form.handleSubmit(onSubmit)(); // Auto-save
+      } catch (error) {
+        console.error("Image processing failed", error);
+        toast({ title: 'Image Error', description: 'Could not process the image.', variant: 'destructive' });
+      }
   }
   
   if (isLoading || isAuthLoading) {
@@ -132,6 +203,8 @@ export default function ClientProfilePage() {
         </Card>
     )
   }
+  
+  const avatarUrl = form.watch('avatar');
 
   return (
      <Card>
@@ -142,17 +215,25 @@ export default function ClientProfilePage() {
         <CardContent className="space-y-8">
             <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative">
+                    <Input 
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        ref={avatarFileRef}
+                        onChange={handleAvatarChange}
+                        className="hidden" 
+                    />
                     <Avatar className="h-24 w-24 border-2 border-primary">
-                        <AvatarImage src={user?.avatar} alt={user?.firstName} data-ai-hint="user avatar" />
+                        <AvatarImage src={avatarUrl} alt={user?.firstName} data-ai-hint="user avatar" />
                         <AvatarFallback>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8">
+                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8" onClick={() => avatarFileRef.current?.click()}>
                         <Camera className="h-4 w-4"/>
                         <span className="sr-only">Change photo</span>
                     </Button>
                 </div>
                 <div className="text-center sm:text-left">
-                    <h2 className="text-2xl font-bold">{user?.firstName} {user?.lastName}</h2>
+                    <h2 className="text-2xl font-bold">{form.getValues('firstName')} {form.getValues('lastName')}</h2>
                     <p className="text-muted-foreground">Client since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {month: 'long', year: 'numeric'}) : 'this year'}</p>
                 </div>
             </div>
@@ -215,8 +296,8 @@ export default function ClientProfilePage() {
                                 )}
                                 />
                        </div>
-                      <div className="flex justify-between items-center gap-4">
-                            <div>
+                      <div className="flex justify-between items-center gap-4 flex-wrap">
+                            <div className="flex gap-2 flex-wrap">
                                 <Link href="/client/saved">
                                     <Button variant="outline">
                                         <Heart className="mr-2 h-4 w-4" />
@@ -237,6 +318,26 @@ export default function ClientProfilePage() {
                       </div>
                   </form>
               </Form>
+            </div>
+             <div className="max-w-3xl pt-6 border-t">
+                <h3 className="text-lg font-semibold text-destructive mb-4">Danger Zone</h3>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">Delete My Account</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action is permanent and cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toast({ title: "Action Canceled", description: "Account deletion is a placeholder."})}>Delete Account</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </CardContent>
     </Card>

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import {
   Sheet,
@@ -16,7 +17,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { ServiceOrOffer, Service, Offer, VendorProfile, MediaItem, ServiceCategory } from '@/lib/types';
+import type { ServiceOrOffer, Service, Offer, VendorProfile, MediaItem, ServiceCategory, Location } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { DollarSign, Loader2, ImagePlus, X, Video } from 'lucide-react';
 import { createServiceOrOffer, getVendorProfile, updateServiceOrOffer } from '@/lib/services';
@@ -26,6 +27,7 @@ import { format } from 'date-fns';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
 import { Separator } from './ui/separator';
+import { locations } from '@/lib/types';
 
 interface ManageServiceDialogProps {
   children: React.ReactNode;
@@ -115,6 +117,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
     const formData = new FormData(event.currentTarget);
     const title = formData.get('title') as string;
     const category = formData.get('category') as ServiceCategory;
+    const location = formData.get('location') as Location;
     const description = formData.get('description') as string;
     
     const finalMedia = media.map((item, index) => ({ ...item, isThumbnail: index === 0 }));
@@ -123,6 +126,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
         const baseData: Partial<ServiceOrOffer> = {
             title,
             category,
+            location,
             description,
             vendorId,
             vendorName: vendorProfile.businessName,
@@ -278,6 +282,19 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
                     <SelectContent>
                         {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                     </SelectContent>
+                    </Select>
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="location" className="text-right">
+                    Location
+                    </Label>
+                    <Select name="location" defaultValue={service?.location || vendorProfile?.location}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {locations.map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">

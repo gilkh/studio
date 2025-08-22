@@ -1,7 +1,10 @@
 
+
 export type ServiceType = 'service' | 'offer';
 export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
+export type Location = 'Beirut' | 'Mount Lebanon' | 'North Lebanon' | 'South Lebanon' | 'Nabatieh' | 'Beqaa' | 'Baalbek-Hermel' | 'Akkar';
 
+export const locations: Location[] = ['Beirut', 'Mount Lebanon', 'North Lebanon', 'South Lebanon', 'Nabatieh', 'Beqaa', 'Baalbek-Hermel', 'Akkar'];
 
 export interface MediaItem {
   url: string;
@@ -58,6 +61,7 @@ export interface BaseService {
   image: string;
   media?: MediaItem[];
   inclusions?: ServiceInclusions;
+  location: Location;
 }
 
 export interface Service extends BaseService {
@@ -191,6 +195,7 @@ export interface VendorProfile {
     reviewCount: number;
     avatar?: string;
     verification?: 'none' | 'verified' | 'trusted';
+    location: Location;
 }
 
 export interface VendorCode {

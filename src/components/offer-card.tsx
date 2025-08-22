@@ -1,11 +1,12 @@
 
+
 'use client';
 import type { Offer } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Clock, Heart, HeartCrack, Send, Video, ShieldCheck } from 'lucide-react';
+import { Star, Edit, Clock, Heart, HeartCrack, Send, Video, ShieldCheck, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import { ManageServiceDialog } from './manage-service-dialog';
 import { BookOfferDialog } from './book-offer-dialog';
@@ -161,9 +162,15 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
               </div>
             </div>
           </Link>
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dashed">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground text-sm">Multiple dates available</span>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-dashed">
+                <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground text-sm">Multiple dates available</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{offer.location}</span>
+                </div>
           </div>
         </div>
       

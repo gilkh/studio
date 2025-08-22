@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { ServiceCard } from './service-card';
@@ -10,12 +11,13 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState, useMemo } from 'react';
-import type { ServiceOrOffer, Service, Offer, ServiceCategory, ServiceInclusions } from '@/lib/types';
+import type { ServiceOrOffer, Service, Offer, ServiceCategory, ServiceInclusions, Location } from '@/lib/types';
 import { getServicesAndOffers } from '@/lib/services';
 import { Skeleton } from './ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { locations } from '@/lib/types';
 
 
 const categories: (ServiceCategory | 'All Categories')[] = ['All Categories', 'Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
@@ -63,6 +65,7 @@ export function ClientDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | 'All Categories'>('All Categories');
+  const [selectedLocation, setSelectedLocation] = useState<Location | 'All Locations'>('All Locations');
   const [activeFilters, setActiveFilters] = useState<Partial<ServiceInclusions>>({});
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
@@ -86,6 +89,9 @@ export function ClientDashboard() {
       .filter(item => 
         selectedCategory === 'All Categories' || item.category === selectedCategory
       )
+      .filter(item =>
+        selectedLocation === 'All Locations' || item.location === selectedLocation
+      )
       .filter(item => 
         item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,7 +103,7 @@ export function ClientDashboard() {
           return item.inclusions?.[filterKey as keyof ServiceInclusions] === true;
         });
       });
-  }, [allItems, searchTerm, selectedCategory, activeFilters]);
+  }, [allItems, searchTerm, selectedCategory, selectedLocation, activeFilters]);
 
   const services = filteredItems.filter(item => item.type === 'service') as Service[];
   const offers = filteredItems.filter(item => item.type === 'offer') as Offer[];
@@ -106,6 +112,10 @@ export function ClientDashboard() {
     // Reset filters when category changes
     setActiveFilters({});
     setSelectedCategory(value as ServiceCategory | 'All Categories');
+  };
+  
+  const handleLocationChange = (value: string) => {
+    setSelectedLocation(value as Location | 'All Locations');
   };
 
   const handleApplyFilters = (newFilters: Partial<ServiceInclusions>) => {
@@ -187,7 +197,7 @@ export function ClientDashboard() {
             <CardDescription>Find the perfect professional for your event.</CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-4 max-w-3xl">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input 
@@ -208,6 +218,17 @@ export function ClientDashboard() {
                   </SelectItem>
                 ))}
               </SelectContent>
+            </Select>
+            <Select value={selectedLocation} onValueChange={handleLocationChange}>
+                <SelectTrigger className="w-full sm:w-[220px] h-12 text-base">
+                    <SelectValue placeholder="Filter by location" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="All Locations">All Locations</SelectItem>
+                    {locations.map((loc) => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
+                </SelectContent>
             </Select>
             <AdvancedFilterDialog />
           </div>

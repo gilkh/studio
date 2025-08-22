@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2, User } from 'lucide-react';
+import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2, User, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor, getUserProfile, createOrUpdateUserProfile } from '@/lib/services';
-import type { VendorProfile, Review, UserProfile, ServiceCategory } from '@/lib/types';
+import type { VendorProfile, Review, UserProfile, ServiceCategory, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -22,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
+import { locations } from '@/lib/types';
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -31,6 +32,7 @@ const profileFormSchema = z.object({
   // From VendorProfile
   businessName: z.string().min(1, "Business name is required"),
   category: z.string().min(1, "Category is required"),
+  location: z.string().min(1, "Location is required"),
   tagline: z.string().min(1, "Tagline is required"),
   description: z.string().min(1, "Description is required"),
   portfolio: z.array(z.string()).optional(),
@@ -60,6 +62,7 @@ export default function VendorProfilePage() {
         defaultValues: {
             businessName: '',
             category: '',
+            location: '',
             tagline: '',
             description: '',
             portfolio: [],
@@ -120,6 +123,7 @@ export default function VendorProfilePage() {
             const vendorData: Partial<VendorProfile> = {
                 businessName: values.businessName,
                 category: values.category as ServiceCategory,
+                location: values.location as Location,
                 tagline: values.tagline,
                 description: values.description,
                 portfolio: values.portfolio,
@@ -138,7 +142,7 @@ export default function VendorProfilePage() {
             ]);
             
             // Update local state
-            setVendor(prev => prev ? { ...prev, ...vendorData } : null);
+            setVendor(prev => prev ? { ...prev, ...vendorData } as VendorProfile : null);
             setUser(prev => prev ? { ...prev, ...userData} : null);
 
             toast({
@@ -308,6 +312,10 @@ export default function VendorProfilePage() {
                                 <span className="font-bold text-base">{(vendor.rating || 0).toFixed(1)}</span>
                                 <span>({vendor.reviewCount || 0} reviews)</span>
                             </div>
+                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="w-4 h-4" />
+                                <span className="font-medium text-base">{vendor.location}</span>
+                            </div>
                             {vendor.verification === 'verified' && (
                                 <Badge variant="secondary" className="gap-1.5 pl-2 border-green-600">
                                     <ShieldCheck className="h-4 w-4 text-green-600" />
@@ -368,17 +376,39 @@ export default function VendorProfilePage() {
                                 )}
                             />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="tagline"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Tagline / Short Description</FormLabel>
-                                    <FormControl><Input {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <FormField
+                                control={form.control}
+                                name="tagline"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Tagline / Short Description</FormLabel>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Primary Location</FormLabel>
+                                         <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a location" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {locations.map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <FormField
                             control={form.control}
                             name="description"

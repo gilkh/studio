@@ -1,11 +1,12 @@
 
+
 'use client';
 import type { Service } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Edit, Heart, HeartCrack, Send, Video, ShieldCheck } from 'lucide-react';
+import { Star, Edit, Heart, HeartCrack, Send, Video, ShieldCheck, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import { QuoteRequestDialog } from './quote-request-dialog';
 import { ManageServiceDialog } from './manage-service-dialog';
@@ -141,6 +142,10 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
           <Link href={`/client/service/${service.id}`} className="flex-grow">
             <h3 className="text-xl font-bold leading-tight mb-2">{service.title}</h3>
           </Link>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
+                <MapPin className="h-4 w-4" />
+                <span>{service.location}</span>
+            </div>
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{service.description}</p>
           <div className="mt-auto pt-4 border-t border-dashed">
             <Link href={`/vendor/${service.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>

@@ -30,7 +30,7 @@ export default function AdminLayout({
   // for unauthorized users.
   if (isLoading || role !== 'admin') {
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-secondary/50">
+        <div className="flex min-h-screen w-full items-center justify-center bg-background">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
@@ -38,7 +38,7 @@ export default function AdminLayout({
 
   // Only render the admin content if the user is authenticated as an admin.
   return (
-    <div className="flex min-h-screen w-full flex-col bg-secondary/50">
+    <div className="flex min-h-screen w-full flex-col bg-background">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
             <h1 className="text-xl font-semibold">Farhetkoun Admin</h1>
             <Link href="/login">

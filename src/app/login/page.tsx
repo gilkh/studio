@@ -149,7 +149,7 @@ export default function LoginPage() {
       </section>
 
       {/* Categories Showcase Section */}
-        <section className="py-20 sm:py-24 bg-secondary/20">
+        <section className="py-20 sm:py-24 bg-muted/50">
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl md:text-4xl font-bold">Find Everything You Need</h2>
@@ -243,7 +243,7 @@ export default function LoginPage() {
       </section>
 
       {/* Login Section */}
-      <section id="login-section" className="py-20 sm:py-24 bg-secondary/50">
+      <section id="login-section" className="py-20 sm:py-24 bg-muted/50">
         <div className="container mx-auto px-4">
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">

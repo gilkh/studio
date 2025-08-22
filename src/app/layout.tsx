@@ -6,36 +6,44 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { useTheme } from '@/hooks/use-theme';
 import { useEffect } from 'react';
+import { LanguageProvider, useLanguage } from '@/hooks/use-language';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
-// Metadata would traditionally be in a server component, 
-// but for this client-side layout, we'll manage the title directly.
-// export const metadata: Metadata = {
-//   title: 'Farhetkoun - Find Event Services',
-//   description: 'Your one-stop marketplace to find and book services for your next event.',
-// };
+function AppBody({ children }: { children: React.ReactNode }) {
+    const { theme } = useTheme();
+    const { language, translations } = useLanguage();
+
+    useEffect(() => {
+        document.title = translations.meta.title;
+        document.querySelector('meta[name="description"]')?.setAttribute('content', translations.meta.description);
+    }, [translations]);
+
+    return (
+        <html lang={language} dir={language === 'ar' ? 'rtl' : 'ltr'} className={theme} style={{ colorScheme: theme }}>
+            <head>
+                 <meta name="description" content={translations.meta.description} />
+            </head>
+            <body className={`${inter.variable} font-sans antialiased`}>
+                {children}
+                <Toaster />
+            </body>
+        </html>
+    );
+}
+
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { theme } = useTheme();
-
-  useEffect(() => {
-    document.title = 'Farhetkoun - Find Event Services';
-  }, []);
-
   return (
-    <html lang="en" className={theme} style={{ colorScheme: theme }}>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
-        <Toaster />
-      </body>
-    </html>
+    <LanguageProvider>
+        <AppBody>{children}</AppBody>
+    </LanguageProvider>
   );
 }

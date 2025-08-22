@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Languages, Moon, Sun } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ClientSettingsPage() {
   return (
@@ -23,6 +25,41 @@ export default function ClientSettingsPage() {
                     <Input id="email" type="email" defaultValue="john.doe@example.com" />
                 </div>
                 <Button variant="outline">Change Password</Button>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Appearance Settings</CardTitle>
+                <CardDescription>Customize the look and feel of the application.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                 <div className="space-y-2">
+                    <Label>Theme</Label>
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                            <Sun className="h-5 w-5" />
+                            Light
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Moon className="h-5 w-5" />
+                            Dark
+                        </Button>
+                    </div>
+                 </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="language">Language</Label>
+                     <Select defaultValue="en">
+                        <SelectTrigger id="language">
+                            <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="fr">Français</SelectItem>
+                            <SelectItem value="ar">العربية</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
             </CardContent>
         </Card>
 

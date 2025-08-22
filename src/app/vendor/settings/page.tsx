@@ -143,8 +143,8 @@ export default function VendorSettingsPage() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => toast({ title: t.common.actionCancelled, description: "Profile deactivation is a placeholder."})}>{t.dangerZone.deactivateProfile}</AlertDialogAction>
+                            <AlertDialogCancel>{translations.common.cancel}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toast({ title: translations.common.actionCancelled, description: "Profile deactivation is a placeholder."})}>{t.dangerZone.deactivateProfile}</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

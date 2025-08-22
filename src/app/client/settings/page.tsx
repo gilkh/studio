@@ -141,8 +141,8 @@ export default function ClientSettingsPage() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => toast({ title: t.common.actionCancelled, description: "Account deletion is a placeholder."})}>{t.dangerZone.deleteAccount}</AlertDialogAction>
+                            <AlertDialogCancel>{translations.common.cancel}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toast({ title: translations.common.actionCancelled, description: "Account deletion is a placeholder."})}>{t.dangerZone.deleteAccount}</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

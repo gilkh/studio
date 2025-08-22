@@ -182,17 +182,25 @@ export default function VendorProfilePage() {
                         <p className="text-muted-foreground">{vendor?.tagline}</p>
                         <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                <Star className="w-4 h-4 text-gold" />
                                 <span className="font-bold text-base">5.0</span>
                                 <span>(150 reviews)</span>
                             </div>
-                            <Badge variant="secondary" className="gap-1.5 pl-2">
-                                <ShieldCheck className="h-4 w-4 text-green-600" />
-                                Verified Vendor
-                            </Badge>
+                            {vendor.verification === 'verified' && (
+                                <Badge variant="secondary" className="gap-1.5 pl-2 border-green-600">
+                                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                                    Verified Vendor
+                                </Badge>
+                            )}
+                            {vendor.verification === 'trusted' && (
+                                <Badge variant="gold" className="gap-1.5 pl-2">
+                                    <ShieldCheck className="h-4 w-4" />
+                                    Trusted Vendor
+                                </Badge>
+                            )}
                             {vendor?.accountTier && (
                                 <RequestUpgradeDialog vendor={vendor}>
-                                   <Badge variant="outline" className="capitalize border-green-600 bg-green-50 text-green-700 gap-1.5 pl-2 cursor-pointer hover:bg-green-100">
+                                   <Badge variant="outline" className="capitalize border-gold-dark bg-gold/10 text-gold-dark gap-1.5 pl-2 cursor-pointer hover:bg-gold/20">
                                         <Gem className="h-4 w-4" />
                                         {vendor.accountTier} Tier
                                     </Badge>
@@ -328,7 +336,7 @@ export default function VendorProfilePage() {
             </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-gold-dark/50">
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
@@ -351,7 +359,7 @@ export default function VendorProfilePage() {
             </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-gold-dark/50">
             <CardHeader>
                 <CardTitle>Client Reviews</CardTitle>
                 <CardDescription>Here's what your past clients have to say.</CardDescription>
@@ -368,7 +376,7 @@ export default function VendorProfilePage() {
                                     <p className="font-semibold">{review.author}</p>
                                      <div className="flex items-center gap-0.5">
                                         {[...Array(review.rating)].map((_, i) => (
-                                            <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                            <Star key={i} className="h-4 w-4 text-gold" />
                                         ))}
                                     </div>
                                 </div>

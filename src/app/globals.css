@@ -14,22 +14,22 @@ body {
     --card-foreground: 20 14% 4%;
     --popover: 30 50% 100%;
     --popover-foreground: 20 14% 4%;
-    --primary: 4 85% 65%; /* Vibrant Coral */
+    --primary: 4 100% 69%; /* Vibrant Coral Pink */
     --primary-foreground: 0 0% 100%;
-    --secondary: 4 85% 96%;
-    --secondary-foreground: 4 40% 10%;
-    --muted: 4 85% 96%;
-    --muted-foreground: 4 10% 45%;
-    --accent: 180 70% 35%; /* Rich Teal */
-    --accent-foreground: 0 0% 100%;
+    --secondary: 180 85% 96%; /* Light Teal */
+    --secondary-foreground: 180 40% 10%;
+    --muted: 30 50% 95%; /* Gold-Beige tint for muted */
+    --muted-foreground: 30 10% 45%;
+    --accent: 51 100% 50%; /* Gold */
+    --accent-foreground: 45 100% 12%; /* Dark Gold for text on gold bg */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 4 20% 90%;
-    --input: 4 20% 90%;
-    --ring: 180 70% 35%; /* Rich Teal */
-    --chart-1: 4 85% 65%; /* Vibrant Coral */
+    --border: 45 50% 90%; /* Soft Gold-Beige tint */
+    --input: 45 50% 90%; /* Soft Gold-Beige tint */
+    --ring: 51 100% 50%; /* Gold */
+    --chart-1: 4 100% 69%; /* Vibrant Coral Pink */
     --chart-2: 180 70% 35%; /* Rich Teal */
-    --chart-3: 197 37% 24%;
+    --chart-3: 51 100% 50%; /* Gold */
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
@@ -41,19 +41,19 @@ body {
     --card-foreground: 30 50% 98%;
     --popover: 20 14% 4%;
     --popover-foreground: 30 50% 98%;
-    --primary: 4 85% 65%; /* Vibrant Coral */
+    --primary: 4 100% 69%; /* Vibrant Coral Pink */
     --primary-foreground: 0 0% 100%;
-    --secondary: 4 20% 15%;
+    --secondary: 180 20% 15%; /* Dark Teal */
     --secondary-foreground: 30 50% 98%;
-    --muted: 4 20% 15%;
-    --muted-foreground: 4 10% 65%;
-    --accent: 180 70% 35%; /* Rich Teal */
-    --accent-foreground: 0 0% 100%;
+    --muted: 45 20% 15%; /* Dark Gold-Beige tint */
+    --muted-foreground: 45 10% 65%;
+    --accent: 51 100% 50%; /* Gold */
+    --accent-foreground: 51 100% 85%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 4 20% 15%;
-    --input: 4 20% 15%;
-    --ring: 180 70% 35%; /* Rich Teal */
+    --border: 45 20% 15%; /* Dark Gold-Beige tint */
+    --input: 45 20% 15%; /* Dark Gold-Beige tint */
+    --ring: 51 100% 50%; /* Gold */
     --chart-1: 30 50% 98%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;

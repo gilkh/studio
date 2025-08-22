@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -231,14 +232,14 @@ export function AdminUserManagement({ initialUser, initialVendor, initialListing
 
         {vendor && (
              <>
-                <Card>
+                <Card className="border-gold-dark/50">
                     <CardHeader>
                         <CardTitle>Vendor Profile</CardTitle>
                         <CardDescription>Edit this vendor's public business information.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            <Star className="w-4 h-4 text-gold" />
                             <span className="font-bold text-base">{(vendor.rating || 0).toFixed(1)}</span>
                             <span>({vendor.reviewCount || 0} reviews)</span>
                         </div>
@@ -294,7 +295,7 @@ export function AdminUserManagement({ initialUser, initialVendor, initialListing
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-gold-dark/50">
                     <CardHeader>
                         <CardTitle>Vendor Listings</CardTitle>
                         <CardDescription>Manage this vendor's services and offers.</CardDescription>

@@ -70,7 +70,7 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
               <p className="text-muted-foreground text-lg">{vendor.tagline}</p>
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm">
                 <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <Star className="w-4 h-4 text-gold" />
                   <span className="font-bold">{(vendor.rating || 0).toFixed(1)}</span>
                   <span className="text-muted-foreground">({vendor.reviewCount || 0} reviews)</span>
                 </div>
@@ -81,8 +81,8 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
                     </Badge>
                 )}
                 {vendor.verification === 'trusted' && (
-                    <Badge variant="secondary" className="gap-1.5 pl-2 border-blue-600">
-                        <ShieldCheck className="h-4 w-4 text-blue-600" />
+                    <Badge variant="gold" className="gap-1.5 pl-2">
+                        <ShieldCheck className="h-4 w-4" />
                         Trusted Vendor
                     </Badge>
                 )}
@@ -170,10 +170,10 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
                                             <p className="font-semibold">{review.clientName}</p>
                                             <div className="flex items-center gap-0.5">
                                                 {[...Array(review.rating)].map((_, i) => (
-                                                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                                    <Star key={i} className="h-4 w-4 text-gold" />
                                                 ))}
                                                 {[...Array(5 - review.rating)].map((_, i) => (
-                                                    <Star key={i} className="h-4 w-4 fill-muted text-muted-foreground" />
+                                                    <Star key={i} className="h-4 w-4 text-muted" />
                                                 ))}
                                             </div>
                                         </div>

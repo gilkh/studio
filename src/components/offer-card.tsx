@@ -37,7 +37,8 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   
-  const mediaItems = offer.media && offer.media.length > 0 ? offer.media : [{ url: offer.image, type: 'image' as const, isThumbnail: true }];
+  const approvedMedia = offer.media?.filter(m => m.status === 'approved') || [];
+  const mediaItems = approvedMedia.length > 0 ? approvedMedia : [{ url: offer.image, type: 'image' as const, status: 'approved' as const, isThumbnail: true }];
 
 
   useEffect(() => {

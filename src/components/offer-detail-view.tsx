@@ -1,4 +1,5 @@
 
+
 'use client';
 import { getServiceOrOfferById } from '@/lib/services';
 import type { Offer, MediaItem, Review } from '@/lib/types';
@@ -58,7 +59,8 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
     );
   }
 
-    const mediaItems = offer.media && offer.media.length > 0 ? offer.media : [{ url: offer.image, type: 'image' as const, isThumbnail: true }];
+    const approvedMedia = offer.media?.filter(m => m.status === 'approved') || [];
+    const mediaItems = approvedMedia.length > 0 ? approvedMedia : [{ url: offer.image, type: 'image' as const, status: 'approved' as const, isThumbnail: true }];
 
 
   return (

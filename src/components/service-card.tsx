@@ -36,7 +36,8 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const mediaItems = service.media && service.media.length > 0 ? service.media : [{ url: service.image, type: 'image' as const, isThumbnail: true }];
+  const approvedMedia = service.media?.filter(m => m.status === 'approved') || [];
+  const mediaItems = approvedMedia.length > 0 ? approvedMedia : [{ url: service.image, type: 'image' as const, status: 'approved' as const, isThumbnail: true }];
 
 
   useEffect(() => {

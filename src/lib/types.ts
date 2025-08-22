@@ -9,6 +9,7 @@ export const locations: Location[] = ['Beirut', 'Mount Lebanon', 'North Lebanon'
 export interface MediaItem {
   url: string;
   type: 'image' | 'video';
+  status: 'pending' | 'approved' | 'rejected';
   isThumbnail?: boolean;
 }
 
@@ -189,7 +190,7 @@ export interface VendorProfile {
     ownerId: string;
     accountTier: 'free' | 'vip1' | 'vip2' | 'vip3';
     createdAt: Date;
-    portfolio?: string[];
+    portfolio?: MediaItem[];
     status: 'active' | 'disabled';
     rating: number;
     reviewCount: number;

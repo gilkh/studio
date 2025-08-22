@@ -133,7 +133,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
             vendorAvatar: vendorProfile.avatar,
             rating: service?.rating || 0,
             reviewCount: service?.reviewCount || 0,
-            image: finalMedia.length > 0 ? finalMedia[0].url : service?.image || 'https://placehold.co/600x400.png',
+            image: finalMedia.find(m => m.status === 'approved' && m.type === 'image')?.url || service?.image || 'https://placehold.co/600x400.png',
             media: finalMedia,
         }
 
@@ -167,7 +167,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
         
         toast({
           title: `${type === 'service' ? 'Service' : 'Offer'} ${service ? 'Updated' : 'Created'}`,
-          description: `The ${type} "${title}" has been successfully saved.`,
+          description: `The ${type} "${title}" has been successfully saved. Media items are pending admin approval.`,
         });
         setOpen(false);
         onListingUpdate?.(); // Callback to refresh the list
@@ -194,6 +194,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
                     newMediaItems.push({
                         url: reader.result as string,
                         type: 'video',
+                        status: 'pending'
                     });
                      if (newMediaItems.length === files.length) {
                         setMedia(prev => [...prev, ...newMediaItems]);
@@ -206,6 +207,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
                      newMediaItems.push({
                         url: compressedDataUrl,
                         type: 'image',
+                        status: 'pending',
                     });
                      if (newMediaItems.length === files.length) {
                         setMedia(prev => {
@@ -332,6 +334,10 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
                                     <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => handleRemoveMedia(index)}>
                                         <X className="h-4 w-4" />
                                     </Button>
+                                    <div className={`absolute inset-0 rounded-md flex items-center justify-center font-bold text-white uppercase text-sm ${item.status === 'pending' ? 'bg-amber-500/70' : 'bg-red-500/70'}`}
+                                         style={{ display: item.status === 'approved' ? 'none' : 'flex' }}>
+                                        {item.status}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -349,7 +355,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
                             multiple
                             onChange={handleMediaUpload} 
                         />
-                        <p className="text-xs text-muted-foreground mt-2">The first item must be an image to be used as a thumbnail.</p>
+                        <p className="text-xs text-muted-foreground mt-2">The first item must be an image to be used as a thumbnail. All media requires admin approval.</p>
                     </div>
                 </div>
 

@@ -54,6 +54,7 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
   
   const myOffers = listings.filter(item => item.type === 'offer') as Offer[];
   const myServices = listings.filter(item => item.type === 'service') as Service[];
+  const approvedPortfolio = vendor.portfolio?.filter(p => p.status === 'approved') || [];
 
   return (
     <div className="space-y-8">

@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus } from '@/lib/services';
-import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry } from '@/lib/types';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMedia, moderateMedia } from '@/lib/services';
+import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, MediaItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand, ThumbsUp, ThumbsDown, Image as ImageIcon } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,19 +37,33 @@ import { AdminAnalyticsChart } from '@/components/admin-analytics-chart';
 import { AdminStatCard } from '@/components/admin-stat-card';
 import { MessagingPanel } from '@/components/messaging-panel';
 import Link from 'next/link';
+import Image from 'next/image';
 
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'] };
+
+interface PendingMediaItem extends MediaItem {
+    context: {
+        ownerId: string;
+        ownerName: string;
+        listingId?: string;
+        listingTitle?: string;
+        listingType?: 'service' | 'offer' | 'profile';
+    };
+}
+
 
 export default function AdminHomePage() {
   const [codes, setCodes] = useState<VendorCode[]>([]);
   const [users, setUsers] = useState<DisplayUser[]>([]);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [vendorInquiries, setVendorInquiries] = useState<VendorInquiry[]>([]);
+  const [pendingMedia, setPendingMedia] = useState<PendingMediaItem[]>([]);
   const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isModerating, setIsModerating] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,17 +73,19 @@ export default function AdminHomePage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [vendorCodes, allUsers, requests, platformAnalytics, inquiries] = await Promise.all([
+      const [vendorCodes, allUsers, requests, platformAnalytics, inquiries, media] = await Promise.all([
         getVendorCodes(),
         getAllUsersAndVendors(),
         getUpgradeRequests(),
         getPlatformAnalytics(),
         getVendorInquiries(),
+        getPendingMedia(),
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
       setUpgradeRequests(requests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
       setVendorInquiries(inquiries.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime()));
+      setPendingMedia(media as PendingMediaItem[]);
       setAnalytics(platformAnalytics);
     } catch (error) {
       toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
@@ -172,6 +188,23 @@ export default function AdminHomePage() {
     }
   };
 
+ const handleModerateMedia = async (item: PendingMediaItem, decision: 'approved' | 'rejected') => {
+    const uniqueId = `${item.context.listingType}-${item.context.listingId || item.context.ownerId}-${item.url.slice(-10)}`;
+    setIsModerating(uniqueId);
+    try {
+        await moderateMedia(item.context.ownerId, item.context.listingType, item.url, decision, item.context.listingId);
+        setPendingMedia(prev => prev.filter(media => media.url !== item.url));
+        toast({
+            title: `Media ${decision}`,
+            description: 'The content moderation status has been updated.'
+        });
+    } catch (error) {
+        console.error("Moderation failed", error);
+        toast({ title: "Moderation Failed", description: "Could not update media status.", variant: "destructive" });
+    } finally {
+        setIsModerating(null);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -187,20 +220,24 @@ export default function AdminHomePage() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-3 sm:flex sm:w-auto">
-            <TabsTrigger value="overview">Platform Overview</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 sm:flex sm:w-auto flex-wrap h-auto">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="moderation">
+                Moderation
+                {pendingMedia.length > 0 && <Badge className="ml-2 bg-red-500">{pendingMedia.length}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
              <TabsTrigger value="inquiries">
                 Inquiries
                 {vendorInquiries.filter(r => r.status === 'pending').length > 0 && <Badge className="ml-2">{vendorInquiries.filter(r => r.status === 'pending').length}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="upgrades">
-                Upgrade Requests
+                Upgrades
                 {upgradeRequests.filter(r => r.status === 'pending').length > 0 && <Badge className="ml-2">{upgradeRequests.filter(r => r.status === 'pending').length}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="codes">Vendor Codes</TabsTrigger>
+            <TabsTrigger value="codes">Codes</TabsTrigger>
             <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
         
@@ -369,6 +406,66 @@ export default function AdminHomePage() {
                             ))}
                         </TableBody>
                      </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+         <TabsContent value="moderation" className="mt-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Content Moderation Queue</CardTitle>
+                    <CardDescription>Review and approve or reject vendor-uploaded media.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Media</TableHead>
+                                <TableHead>Uploader</TableHead>
+                                <TableHead>Context</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(3)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-24 w-24 rounded-md" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
+                                </TableRow>
+                                ))
+                            ) : pendingMedia.length > 0 ? pendingMedia.map(item => {
+                                const uniqueId = `${item.context.listingType}-${item.context.listingId || item.context.ownerId}-${item.url.slice(-10)}`;
+                                return (
+                                <TableRow key={uniqueId}>
+                                    <TableCell>
+                                        <Image src={item.url} alt="Pending media" width={100} height={100} className="rounded-md object-cover aspect-square" />
+                                    </TableCell>
+                                    <TableCell className="font-medium">{item.context.ownerName}</TableCell>
+                                    <TableCell>
+                                        <p className="font-semibold capitalize">{item.context.listingType} Image</p>
+                                        <p className="text-sm text-muted-foreground">{item.context.listingTitle || item.context.ownerName}</p>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex gap-2 justify-end">
+                                            <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleModerateMedia(item, 'approved')} disabled={isModerating === uniqueId}>
+                                                {isModerating === uniqueId ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsUp className="h-4 w-4"/>}
+                                            </Button>
+                                            <Button size="sm" variant="destructive" onClick={() => handleModerateMedia(item, 'rejected')} disabled={isModerating === uniqueId}>
+                                                {isModerating === uniqueId ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsDown className="h-4 w-4"/>}
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground h-24">No media pending review.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
         </TabsContent>

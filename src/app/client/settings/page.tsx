@@ -10,46 +10,127 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Languages, Moon, Sun } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTheme } from '@/hooks/use-theme';
+import { useState } from 'react';
+
+const translations = {
+  en: {
+    accountSettings: "Account Settings",
+    manageAccount: "Manage your account preferences.",
+    email: "Email",
+    changePassword: "Change Password",
+    appearanceSettings: "Appearance Settings",
+    customizeAppearance: "Customize the look and feel of the application.",
+    theme: "Theme",
+    light: "Light",
+    dark: "Dark",
+    language: "Language",
+    notificationSettings: "Notification Settings",
+    howToNotify: "Choose how you want to be notified.",
+    pushNotifications: "Push Notifications",
+    pushDescription: "Get real-time updates on your mobile device.",
+    emailNotifications: "Email Notifications",
+    newMessages: "New messages from vendors",
+    quoteUpdates: "Updates on your quote requests",
+    bookingConfirmations: "Booking confirmations and reminders",
+    promotions: "Promotions and special offers",
+    dangerZone: "Danger Zone",
+    dangerDescription: "These actions are permanent and cannot be undone.",
+    deleteAccount: "Delete My Account",
+  },
+  fr: {
+    accountSettings: "Paramètres du compte",
+    manageAccount: "Gérez les préférences de votre compte.",
+    email: "Email",
+    changePassword: "Changer le mot de passe",
+    appearanceSettings: "Paramètres d'apparence",
+    customizeAppearance: "Personnalisez l'apparence de l'application.",
+    theme: "Thème",
+    light: "Clair",
+    dark: "Sombre",
+    language: "Langue",
+    notificationSettings: "Paramètres de notification",
+    howToNotify: "Choisissez comment vous souhaitez être notifié.",
+    pushNotifications: "Notifications push",
+    pushDescription: "Recevez des mises à jour en temps réel sur votre appareil mobile.",
+    emailNotifications: "Notifications par email",
+    newMessages: "Nouveaux messages des fournisseurs",
+    quoteUpdates: "Mises à jour de vos demandes de devis",
+    bookingConfirmations: "Confirmations et rappels de réservation",
+    promotions: "Promotions et offres spéciales",
+    dangerZone: "Zone de danger",
+    dangerDescription: "Ces actions sont permanentes et ne peuvent pas être annulées.",
+    deleteAccount: "Supprimer mon compte",
+  },
+  ar: {
+    accountSettings: "إعدادات الحساب",
+    manageAccount: "إدارة تفضيلات حسابك.",
+    email: "البريد الإلكتروني",
+    changePassword: "تغيير كلمة المرور",
+    appearanceSettings: "إعدادات المظهر",
+    customizeAppearance: "تخصيص شكل ومظهر التطبيق.",
+    theme: "المظهر",
+    light: "فاتح",
+    dark: "داكن",
+    language: "اللغة",
+    notificationSettings: "إعدادات الإشعارات",
+    howToNotify: "اختر كيف تريد أن يتم إعلامك.",
+    pushNotifications: "إشعارات لحظية",
+    pushDescription: "احصل على تحديثات في الوقت الفعلي على جهازك المحمول.",
+    emailNotifications: "إشعارات البريد الإلكتروني",
+    newMessages: "رسائل جديدة من البائعين",
+    quoteUpdates: "تحديثات على طلبات عروض الأسعار الخاصة بك",
+    bookingConfirmations: "تأكيدات الحجز والتذكيرات",
+    promotions: "العروض الترويجية والعروض الخاصة",
+    dangerZone: "منطقة الخطر",
+    dangerDescription: "هذه الإجراءات دائمة ولا يمكن التراجع عنها.",
+    deleteAccount: "حذف حسابي",
+  }
+};
 
 export default function ClientSettingsPage() {
+  const { theme, setTheme } = useTheme();
+  const [lang, setLang] = useState<'en' | 'fr' | 'ar'>('en');
+  const t = translations[lang];
+
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <Card>
             <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage your account preferences.</CardDescription>
+                <CardTitle>{t.accountSettings}</CardTitle>
+                <CardDescription>{t.manageAccount}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t.email}</Label>
                     <Input id="email" type="email" defaultValue="john.doe@example.com" />
                 </div>
-                <Button variant="outline">Change Password</Button>
+                <Button variant="outline">{t.changePassword}</Button>
             </CardContent>
         </Card>
 
         <Card>
             <CardHeader>
-                <CardTitle>Appearance Settings</CardTitle>
-                <CardDescription>Customize the look and feel of the application.</CardDescription>
+                <CardTitle>{t.appearanceSettings}</CardTitle>
+                <CardDescription>{t.customizeAppearance}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                  <div className="space-y-2">
-                    <Label>Theme</Label>
+                    <Label>{t.theme}</Label>
                     <div className="flex gap-2">
-                        <Button variant="outline" className="w-full justify-start gap-2">
+                        <Button variant={theme === 'light' ? 'default' : 'outline'} className="w-full justify-start gap-2" onClick={() => setTheme('light')}>
                             <Sun className="h-5 w-5" />
-                            Light
+                            {t.light}
                         </Button>
-                        <Button variant="ghost" className="w-full justify-start gap-2">
+                        <Button variant={theme === 'dark' ? 'default' : 'outline'} className="w-full justify-start gap-2" onClick={() => setTheme('dark')}>
                             <Moon className="h-5 w-5" />
-                            Dark
+                            {t.dark}
                         </Button>
                     </div>
                  </div>
                  <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
-                     <Select defaultValue="en">
+                    <Label htmlFor="language">{t.language}</Label>
+                     <Select defaultValue="en" onValueChange={(value: 'en' | 'fr' | 'ar') => setLang(value)}>
                         <SelectTrigger id="language">
                             <SelectValue placeholder="Select language" />
                         </SelectTrigger>
@@ -65,38 +146,38 @@ export default function ClientSettingsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>Choose how you want to be notified.</CardDescription>
+                <CardTitle>{t.notificationSettings}</CardTitle>
+                <CardDescription>{t.howToNotify}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="flex items-center justify-between space-x-2">
                     <Label htmlFor="push-notifications" className="flex flex-col space-y-1">
-                        <span>Push Notifications</span>
+                        <span>{t.pushNotifications}</span>
                         <span className="font-normal leading-snug text-muted-foreground">
-                        Get real-time updates on your mobile device.
+                        {t.pushDescription}
                         </span>
                     </Label>
                     <Switch id="push-notifications" defaultChecked />
                 </div>
                  <Separator />
                 <div className="space-y-4">
-                    <h3 className="text-md font-medium">Email Notifications</h3>
+                    <h3 className="text-md font-medium">{t.emailNotifications}</h3>
                     <div className="space-y-3">
                          <div className="flex items-center gap-3">
                             <Checkbox id="notify-messages" defaultChecked />
-                            <Label htmlFor="notify-messages" className="font-normal">New messages from vendors</Label>
+                            <Label htmlFor="notify-messages" className="font-normal">{t.newMessages}</Label>
                         </div>
                         <div className="flex items-center gap-3">
                             <Checkbox id="notify-quotes" defaultChecked />
-                            <Label htmlFor="notify-quotes" className="font-normal">Updates on your quote requests</Label>
+                            <Label htmlFor="notify-quotes" className="font-normal">{t.quoteUpdates}</Label>
                         </div>
                         <div className="flex items-center gap-3">
                             <Checkbox id="notify-bookings" defaultChecked />
-                            <Label htmlFor="notify-bookings" className="font-normal">Booking confirmations and reminders</Label>
+                            <Label htmlFor="notify-bookings" className="font-normal">{t.bookingConfirmations}</Label>
                         </div>
                          <div className="flex items-center gap-3">
                             <Checkbox id="notify-promotions" />
-                            <Label htmlFor="notify-promotions" className="font-normal">Promotions and special offers</Label>
+                            <Label htmlFor="notify-promotions" className="font-normal">{t.promotions}</Label>
                         </div>
                     </div>
                 </div>
@@ -105,11 +186,11 @@ export default function ClientSettingsPage() {
 
         <Card className="border-destructive">
             <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription>These actions are permanent and cannot be undone.</CardDescription>
+                <CardTitle className="text-destructive">{t.dangerZone}</CardTitle>
+                <CardDescription>{t.dangerDescription}</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button variant="destructive">Delete My Account</Button>
+                <Button variant="destructive">{t.deleteAccount}</Button>
             </CardContent>
         </Card>
     </div>

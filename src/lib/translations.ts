@@ -5,6 +5,19 @@ export const translations = {
       title: "Farhetkoun - Find Event Services",
       description: "Your one-stop marketplace to find and book services for your next event."
     },
+    nav: {
+        home: "Home",
+        explore: "Explore",
+        bookings: "Bookings",
+        messages: "Messages",
+        settings: "Settings",
+        profile: "Profile",
+        logout: "Log out",
+        login: "Login",
+        planner: "Planner",
+        services: "Services",
+        requests: "Requests",
+    },
     common: {
       save: "Save",
       saving: "Saving...",
@@ -60,6 +73,137 @@ export const translations = {
       noAccount: "Don't have an account?",
       signupNow: "Sign up now",
       footer: "© {year} Farhetkoun. All Rights Reserved."
+    },
+    clientBookings: {
+        title: "My Bookings",
+        description: "An overview of all your scheduled events and appointments.",
+        history: {
+            title: "Booking History",
+            description: "Review past events and leave feedback for your vendors.",
+            with: "with",
+            reviewSubmitted: "Review Submitted",
+            leaveReview: "Leave a Review"
+        }
+    },
+    leaveReviewDialog: {
+        title: "Leave a Review",
+        description: "Share your experience with {vendorName} for the service '{serviceTitle}'.",
+        commentPlaceholder: "How was your experience? What did you like or dislike?",
+        submitButton: "Submit Review",
+        errors: {
+            notLoggedIn: "You must be logged in to leave a review.",
+            ratingRequired: { title: "Rating Required", description: "Please select a star rating."},
+            commentRequired: { title: "Comment Required", description: "Please enter a comment for your review."},
+            submissionFailed: { title: "Review Failed", description: "Could not submit your review. Please try again."}
+        },
+        success: {
+            title: "Review Submitted!",
+            description: "Thank you for your feedback."
+        }
+    },
+    clientProfile: {
+        title: "My Profile",
+        description: "Update your personal details and manage your account.",
+        changePhoto: "Change photo",
+        memberSince: "Member since",
+        accountDetails: "Account Details",
+        firstName: "First Name",
+        lastName: "Last Name",
+        email: "Email",
+        phone: "Phone",
+        mySavedItems: "My Saved Items",
+        changePassword: "Change Password",
+        notFound: {
+            title: "User Not Found",
+            description: "Could not load your profile. Please try logging in again."
+        },
+        dangerZone: {
+            title: "Danger Zone",
+            deleteAccount: "Delete My Account",
+            areYouSure: "Are you absolutely sure?",
+            description: "This action cannot be undone. This will permanently delete your account and remove your data from our servers."
+        },
+        updateSuccess: {
+            title: "Profile Updated",
+            description: "Your information has been saved successfully."
+        },
+        errors: {
+            loadProfile: { title: "Error Loading Profile", description: "Could not fetch your profile data." },
+            updateProfile: { title: "Update Failed", description: "Could not save your profile." },
+            fileTooLarge: { title: "File Too Large", description: "Image must be less than 5MB." },
+            invalidFileType: { title: "Invalid File Type", description: "Please select a JPG, PNG, or WEBP image." },
+            imageProcessing: { title: "Image Error", description: "Could not process the image."}
+        }
+    },
+    clientSaved: {
+        title: "My Saved Items",
+        description: "Your favorite services and offers, all in one place.",
+        noItems: "You haven't saved any items yet."
+    },
+    offerCard: {
+        badge: "Offer",
+        priceLabel: "Fixed Price",
+        reviews: "reviews",
+        editOffer: "Edit Offer",
+        saved: {
+            title: "Item Saved!",
+            description: "{title} has been added to your favorites."
+        },
+        unsaved: {
+            title: "Item Unsaved",
+            description: "{title} has been removed from your favorites."
+        }
+    },
+    serviceCard: {
+        reviews: "reviews",
+        priceLabel: "Quote-based",
+        editService: "Edit Service",
+        saved: {
+            title: "Item Saved!",
+            description: "{title} has been added to your favorites."
+        },
+        unsaved: {
+            title: "Item Unsaved",
+            description: "{title} has been removed from your favorites."
+        }
+    },
+    offerDetail: {
+        backLink: "Back to all offers",
+        offerBadge: "Special Offer",
+        descriptionTitle: "About This Offer",
+        whatsIncludedTitle: "What's Included",
+        priceLabel: "Price",
+        availability: "Check calendar for availability",
+        aboutVendorTitle: "About the Vendor",
+        reviews: "reviews",
+        reviewsTitle: "Reviews",
+        noReviews: "This vendor doesn't have any reviews yet.",
+        notFound: {
+            title: "Offer Not Found",
+            description: "We couldn't find the offer you're looking for.",
+            backButton: "Back to Explore"
+        },
+        includes: {
+            hours: "Pre-defined hours of service",
+            equipment: "All necessary equipment",
+            staff: "Professional staff",
+            travel: "Travel within specified area"
+        }
+    },
+    serviceDetail: {
+        backLink: "Back to all services",
+        descriptionTitle: "About This Service",
+        priceLabel: "Price on Request",
+        priceDescription: "Contact vendor for a custom quote",
+        aboutVendorTitle: "About the Vendor",
+        reviews: "reviews",
+        reviewsTitle: "Reviews",
+        noReviews: "This vendor doesn't have any reviews yet.",
+        notFound: {
+            title: "Service Not Found",
+            description: "We couldn't find the service you're looking for.",
+            backButton: "Back to Explore"
+        }
     },
     settings: {
         accountSettings: {
@@ -131,6 +275,19 @@ export const translations = {
       title: "Farhetkoun - Trouvez des Services Événementiels",
       description: "Votre marché unique pour trouver et réserver des services pour votre prochain événement."
     },
+     nav: {
+        home: "Accueil",
+        explore: "Explorer",
+        bookings: "Réservations",
+        messages: "Messages",
+        settings: "Paramètres",
+        profile: "Profil",
+        logout: "Déconnexion",
+        login: "Connexion",
+        planner: "Planificateur",
+        services: "Services",
+        requests: "Demandes",
+    },
     common: {
       save: "Enregistrer",
       saving: "Enregistrement...",
@@ -186,6 +343,137 @@ export const translations = {
       noAccount: "Vous n'avez pas de compte ?",
       signupNow: "Inscrivez-vous maintenant",
       footer: "© {year} Farhetkoun. Tous droits réservés."
+    },
+     clientBookings: {
+        title: "Mes Réservations",
+        description: "Un aperçu de tous vos événements et rendez-vous programmés.",
+        history: {
+            title: "Historique des réservations",
+            description: "Consultez les événements passés et laissez des commentaires à vos fournisseurs.",
+            with: "avec",
+            reviewSubmitted: "Avis soumis",
+            leaveReview: "Laisser un avis"
+        }
+    },
+    leaveReviewDialog: {
+        title: "Laisser un avis",
+        description: "Partagez votre expérience avec {vendorName} pour le service '{serviceTitle}'.",
+        commentPlaceholder: "Comment s'est passée votre expérience ? Qu'avez-vous aimé ou non ?",
+        submitButton: "Envoyer l'avis",
+        errors: {
+            notLoggedIn: "Vous devez être connecté pour laisser un avis.",
+            ratingRequired: { title: "Note requise", description: "Veuillez sélectionner une note en étoiles."},
+            commentRequired: { title: "Commentaire requis", description: "Veuillez saisir un commentaire pour votre avis."},
+            submissionFailed: { title: "Échec de l'envoi", description: "Impossible d'envoyer votre avis. Veuillez réessayer."}
+        },
+        success: {
+            title: "Avis soumis !",
+            description: "Merci pour vos commentaires."
+        }
+    },
+    clientProfile: {
+        title: "Mon Profil",
+        description: "Mettez à jour vos informations personnelles et gérez votre compte.",
+        changePhoto: "Changer la photo",
+        memberSince: "Membre depuis",
+        accountDetails: "Détails du compte",
+        firstName: "Prénom",
+        lastName: "Nom de famille",
+        email: "Email",
+        phone: "Téléphone",
+        mySavedItems: "Mes éléments enregistrés",
+        changePassword: "Changer le mot de passe",
+        notFound: {
+            title: "Utilisateur non trouvé",
+            description: "Impossible de charger votre profil. Veuillez réessayer de vous connecter."
+        },
+        dangerZone: {
+            title: "Zone de danger",
+            deleteAccount: "Supprimer mon compte",
+            areYouSure: "Êtes-vous absolument sûr(e) ?",
+            description: "Cette action est irréversible. Cela supprimera définitivement votre compte et vos données."
+        },
+        updateSuccess: {
+            title: "Profil mis à jour",
+            description: "Vos informations ont été enregistrées avec succès."
+        },
+        errors: {
+            loadProfile: { title: "Erreur de chargement du profil", description: "Impossible de récupérer les données de votre profil." },
+            updateProfile: { title: "Échec de la mise à jour", description: "Impossible d'enregistrer votre profil." },
+            fileTooLarge: { title: "Fichier trop volumineux", description: "L'image doit faire moins de 5 Mo." },
+            invalidFileType: { title: "Type de fichier invalide", description: "Veuillez sélectionner une image JPG, PNG ou WEBP." },
+            imageProcessing: { title: "Erreur d'image", description: "Impossible de traiter l'image."}
+        }
+    },
+    clientSaved: {
+        title: "Mes éléments enregistrés",
+        description: "Vos services et offres préférés, tous au même endroit.",
+        noItems: "Vous n'avez encore enregistré aucun élément."
+    },
+    offerCard: {
+        badge: "Offre",
+        priceLabel: "Prix fixe",
+        reviews: "avis",
+        editOffer: "Modifier l'offre",
+        saved: {
+            title: "Élément enregistré !",
+            description: "{title} a été ajouté à vos favoris."
+        },
+        unsaved: {
+            title: "Élément non enregistré",
+            description: "{title} a été retiré de vos favoris."
+        }
+    },
+    serviceCard: {
+        reviews: "avis",
+        priceLabel: "Sur devis",
+        editService: "Modifier le service",
+        saved: {
+            title: "Élément enregistré !",
+            description: "{title} a été ajouté à vos favoris."
+        },
+        unsaved: {
+            title: "Élément non enregistré",
+            description: "{title} a été retiré de vos favoris."
+        }
+    },
+    offerDetail: {
+        backLink: "Retour à toutes les offres",
+        offerBadge: "Offre Spéciale",
+        descriptionTitle: "À propos de cette offre",
+        whatsIncludedTitle: "Ce qui est inclus",
+        priceLabel: "Prix",
+        availability: "Consultez le calendrier pour les disponibilités",
+        aboutVendorTitle: "À propos du vendeur",
+        reviews: "avis",
+        reviewsTitle: "Avis",
+        noReviews: "Ce vendeur n'a pas encore d'avis.",
+        notFound: {
+            title: "Offre non trouvée",
+            description: "Nous n'avons pas pu trouver l'offre que vous recherchez.",
+            backButton: "Retour à l'exploration"
+        },
+        includes: {
+            hours: "Heures de service prédéfinies",
+            equipment: "Tout l'équipement nécessaire",
+            staff: "Personnel professionnel",
+            travel: "Déplacement dans la zone spécifiée"
+        }
+    },
+    serviceDetail: {
+        backLink: "Retour à tous les services",
+        descriptionTitle: "À propos de ce service",
+        priceLabel: "Prix sur demande",
+        priceDescription: "Contactez le vendeur pour un devis personnalisé",
+        aboutVendorTitle: "À propos du vendeur",
+        reviews: "avis",
+        reviewsTitle: "Avis",
+        noReviews: "Ce vendeur n'a pas encore d'avis.",
+        notFound: {
+            title: "Service non trouvé",
+            description: "Nous n'avons pas pu trouver le service que vous recherchez.",
+            backButton: "Retour à l'exploration"
+        }
     },
     settings: {
         accountSettings: {
@@ -257,6 +545,19 @@ export const translations = {
       title: "فرحتكم - ابحث عن خدمات المناسبات",
       description: "سوقك المتكامل للعثور على خدمات وحجزها لمناسبتك القادمة."
     },
+    nav: {
+        home: "الرئيسية",
+        explore: "استكشف",
+        bookings: "الحجوزات",
+        messages: "الرسائل",
+        settings: "الإعدادات",
+        profile: "الملف الشخصي",
+        logout: "تسجيل الخروج",
+        login: "تسجيل الدخول",
+        planner: "المخطط",
+        services: "الخدمات",
+        requests: "الطلبات",
+    },
     common: {
       save: "حفظ",
       saving: "جارٍ الحفظ...",
@@ -312,6 +613,137 @@ export const translations = {
       noAccount: "ليس لديك حساب؟",
       signupNow: "أنشئ حسابًا الآن",
       footer: "© {year} فرحتكم. جميع الحقوق محفوظة."
+    },
+     clientBookings: {
+        title: "حجوزاتي",
+        description: "نظرة عامة على جميع الفعاليات والمواعيد المجدولة.",
+        history: {
+            title: "سجل الحجوزات",
+            description: "راجع الفعاليات السابقة واترك تقييمًا للبائعين.",
+            with: "مع",
+            reviewSubmitted: "تم تقديم التقييم",
+            leaveReview: "اترك تقييمًا"
+        }
+    },
+    leaveReviewDialog: {
+        title: "اترك تقييمًا",
+        description: "شارك تجربتك مع {vendorName} لخدمة '{serviceTitle}'.",
+        commentPlaceholder: "كيف كانت تجربتك؟ ما الذي أعجبك أو لم يعجبك؟",
+        submitButton: "إرسال التقييم",
+        errors: {
+            notLoggedIn: "يجب عليك تسجيل الدخول لترك تقييم.",
+            ratingRequired: { title: "التقييم مطلوب", description: "يرجى تحديد تقييم بالنجوم."},
+            commentRequired: { title: "التعليق مطلوب", description: "يرجى إدخال تعليق لتقييمك."},
+            submissionFailed: { title: "فشل إرسال التقييم", description: "تعذر إرسال تقييمك. يرجى المحاولة مرة أخرى."}
+        },
+        success: {
+            title: "تم إرسال التقييم!",
+            description: "شكرًا لك على ملاحظاتك."
+        }
+    },
+     clientProfile: {
+        title: "ملفي الشخصي",
+        description: "قم بتحديث بياناتك الشخصية وإدارة حسابك.",
+        changePhoto: "تغيير الصورة",
+        memberSince: "عضو منذ",
+        accountDetails: "تفاصيل الحساب",
+        firstName: "الاسم الأول",
+        lastName: "اسم العائلة",
+        email: "البريد الإلكتروني",
+        phone: "الهاتف",
+        mySavedItems: "العناصر المحفوظة",
+        changePassword: "تغيير كلمة المرور",
+        notFound: {
+            title: "المستخدم غير موجود",
+            description: "لم نتمكن من تحميل ملفك الشخصي. يرجى محاولة تسجيل الدخول مرة أخرى."
+        },
+        dangerZone: {
+            title: "منطقة الخطر",
+            deleteAccount: "حذف حسابي",
+            areYouSure: "هل أنت متأكد تمامًا؟",
+            description: "هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف حسابك وبياناتك بشكل دائم."
+        },
+        updateSuccess: {
+            title: "تم تحديث الملف الشخصي",
+            description: "تم حفظ معلوماتك بنجاح."
+        },
+        errors: {
+            loadProfile: { title: "خطأ في تحميل الملف الشخصي", description: "تعذر جلب بيانات ملفك الشخصي." },
+            updateProfile: { title: "فشل التحديث", description: "تعذر حفظ ملفك الشخصي." },
+            fileTooLarge: { title: "الملف كبير جدًا", description: "يجب أن يكون حجم الصورة أقل من 5 ميغابايت." },
+            invalidFileType: { title: "نوع الملف غير صالح", description: "يرجى تحديد صورة من نوع JPG أو PNG أو WEBP." },
+            imageProcessing: { title: "خطأ في الصورة", description: "تعذر معالجة الصورة."}
+        }
+    },
+    clientSaved: {
+        title: "العناصر المحفوظة",
+        description: "خدماتك وعروضك المفضلة في مكان واحد.",
+        noItems: "لم تقم بحفظ أي عناصر بعد."
+    },
+     offerCard: {
+        badge: "عرض",
+        priceLabel: "سعر ثابت",
+        reviews: "تقييمات",
+        editOffer: "تعديل العرض",
+        saved: {
+            title: "تم حفظ العنصر!",
+            description: "تمت إضافة {title} إلى مفضلتك."
+        },
+        unsaved: {
+            title: "تم إلغاء حفظ العنصر",
+            description: "تمت إزالة {title} من مفضلتك."
+        }
+    },
+    serviceCard: {
+        reviews: "تقييمات",
+        priceLabel: "حسب الطلب",
+        editService: "تعديل الخدمة",
+        saved: {
+            title: "تم حفظ العنصر!",
+            description: "تمت إضافة {title} إلى مفضلتك."
+        },
+        unsaved: {
+            title: "تم إلغاء حفظ العنصر",
+            description: "تمت إزالة {title} من مفضلتك."
+        }
+    },
+    offerDetail: {
+        backLink: "العودة إلى كل العروض",
+        offerBadge: "عرض خاص",
+        descriptionTitle: "عن هذا العرض",
+        whatsIncludedTitle: "ماذا يتضمن",
+        priceLabel: "السعر",
+        availability: "تحقق من التقويم للتوافر",
+        aboutVendorTitle: "عن البائع",
+        reviews: "تقييمات",
+        reviewsTitle: "التقييمات",
+        noReviews: "لا توجد تقييمات لهذا البائع بعد.",
+        notFound: {
+            title: "العرض غير موجود",
+            description: "لم نتمكن من العثور على العرض الذي تبحث عنه.",
+            backButton: "العودة للاستكشاف"
+        },
+        includes: {
+            hours: "ساعات خدمة محددة مسبقًا",
+            equipment: "جميع المعدات اللازمة",
+            staff: "طاقم عمل محترف",
+            travel: "التنقل داخل المنطقة المحددة"
+        }
+    },
+    serviceDetail: {
+        backLink: "العودة إلى كل الخدمات",
+        descriptionTitle: "عن هذه الخدمة",
+        priceLabel: "السعر عند الطلب",
+        priceDescription: "اتصل بالبائع للحصول على عرض سعر مخصص",
+        aboutVendorTitle: "عن البائع",
+        reviews: "تقييمات",
+        reviewsTitle: "التقييمات",
+        noReviews: "لا توجد تقييمات لهذا البائع بعد.",
+        notFound: {
+            title: "الخدمة غير موجودة",
+            description: "لم نتمكن من العثور على الخدمة التي تبحث عنها.",
+            backButton: "العودة للاستكشاف"
+        }
     },
     settings: {
         accountSettings: {

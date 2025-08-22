@@ -21,27 +21,31 @@ import { useEffect, useState } from 'react';
 import { getVendorQuoteRequests, getUserProfile, getVendorProfile, getChatsForUser } from '@/lib/services';
 import { useAuth, logout } from '@/hooks/use-auth';
 import type { UserProfile, VendorProfile, Chat } from '@/lib/types';
+import { useLanguage } from '@/hooks/use-language';
 
-
-const clientLinks = [
-  { href: '/client/home', label: 'Home', icon: Home },
-  { href: '/client/explore', label: 'Explore', icon: Compass },
-  { href: '/client/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/client/event-planner', label: 'Planner', icon: PenTool },
-  { href: '/client/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link-desktop' },
-];
-
-const vendorLinks = [
-  { href: '/vendor/home', label: 'Home', icon: Home },
-  { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
-  { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link-desktop' },
-  { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/vendor/messages', label: 'Messages', icon: MessageSquare, 'data-testid': 'messages-link-desktop' },
-];
 
 
 export function AppHeader() {
   const { userId, role, isLoading } = useAuth();
+  const { translations } = useLanguage();
+  const t = translations.nav;
+  
+    const clientLinks = [
+        { href: '/client/home', label: t.home, icon: Home },
+        { href: '/client/explore', label: t.explore, icon: Compass },
+        { href: '/client/bookings', label: t.bookings, icon: Calendar },
+        { href: '/client/event-planner', label: t.planner, icon: PenTool },
+        { href: '/client/messages', label: t.messages, icon: MessageSquare, 'data-testid': 'messages-link-desktop' },
+    ];
+
+    const vendorLinks = [
+        { href: '/vendor/home', label: t.home, icon: Home },
+        { href: '/vendor/manage-services', label: t.services, icon: Briefcase },
+        { href: '/vendor/client-requests', label: t.requests, icon: Users, 'data-testid': 'requests-link-desktop' },
+        { href: '/vendor/bookings', label: t.bookings, icon: Calendar },
+        { href: '/vendor/messages', label: t.messages, icon: MessageSquare, 'data-testid': 'messages-link-desktop' },
+    ];
+
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const router = useRouter();
@@ -121,7 +125,7 @@ export function AppHeader() {
                 {...props}
             >
                 {label}
-                 {label === 'Requests' && pendingRequests > 0 && (
+                 {label === t.requests && pendingRequests > 0 && (
                     <Badge className="h-5 w-5 shrink-0 justify-center rounded-full p-1 text-xs">
                         {pendingRequests}
                     </Badge>
@@ -168,25 +172,25 @@ export function AppHeader() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href={isVendor ? "/vendor/profile" : "/client/profile"}>Profile</Link>
+                    <Link href={isVendor ? "/vendor/profile" : "/client/profile"}>{t.profile}</Link>
                 </DropdownMenuItem>
                  <DropdownMenuItem asChild>
-                    <Link href={isVendor ? "/vendor/bookings" : "/client/bookings"}>My Bookings</Link>
+                    <Link href={isVendor ? "/vendor/bookings" : "/client/bookings"}>{t.bookings}</Link>
                 </DropdownMenuItem>
                  <DropdownMenuItem asChild>
-                    <Link href={isVendor ? "/vendor/settings" : "/client/settings"}>Settings</Link>
+                    <Link href={isVendor ? "/vendor/settings" : "/client/settings"}>{t.settings}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                    {t.logout}
                 </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </>
         ) : (
             <Link href="/login">
-                <Button>Sign In</Button>
+                <Button>{t.login}</Button>
             </Link>
         )}
       </div>

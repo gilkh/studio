@@ -18,6 +18,7 @@ import type { Booking, Review } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { createReview, getUserProfile } from '@/lib/services';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/use-language';
 
 interface LeaveReviewDialogProps {
   booking: Booking;
@@ -28,6 +29,9 @@ interface LeaveReviewDialogProps {
 export function LeaveReviewDialog({ booking, children, onReviewSubmit }: LeaveReviewDialogProps) {
   const { toast } = useToast();
   const { userId } = useAuth();
+  const { translations } = useLanguage();
+  const t = translations.leaveReviewDialog;
+
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rating, setRating] = useState(0);
@@ -36,15 +40,15 @@ export function LeaveReviewDialog({ booking, children, onReviewSubmit }: LeaveRe
 
   const handleSubmit = async () => {
     if (!userId) {
-        toast({ title: "Error", description: "You must be logged in.", variant: "destructive"});
+        toast({ title: translations.common.error, description: t.errors.notLoggedIn, variant: "destructive"});
         return;
     }
     if (rating === 0) {
-        toast({ title: "Rating required", description: "Please select a star rating.", variant: "destructive"});
+        toast({ title: t.errors.ratingRequired.title, description: t.errors.ratingRequired.description, variant: "destructive"});
         return;
     }
      if (!comment.trim()) {
-        toast({ title: "Comment required", description: "Please write a brief comment.", variant: "destructive"});
+        toast({ title: t.errors.commentRequired.title, description: t.errors.commentRequired.description, variant: "destructive"});
         return;
     }
     setIsSubmitting(true);
@@ -65,15 +69,15 @@ export function LeaveReviewDialog({ booking, children, onReviewSubmit }: LeaveRe
         
       await createReview(reviewData);
       toast({
-        title: 'Review Submitted!',
-        description: 'Thank you for your feedback.',
+        title: t.success.title,
+        description: t.success.description,
       });
       onReviewSubmit();
       setOpen(false);
       
     } catch (error) {
       console.error("Failed to submit review:", error);
-      toast({ title: "Submission Failed", description: "Could not submit your review.", variant: "destructive" });
+      toast({ title: t.errors.submissionFailed.title, description: t.errors.submissionFailed.description, variant: "destructive" });
     } finally {
         setIsSubmitting(false);
     }
@@ -84,9 +88,9 @@ export function LeaveReviewDialog({ booking, children, onReviewSubmit }: LeaveRe
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Leave a Review</DialogTitle>
+          <DialogTitle>{t.title}</DialogTitle>
           <DialogDescription>
-            Share your experience with <strong>{booking.with}</strong> for their service: <strong>{booking.title}</strong>.
+            {t.description.replace('{vendorName}', booking.with).replace('{serviceTitle}', booking.title)}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
@@ -103,17 +107,17 @@ export function LeaveReviewDialog({ booking, children, onReviewSubmit }: LeaveRe
                 ))}
             </div>
             <Textarea 
-                placeholder="Tell us about your experience..."
+                placeholder={t.commentPlaceholder}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={5}
             />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{translations.common.cancel}</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit Review
+            {t.submitButton}
           </Button>
         </DialogFooter>
       </DialogContent>

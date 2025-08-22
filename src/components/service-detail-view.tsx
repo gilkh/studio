@@ -21,6 +21,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { getReviewsForVendor } from '@/lib/services';
+import { useLanguage } from '@/hooks/use-language';
 
 
 // This is the client component that renders the UI
@@ -28,6 +29,8 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
     const [service, setService] = useState(initialService);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { translations } = useLanguage();
+    const t = translations.serviceDetail;
 
     useEffect(() => {
         async function fetchService() {
@@ -50,10 +53,10 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
   if (!service) {
     return (
       <div className="text-center py-12">
-        <h1 className="text-2xl font-bold">Service not found</h1>
-        <p className="text-muted-foreground">This service may have been removed or the link is incorrect.</p>
+        <h1 className="text-2xl font-bold">{t.notFound.title}</h1>
+        <p className="text-muted-foreground">{t.notFound.description}</p>
         <Link href="/client/explore">
-            <Button className="mt-4">Back to Explore</Button>
+            <Button className="mt-4">{t.notFound.backButton}</Button>
         </Link>
       </div>
     );
@@ -66,7 +69,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
     <div className="space-y-8">
        <Link href="/client/explore" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Back to Explore
+            {t.backLink}
         </Link>
 
         <div className="relative">
@@ -113,7 +116,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
             <div className="lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Description</CardTitle>
+                        <CardTitle>{t.descriptionTitle}</CardTitle>
                     </CardHeader>
                     <CardContent className="text-muted-foreground">
                         <p>{service.description}</p>
@@ -124,15 +127,15 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
             <div className="lg:col-span-1 space-y-6">
                  <Card className="sticky top-24">
                     <CardHeader className="text-center">
-                        <p className="text-5xl font-bold text-primary">Custom Quote</p>
-                         <p className="text-muted-foreground">Pricing is tailored to your event's needs.</p>
+                        <p className="text-5xl font-bold text-primary">{t.priceLabel}</p>
+                         <p className="text-muted-foreground">{t.priceDescription}</p>
                     </CardHeader>
                     <CardContent>
                         <div className="flex gap-2">
                             <QuoteRequestDialog service={service}>
                                 <Button size="lg" className="w-full text-lg h-12">
                                     <MessageSquare className="mr-2 h-5 w-5" />
-                                    Request a Quote
+                                    {translations.common.requestAQuote}
                                 </Button>
                             </QuoteRequestDialog>
                             <QuoteRequestDialog service={service}>
@@ -146,7 +149,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>About the Vendor</CardTitle>
+                        <CardTitle>{t.aboutVendorTitle}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Link href={`/vendor/${service.vendorId}`} className="group/vendor">
@@ -160,7 +163,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
                                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                         <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                                         <span className="font-bold">{service.rating.toFixed(1)}</span>
-                                        <span>({service.reviewCount} reviews)</span>
+                                        <span>({service.reviewCount} {t.reviews})</span>
                                     </div>
                                 </div>
                             </div>
@@ -171,10 +174,10 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
 
             <div className="lg:col-span-2 space-y-6">
                 <Card>
-                    <CardHeader><CardTitle>Reviews ({reviews.length})</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>{t.reviewsTitle} ({reviews.length})</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
                          {isLoading ? (
-                            <p className="text-muted-foreground">Loading reviews...</p>
+                            <p className="text-muted-foreground">{translations.common.loading}</p>
                         ) : reviews.length > 0 ? reviews.map((review, index) => (
                             <div key={review.id}>
                                 <div className="flex items-start gap-4">
@@ -200,7 +203,7 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
                                 {index < reviews.length -1 && <Separator className="mt-6" />}
                             </div>
                         )) : (
-                             <p className="text-center text-muted-foreground py-8">This vendor doesn't have any reviews yet.</p>
+                             <p className="text-center text-muted-foreground py-8">{t.noReviews}</p>
                         )}
                     </CardContent>
                 </Card>
@@ -209,5 +212,3 @@ export function ServiceDetailView({ service: initialService, id }: { service: Se
     </div>
   );
 }
-
-    

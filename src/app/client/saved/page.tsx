@@ -12,9 +12,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { getSavedItems } from '@/lib/services';
+import { useLanguage } from '@/hooks/use-language';
 
 export default function SavedItemsPage() {
     const { userId, isLoading: isAuthLoading } = useAuth();
+    const { translations } = useLanguage();
+    const t = translations.clientSaved;
+
     const [savedItems, setSavedItems] = useState<ServiceOrOffer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -46,9 +50,9 @@ export default function SavedItemsPage() {
                             </Button>
                         </Link>
                         <div>
-                            <CardTitle>My Saved Items</CardTitle>
+                            <CardTitle>{t.title}</CardTitle>
                             <CardDescription>
-                                All the services and offers you've saved for later.
+                                {t.description}
                             </CardDescription>
                         </div>
                     </div>
@@ -69,7 +73,7 @@ export default function SavedItemsPage() {
                             )}
                         </div>
                     ) : (
-                        <p className="text-center text-muted-foreground py-8">You haven't saved any items yet.</p>
+                        <p className="text-center text-muted-foreground py-8">{t.noItems}</p>
                     )}
                 </CardContent>
              </Card>

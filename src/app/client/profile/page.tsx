@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { ChangePasswordDialog } from '@/components/change-password-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useLanguage } from '@/hooks/use-language';
 
 
 const profileFormSchema = z.object({
@@ -34,6 +35,8 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 export default function ClientProfilePage() {
   const { toast } = useToast();
   const { userId, isLoading: isAuthLoading } = useAuth();
+  const { language, translations } = useLanguage();
+  const t = translations.clientProfile;
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const avatarFileRef = useRef<HTMLInputElement>(null);
@@ -70,8 +73,8 @@ export default function ClientProfilePage() {
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
         toast({
-          title: "Error",
-          description: "Could not load your profile. Please try again later.",
+          title: t.errors.loadProfile.title,
+          description: t.errors.loadProfile.description,
           variant: "destructive",
         });
       } finally {
@@ -79,6 +82,7 @@ export default function ClientProfilePage() {
       }
     }
     fetchUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isAuthLoading, form, toast]);
 
 
@@ -88,14 +92,14 @@ export default function ClientProfilePage() {
       await createOrUpdateUserProfile(userId, values);
       setUser(prev => prev ? { ...prev, ...values } as UserProfile : null);
       toast({
-        title: "Profile Updated",
-        description: "Your information has been saved successfully.",
+        title: t.updateSuccess.title,
+        description: t.updateSuccess.description,
       });
     } catch (error) {
       console.error("Failed to update profile:", error);
        toast({
-        title: "Update Failed",
-        description: "Could not save your changes. Please try again.",
+        title: t.errors.updateProfile.title,
+        description: t.errors.updateProfile.description,
         variant: "destructive",
       });
     }
@@ -144,11 +148,11 @@ export default function ClientProfilePage() {
       if (!file) return;
 
       if (file.size > MAX_FILE_SIZE) {
-          toast({ title: 'File too large', description: 'Image must be less than 5MB.', variant: 'destructive' });
+          toast({ title: t.errors.fileTooLarge.title, description: t.errors.fileTooLarge.description, variant: 'destructive' });
           return;
       }
       if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-          toast({ title: 'Invalid file type', description: 'Please select a JPG, PNG, or WEBP image.', variant: 'destructive' });
+          toast({ title: t.errors.invalidFileType.title, description: t.errors.invalidFileType.description, variant: 'destructive' });
           return;
       }
 
@@ -158,7 +162,7 @@ export default function ClientProfilePage() {
         await form.handleSubmit(onSubmit)(); // Auto-save
       } catch (error) {
         console.error("Image processing failed", error);
-        toast({ title: 'Image Error', description: 'Could not process the image.', variant: 'destructive' });
+        toast({ title: t.errors.imageProcessing.title, description: t.errors.imageProcessing.description, variant: 'destructive' });
       }
   }
   
@@ -192,12 +196,12 @@ export default function ClientProfilePage() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Profile Not Found</CardTitle>
-                <CardDescription>We couldn't load your profile data. You may need to log in.</CardDescription>
+                <CardTitle>{t.notFound.title}</CardTitle>
+                <CardDescription>{t.notFound.description}</CardDescription>
             </CardHeader>
              <CardContent>
                 <Link href="/login">
-                    <Button>Go to Login</Button>
+                    <Button>{translations.common.login}</Button>
                 </Link>
             </CardContent>
         </Card>
@@ -209,8 +213,8 @@ export default function ClientProfilePage() {
   return (
      <Card>
         <CardHeader>
-            <CardTitle>My Profile</CardTitle>
-            <CardDescription>View and edit your public profile information and preferences.</CardDescription>
+            <CardTitle>{t.title}</CardTitle>
+            <CardDescription>{t.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
             <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -229,17 +233,17 @@ export default function ClientProfilePage() {
                     </Avatar>
                     <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full bg-background h-8 w-8" onClick={() => avatarFileRef.current?.click()}>
                         <Camera className="h-4 w-4"/>
-                        <span className="sr-only">Change photo</span>
+                        <span className="sr-only">{t.changePhoto}</span>
                     </Button>
                 </div>
                 <div className="text-center sm:text-left">
                     <h2 className="text-2xl font-bold">{form.getValues('firstName')} {form.getValues('lastName')}</h2>
-                    <p className="text-muted-foreground">Client since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {month: 'long', year: 'numeric'}) : 'this year'}</p>
+                    <p className="text-muted-foreground">{t.memberSince} {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(language, {month: 'long', year: 'numeric'}) : 'this year'}</p>
                 </div>
             </div>
             
             <div className="max-w-3xl">
-              <h3 className="text-lg font-semibold mb-4">My Account</h3>
+              <h3 className="text-lg font-semibold mb-4">{t.accountDetails}</h3>
               <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                        <div className="grid md:grid-cols-2 gap-6">
@@ -248,7 +252,7 @@ export default function ClientProfilePage() {
                             name="firstName"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>First Name</FormLabel>
+                                <FormLabel>{t.firstName}</FormLabel>
                                 <FormControl>
                                     <Input placeholder="John" {...field} />
                                 </FormControl>
@@ -261,7 +265,7 @@ export default function ClientProfilePage() {
                             name="lastName"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Last Name</FormLabel>
+                                <FormLabel>{t.lastName}</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Doe" {...field} />
                                 </FormControl>
@@ -274,7 +278,7 @@ export default function ClientProfilePage() {
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem className="md:col-span-2">
-                                    <FormLabel>Email Address</FormLabel>
+                                    <FormLabel>{t.email}</FormLabel>
                                     <FormControl>
                                         <Input type="email" placeholder="john.doe@example.com" {...field} />
                                     </FormControl>
@@ -287,7 +291,7 @@ export default function ClientProfilePage() {
                                 name="phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormLabel>{t.phone}</FormLabel>
                                     <FormControl>
                                         <Input type="tel" placeholder="(123) 456-7890" {...field} />
                                     </FormControl>
@@ -301,40 +305,40 @@ export default function ClientProfilePage() {
                                 <Link href="/client/saved">
                                     <Button variant="outline">
                                         <Heart className="mr-2 h-4 w-4" />
-                                        My Saved Items
+                                        {t.mySavedItems}
                                     </Button>
                                 </Link>
                                  <ChangePasswordDialog userId={userId}>
                                     <Button variant="outline" className="ml-2">
                                         <KeyRound className="mr-2 h-4 w-4" />
-                                        Change Password
+                                        {t.changePassword}
                                     </Button>
                                 </ChangePasswordDialog>
                             </div>
                           <Button type="submit" disabled={form.formState.isSubmitting}>
                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              Save Changes
+                              {translations.common.save}
                           </Button>
                       </div>
                   </form>
               </Form>
             </div>
              <div className="max-w-3xl pt-6 border-t">
-                <h3 className="text-lg font-semibold text-destructive mb-4">Danger Zone</h3>
+                <h3 className="text-lg font-semibold text-destructive mb-4">{t.dangerZone.title}</h3>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive">Delete My Account</Button>
+                        <Button variant="destructive">{t.dangerZone.deleteAccount}</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogTitle>{t.dangerZone.areYouSure}</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action is permanent and cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                                {t.dangerZone.description}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => toast({ title: "Action Canceled", description: "Account deletion is a placeholder."})}>Delete Account</AlertDialogAction>
+                            <AlertDialogCancel>{translations.common.cancel}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toast({ title: translations.common.actionCancelled, description: "Account deletion is a placeholder."})}>{t.dangerZone.deleteAccount}</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

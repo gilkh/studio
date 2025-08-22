@@ -22,12 +22,15 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { getReviewsForVendor } from '@/lib/services';
+import { useLanguage } from '@/hooks/use-language';
 
 // This is the client component that renders the UI
 export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | null, id: string }) {
   const [offer, setOffer] = useState(initialOffer);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { translations } = useLanguage();
+  const t = translations.offerDetail;
   
   useEffect(() => {
     async function fetchOffer() {
@@ -50,10 +53,10 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
   if (!offer) {
     return (
       <div className="text-center py-12">
-        <h1 className="text-2xl font-bold">Offer not found</h1>
-        <p className="text-muted-foreground">This offer may have been removed or the link is incorrect.</p>
+        <h1 className="text-2xl font-bold">{t.notFound.title}</h1>
+        <p className="text-muted-foreground">{t.notFound.description}</p>
         <Link href="/client/explore">
-            <Button className="mt-4">Back to Explore</Button>
+            <Button className="mt-4">{t.notFound.backButton}</Button>
         </Link>
       </div>
     );
@@ -67,7 +70,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
     <div className="space-y-8">
        <Link href="/client/explore" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Back to Explore
+            {t.backLink}
         </Link>
 
         <div className="relative">
@@ -105,7 +108,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
             </Carousel>
 
              <div className="absolute bottom-6 left-6 text-white z-10 pointer-events-none">
-                <Badge className="bg-primary/90 text-primary-foreground mb-2" variant="default">Special Offer</Badge>
+                <Badge className="bg-primary/90 text-primary-foreground mb-2" variant="default">{t.offerBadge}</Badge>
                 <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">{offer.title}</h1>
                 <p className="text-lg text-primary-foreground/90">{offer.category}</p>
              </div>
@@ -116,7 +119,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
             <div className="lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Description</CardTitle>
+                        <CardTitle>{t.descriptionTitle}</CardTitle>
                     </CardHeader>
                     <CardContent className="text-muted-foreground">
                         <p>{offer.description}</p>
@@ -124,14 +127,14 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                 </Card>
 
                  <Card>
-                    <CardHeader><CardTitle>What's Included</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>{t.whatsIncludedTitle}</CardTitle></CardHeader>
                     <CardContent>
                         {/* This could be a structured field in the future */}
                         <ul className="list-disc list-inside text-muted-foreground space-y-2">
-                            <li>Service for up to 4 hours</li>
-                            <li>All necessary equipment and setup</li>
-                            <li>Professional staff on-site</li>
-                            <li>Travel within a 50-mile radius</li>
+                            <li>{t.includes.hours}</li>
+                            <li>{t.includes.equipment}</li>
+                            <li>{t.includes.staff}</li>
+                            <li>{t.includes.travel}</li>
                         </ul>
                     </CardContent>
                 </Card>
@@ -140,18 +143,18 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
             <div className="lg:col-span-1 space-y-6">
                  <Card className="sticky top-24">
                     <CardHeader className="text-center">
-                        <p className="text-muted-foreground">Fixed Price</p>
+                        <p className="text-muted-foreground">{t.priceLabel}</p>
                         <p className="text-5xl font-bold text-primary">${offer.price}</p>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground text-sm">Multiple dates available</span>
+                            <span className="text-muted-foreground text-sm">{t.availability}</span>
                         </div>
                          <Separator />
                         <div className="flex gap-2">
                             <BookOfferDialog offer={offer}>
-                                <Button size="lg" className="w-full text-lg h-12">Book Now</Button>
+                                <Button size="lg" className="w-full text-lg h-12">{translations.common.bookNow}</Button>
                             </BookOfferDialog>
                             <QuoteRequestDialog service={offer}>
                                 <Button size="lg" variant="outline" className="h-12 w-12 p-0">
@@ -164,7 +167,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>About the Vendor</CardTitle>
+                        <CardTitle>{t.aboutVendorTitle}</CardTitle>
                     </CardHeader>
                      <CardContent>
                         <Link href={`/vendor/${offer.vendorId}`} className="group/vendor">
@@ -178,7 +181,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                         <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                                         <span className="font-bold">{offer.rating.toFixed(1)}</span>
-                                        <span>({offer.reviewCount} reviews)</span>
+                                        <span>({offer.reviewCount} {t.reviews})</span>
                                     </div>
                                 </div>
                             </div>
@@ -189,10 +192,10 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
 
             <div className="lg:col-span-2 space-y-6">
                  <Card>
-                    <CardHeader><CardTitle>Reviews ({reviews.length})</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>{t.reviewsTitle} ({reviews.length})</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
                         {isLoading ? (
-                            <p className="text-muted-foreground">Loading reviews...</p>
+                            <p className="text-muted-foreground">{translations.common.loading}</p>
                         ) : reviews.length > 0 ? reviews.map((review, index) => (
                             <div key={review.id}>
                                 <div className="flex items-start gap-4">
@@ -218,7 +221,7 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
                                 {index < reviews.length -1 && <Separator className="mt-6" />}
                             </div>
                         )) : (
-                             <p className="text-center text-muted-foreground py-8">This vendor doesn't have any reviews yet.</p>
+                             <p className="text-center text-muted-foreground py-8">{t.noReviews}</p>
                         )}
                     </CardContent>
                 </Card>
@@ -228,5 +231,3 @@ export function OfferDetailView({ offer: initialOffer, id }: { offer: Offer | nu
     </div>
   );
 }
-
-    

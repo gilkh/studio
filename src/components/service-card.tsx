@@ -22,6 +22,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { useLanguage } from '@/hooks/use-language';
 
 
 interface ServiceCardProps {
@@ -32,6 +33,8 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps) {
   const { userId } = useAuth();
+  const { translations } = useLanguage();
+  const t = translations.serviceCard;
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -64,8 +67,8 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
         await toggleSavedItem(userId, service.id);
         setIsSaved(!isSaved);
         toast({
-            title: isSaved ? 'Item Unsaved' : 'Item Saved!',
-            description: isSaved ? `"${service.title}" removed from your saved items.` : `"${service.title}" added to your saved items.`
+            title: isSaved ? t.unsaved.title : t.saved.title,
+            description: isSaved ? t.unsaved.description.replace('{title}', service.title) : t.saved.description.replace('{title}', service.title)
         });
     } catch (error) {
         console.error('Failed to toggle saved item', error);
@@ -164,7 +167,7 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                             <span className="font-bold">{(service.rating || 0).toFixed(1)}</span>
-                            <span>({service.reviewCount || 0} reviews)</span>
+                            <span>({service.reviewCount || 0} {t.reviews})</span>
                         </div>
                     </div>
                 </div>
@@ -174,17 +177,17 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
       
       <CardFooter className="p-4 pt-2 flex justify-between items-center bg-muted/50">
         <div>
-          <p className="text-lg font-semibold text-primary">Custom Quote</p>
+          <p className="text-lg font-semibold text-primary">{t.priceLabel}</p>
         </div>
         {role === 'client' ? (
           <QuoteRequestDialog service={service}>
-            <Button size="lg">Get a Quote</Button>
+            <Button size="lg">{translations.common.getAQuote}</Button>
           </QuoteRequestDialog>
         ) : (
           <ManageServiceDialog service={service} onListingUpdate={onListingUpdate}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
-              Edit Service
+              {t.editService}
             </Button>
           </ManageServiceDialog>
         )}

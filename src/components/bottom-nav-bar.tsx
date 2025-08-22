@@ -11,29 +11,33 @@ import { getVendorQuoteRequests } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import type { Chat } from '@/lib/types';
 import { getChatsForUser } from '@/lib/services';
-
-const clientLinks = [
-  { href: '/client/home', label: 'Home', icon: Home },
-  { href: '/client/explore', label: 'Explore', icon: Compass },
-  { href: '/client/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/client/event-planner', label: 'Planner', icon: PenTool },
-];
-
-const vendorLinks = [
-  { href: '/vendor/home', label: 'Home', icon: Home },
-  { href: '/vendor/manage-services', label: 'Services', icon: Briefcase },
-  { href: '/vendor/client-requests', label: 'Requests', icon: Users, 'data-testid': 'requests-link' },
-  { href: '/vendor/bookings', label: 'Bookings', icon: Calendar },
-];
+import { useLanguage } from '@/hooks/use-language';
 
 
 export function BottomNavBar() {
   const pathname = usePathname();
   const { userId, role } = useAuth();
+  const { translations } = useLanguage();
+  const t = translations.nav;
+
   const [pendingRequests, setPendingRequests] = useState(0);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const isVendor = role === 'vendor';
   
+    const clientLinks = [
+        { href: '/client/home', label: t.home, icon: Home },
+        { href: '/client/explore', label: t.explore, icon: Compass },
+        { href: '/client/bookings', label: t.bookings, icon: Calendar },
+        { href: '/client/event-planner', label: t.planner, icon: PenTool },
+    ];
+
+    const vendorLinks = [
+        { href: '/vendor/home', label: t.home, icon: Home },
+        { href: '/vendor/manage-services', label: t.services, icon: Briefcase },
+        { href: '/vendor/client-requests', label: t.requests, icon: Users, 'data-testid': 'requests-link' },
+        { href: '/vendor/bookings', label: t.bookings, icon: Calendar },
+    ];
+
   useEffect(() => {
     if (isVendor && userId) {
       getVendorQuoteRequests(userId).then(requests => {
@@ -71,12 +75,12 @@ export function BottomNavBar() {
           >
             <div className="relative">
                 <Icon className="h-6 w-6" />
-                {label === 'Requests' && pendingRequests > 0 && (
+                {label === t.requests && pendingRequests > 0 && (
                     <Badge className="absolute -top-1 -right-2 h-4 w-4 shrink-0 justify-center rounded-full p-1 text-[10px]">
                         {pendingRequests}
                     </Badge>
                 )}
-                 {label === 'Messages' && hasUnreadMessages && (
+                 {label === t.messages && hasUnreadMessages && (
                     <span className="absolute top-0 right-0 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>

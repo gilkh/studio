@@ -23,6 +23,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { useLanguage } from '@/hooks/use-language';
 
 
 interface OfferCardProps {
@@ -33,6 +34,8 @@ interface OfferCardProps {
 
 export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
   const { userId } = useAuth();
+  const { translations } = useLanguage();
+  const t = translations.offerCard;
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -65,8 +68,8 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
         await toggleSavedItem(userId, offer.id);
         setIsSaved(!isSaved);
          toast({
-            title: isSaved ? 'Item Unsaved' : 'Item Saved!',
-            description: isSaved ? `"${offer.title}" removed from your saved items.` : `"${offer.title}" added to your saved items.`
+            title: isSaved ? t.unsaved.title : t.saved.title,
+            description: isSaved ? t.unsaved.description.replace('{title}', offer.title) : t.saved.description.replace('{title}', offer.title)
         });
     } catch (error) {
         console.error('Failed to toggle saved item', error);
@@ -136,7 +139,7 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
               </div>
           )}
           <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground z-10" variant="default">
-            Special Offer
+            {t.badge}
           </Badge>
         </CardHeader>
         <div className="p-4 flex-grow flex flex-col">
@@ -164,7 +167,7 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                     <span className="font-bold">{(offer.rating || 0).toFixed(1)}</span>
-                    <span>({offer.reviewCount || 0} reviews)</span>
+                    <span>({offer.reviewCount || 0} {t.reviews})</span>
                     </div>
                 </div>
                 </div>
@@ -174,18 +177,18 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
       
       <CardFooter className="p-4 pt-2 flex justify-between items-center bg-muted/50">
         <div>
-          <p className="text-xs text-muted-foreground">Fixed Price</p>
+          <p className="text-xs text-muted-foreground">{t.priceLabel}</p>
           <p className="text-2xl font-bold text-primary">${offer.price}</p>
         </div>
         {role === 'client' ? (
           <BookOfferDialog offer={offer}>
-            <Button size="lg">Book Now</Button>
+            <Button size="lg">{translations.common.bookNow}</Button>
           </BookOfferDialog>
         ) : (
           <ManageServiceDialog service={offer} onListingUpdate={onListingUpdate}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
-              Edit Offer
+              {t.editOffer}
             </Button>
           </ManageServiceDialog>
         )}

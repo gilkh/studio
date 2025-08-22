@@ -54,8 +54,8 @@ export default {
           foreground: 'hsl(var(--destructive-foreground))',
         },
         gold: {
-          DEFAULT: '#FFD700',
-          dark: '#D4AF37'
+          DEFAULT: 'hsl(var(--accent))',
+          dark: 'hsl(var(--accent-foreground))'
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

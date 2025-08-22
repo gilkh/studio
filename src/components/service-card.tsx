@@ -142,12 +142,12 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
         <div className="p-4 flex-grow flex flex-col">
           <Link href={`/client/service/${service.id}`} className="flex-grow">
             <h3 className="text-xl font-bold leading-tight mb-2">{service.title}</h3>
-          </Link>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
+             <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
                 <MapPin className="h-4 w-4" />
                 <span>{service.location}</span>
             </div>
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{service.description}</p>
+          </Link>
           <div className="mt-auto pt-4 border-t border-dashed">
             <Link href={`/vendor/${service.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-3">

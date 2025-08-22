@@ -142,37 +142,34 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
         <div className="p-4 flex-grow flex flex-col">
             <Link href={`/client/offer/${offer.id}`} className="flex-grow">
                 <h3 className="text-xl font-bold leading-tight mb-2">{offer.title}</h3>
-            </Link>
-           <Link href={`/vendor/${offer.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mt-2">
-              <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
-                <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
-                <AvatarFallback>{offer.vendorName.substring(0,2)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-1.5">
-                    <p className="font-semibold text-sm group-hover/vendor:underline">{offer.vendorName}</p>
-                    {offer.vendorVerification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
-                    {offer.vendorVerification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold">{(offer.rating || 0).toFixed(1)}</span>
-                  <span>({offer.reviewCount || 0} reviews)</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-dashed">
-                <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground text-sm">Multiple dates available</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
                     <MapPin className="h-4 w-4" />
                     <span>{offer.location}</span>
                 </div>
-          </div>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{offer.description}</p>
+            </Link>
+           <div className="mt-auto pt-4 border-t border-dashed">
+            <Link href={`/vendor/${offer.vendorId}`} className="group/vendor" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 border-2 border-background ring-2 ring-primary">
+                    <AvatarImage src={offer.vendorAvatar} alt={offer.vendorName} />
+                    <AvatarFallback>{offer.vendorName.substring(0,2)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-sm group-hover/vendor:underline">{offer.vendorName}</p>
+                        {offer.vendorVerification === 'verified' && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                        {offer.vendorVerification === 'trusted' && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span className="font-bold">{(offer.rating || 0).toFixed(1)}</span>
+                    <span>({offer.reviewCount || 0} reviews)</span>
+                    </div>
+                </div>
+                </div>
+            </Link>
+           </div>
         </div>
       
       <CardFooter className="p-4 pt-2 flex justify-between items-center bg-muted/50">

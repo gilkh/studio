@@ -174,7 +174,7 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
       
       <CardFooter className="p-4 pt-2 flex justify-between items-center bg-muted/50">
         <div>
-          <p className="text-xl font-semibold text-primary">Custom Quote</p>
+          <p className="text-lg font-semibold text-primary">Custom Quote</p>
         </div>
         {role === 'client' ? (
           <QuoteRequestDialog service={service}>

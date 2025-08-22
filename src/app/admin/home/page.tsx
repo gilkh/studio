@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMedia, moderateMedia } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMediaForModeration, moderateMedia } from '@/lib/services';
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, MediaItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -79,7 +79,7 @@ export default function AdminHomePage() {
         getUpgradeRequests(),
         getPlatformAnalytics(),
         getVendorInquiries(),
-        getPendingMedia(),
+        getPendingMediaForModeration(),
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
@@ -341,7 +341,7 @@ export default function AdminHomePage() {
                                     <TableCell>
                                         {user.role === 'vendor' ? (
                                              <div className="flex items-center gap-1.5">
-                                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                                <Star className="w-4 h-4 text-gold" />
                                                 <span className="font-medium">{(user.rating || 0).toFixed(1)}</span>
                                                 <span className="text-xs text-muted-foreground">({user.reviewCount || 0})</span>
                                             </div>

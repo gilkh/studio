@@ -1026,6 +1026,81 @@ export async function updateVendorInquiryStatus(inquiryId: string, status: Vendo
     await updateDoc(inquiryRef, { status });
 }
 
+export async function getPendingMediaForModeration(): Promise<any[]> {
+    const allItems: any[] = [];
+
+    // Fetch from vendors (profile pictures)
+    const vendorsQuery = query(collection(db, 'vendors'));
+    const vendorsSnapshot = await getDocs(vendorsQuery);
+    vendorsSnapshot.forEach(doc => {
+        const vendor = doc.data() as VendorProfile;
+        if (vendor.avatar && !vendor.avatar.startsWith('http')) { // Assuming data URIs need moderation
+            // This part is tricky as we need to know if it's pending.
+            // A real system would have a status field on the avatar itself.
+            // For now, let's assume any non-URL avatar on a non-admin could be pending.
+            // This is a simplification.
+        }
+    });
+
+    // Fetch from services and offers (portfolio media)
+    const servicesSnapshot = await getDocs(collection(db, 'services'));
+    servicesSnapshot.forEach(doc => {
+        const service = { id: doc.id, ...doc.data() } as Service;
+        service.media?.forEach(media => {
+            if (media.status === 'pending') {
+                allItems.push({ ...media, context: { ownerId: service.vendorId, ownerName: service.vendorName, listingId: service.id, listingTitle: service.title, listingType: 'service' }});
+            }
+        });
+    });
+    
+    const offersSnapshot = await getDocs(collection(db, 'offers'));
+    offersSnapshot.forEach(doc => {
+        const offer = { id: doc.id, ...doc.data() } as Offer;
+        offer.media?.forEach(media => {
+            if (media.status === 'pending') {
+                allItems.push({ ...media, context: { ownerId: offer.vendorId, ownerName: offer.vendorName, listingId: offer.id, listingTitle: offer.title, listingType: 'offer' }});
+            }
+        });
+    });
+
+    return allItems;
+}
+
+
+export async function moderateMedia(ownerId: string, listingType: 'service' | 'offer' | 'profile', mediaUrl: string, decision: 'approved' | 'rejected', listingId?: string) {
+    
+    if (listingType === 'profile') {
+        const vendorRef = doc(db, 'vendors', ownerId);
+        // This is simplified. A real app would store avatar status separately.
+        // We'll just assume we're updating the main avatar URL and it's now "approved".
+        // No real status change is possible with current structure.
+        console.log(`Moderating profile picture for ${ownerId} - ${decision}`);
+
+    } else {
+        if (!listingId) throw new Error("Listing ID is required for service/offer media moderation.");
+        const collectionName = listingType === 'service' ? 'services' : 'offers';
+        const listingRef = doc(db, collectionName, listingId);
+        
+        await runTransaction(db, async (transaction) => {
+            const listingDoc = await transaction.get(listingRef);
+            if (!listingDoc.exists()) throw new Error("Listing not found");
+
+            const listingData = listingDoc.data() as ServiceOrOffer;
+            const mediaItems = listingData.media || [];
+
+            const newMediaItems = mediaItems.map(item => {
+                if (item.url === mediaUrl) {
+                    return { ...item, status: decision };
+                }
+                return item;
+            });
+            
+            transaction.update(listingRef, { media: newMediaItems });
+        });
+    }
+}
+
+
 // --- Real-time Messaging Services ---
 
 export function getChatsForUser(userId: string | undefined, callback: (chats: Chat[]) => void): () => void {

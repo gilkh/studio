@@ -14,7 +14,7 @@ body {
     --card-foreground: 20 14% 4%;
     --popover: 30 50% 100%;
     --popover-foreground: 20 14% 4%;
-    --primary: 4 100% 69%; /* Vibrant Coral Pink */
+    --primary: 8 85% 60%; /* Warmer, Deeper Coral */
     --primary-foreground: 0 0% 100%;
     --secondary: 180 85% 96%; /* Light Teal */
     --secondary-foreground: 180 40% 10%;
@@ -27,7 +27,7 @@ body {
     --border: 50 70% 92%; /* Soft Gold-Beige tint */
     --input: 50 70% 92%; /* Soft Gold-Beige tint */
     --ring: 50 100% 85%; /* Soft Champagne Gold */
-    --chart-1: 4 100% 69%; /* Vibrant Coral Pink */
+    --chart-1: 8 85% 60%; /* Warmer, Deeper Coral */
     --chart-2: 180 70% 35%; /* Rich Teal */
     --chart-3: 51 100% 50%; /* Gold */
     --chart-4: 43 74% 66%;
@@ -41,7 +41,7 @@ body {
     --card-foreground: 30 50% 98%;
     --popover: 20 14% 4%;
     --popover-foreground: 30 50% 98%;
-    --primary: 4 100% 69%; /* Vibrant Coral Pink */
+    --primary: 8 85% 60%; /* Warmer, Deeper Coral */
     --primary-foreground: 0 0% 100%;
     --secondary: 180 20% 15%; /* Dark Teal */
     --secondary-foreground: 30 50% 98%;

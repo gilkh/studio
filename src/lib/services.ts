@@ -1,5 +1,5 @@
 
-import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer, deleteField } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
@@ -43,6 +43,9 @@ export async function createNewUser(data: {
 
     if (accountType === 'client') {
         await setDoc(doc(db, 'users', userId), userProfile);
+        if (!isSocialSignIn) {
+            await sendVerificationEmail(userId, email);
+        }
         return { success: true, userId, role: 'client' };
     } else if (accountType === 'vendor') {
         if (!vendorCode) {
@@ -1292,7 +1295,7 @@ export async function verifyUserEmail(token: string): Promise<void> {
     const userRef = doc(db, 'users', userDoc.id);
     await updateDoc(userRef, {
         emailVerified: true,
-        verificationToken: deleteDoc // This should be `deleteField()` but it's not available in web SDK v9 compat
+        verificationToken: deleteField()
     });
 }
 
@@ -1335,10 +1338,9 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
 
     await updateDoc(userRef, {
         password: hashedPassword,
-        resetPasswordToken: deleteDoc,
-        resetPasswordExpires: deleteDoc,
+        resetPasswordToken: deleteField(),
+        resetPasswordExpires: deleteField(),
     });
 }
-    
 
     

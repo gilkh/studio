@@ -37,3 +37,5 @@ if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
 
 
 export { app, db, auth };
+
+    

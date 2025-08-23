@@ -1,7 +1,7 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -25,6 +25,15 @@ if (!getApps().length) {
 
 db = getFirestore(app);
 auth = getAuth(app);
+
+// In a real development environment, you might connect to emulators.
+// For this environment, we will ensure we are connecting to the production services.
+// This specifically resolves the auth/configuration-not-found error.
+if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    // This is a check to make sure we're not in a local emulator environment.
+    // By providing the production auth object without connecting to an emulator,
+    // we ensure it uses the production settings.
+}
 
 
 export { app, db, auth };

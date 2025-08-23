@@ -1,3 +1,4 @@
+
 export type ServiceType = 'service' | 'offer';
 export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
 export type Location = 'Beirut' | 'Mount Lebanon' | 'North Lebanon' | 'South Lebanon' | 'Nabatieh' | 'Beqaa' | 'Baalbek-Hermel' | 'Akkar';
@@ -139,6 +140,7 @@ export interface EventTask {
   task: string;
   deadline: string;
   estimatedCost: number;
+  actualCost?: number;
   completed: boolean;
   suggestedVendorCategory?: string;
   assignedVendor?: {
@@ -161,6 +163,7 @@ export interface SavedTimeline {
     name: string;
     tasks: EventTask[];
     lastModified: string;
+    initialBudget: number;
 }
 
 // Firestore-specific types

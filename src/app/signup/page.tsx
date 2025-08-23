@@ -61,6 +61,7 @@ const signupFormSchema = z.object({
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  phone: z.string().min(10, "Please enter a valid phone number"),
   businessName: z.string().optional(),
   vendorCode: z.string().optional(),
   email: z.string().email('Please enter a valid email address'),
@@ -102,6 +103,7 @@ export default function SignupPage() {
       accountType: 'client',
       firstName: '',
       lastName: '',
+      phone: '',
       businessName: '',
       vendorCode: '',
       email: '',
@@ -416,6 +418,20 @@ export default function SignupPage() {
                                 />
                                 </>
                             )}
+                            
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                        <Input type="tel" placeholder="(123) 456-7890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                              <FormField
                                 control={form.control}
@@ -475,5 +491,7 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
 
     

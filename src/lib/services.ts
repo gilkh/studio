@@ -1,5 +1,4 @@
 
-
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
@@ -13,12 +12,13 @@ export async function createNewUser(data: {
     firstName: string;
     lastName: string;
     email: string;
+    phone: string;
     password?: string;
     businessName?: string;
     vendorCode?: string;
     avatar?: string;
 }, isSocialSignIn = false, id?: string, emailVerified = false) {
-    const { accountType, firstName, lastName, email, password, businessName, vendorCode, avatar } = data;
+    const { accountType, firstName, lastName, email, password, businessName, vendorCode, avatar, phone } = data;
     const userId = id || `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
     if (!isSocialSignIn && !password) {
@@ -32,7 +32,7 @@ export async function createNewUser(data: {
         firstName,
         lastName,
         email,
-        phone: '',
+        phone: phone || '',
         createdAt: new Date(),
         savedItemIds: [],
         status: 'active',
@@ -65,7 +65,7 @@ export async function createNewUser(data: {
             category: 'Venues', // Default category
             tagline: '',
             description: '',
-            phone: '',
+            phone: phone || '',
             accountTier: 'free',
             createdAt: new Date(),
             status: 'active',
@@ -184,6 +184,7 @@ async function handleSocialSignIn(firebaseUser: FirebaseUser) {
             firstName,
             lastName,
             email: firebaseUser.email,
+            phone: firebaseUser.phoneNumber || '',
             avatar: firebaseUser.photoURL || '',
         };
         return await createNewUser(newUserPayload, true, firebaseUser.uid, true);
@@ -1268,5 +1269,76 @@ export async function markChatAsRead(chatId: string, userId: string) {
         [`unreadCount.${userId}`]: 0
     });
 }
+
+// --- Email Verification and Password Reset ---
+
+// In a real app, you would use Firebase Auth to send emails.
+// For this simulation, we'll generate tokens and store them on the user document.
+
+export async function sendVerificationEmail(userId: string, email: string) {
+    const token = Math.random().toString(36).substring(2);
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { verificationToken: token });
+    console.log(`SIMULATING EMAIL to ${email}: Verify your email by visiting /verify-email?token=${token}`);
+}
+
+export async function verifyUserEmail(token: string): Promise<void> {
+    const q = query(collection(db, 'users'), where('verificationToken', '==', token));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        throw new Error("Invalid or expired verification token.");
+    }
+    const userDoc = snapshot.docs[0];
+    const userRef = doc(db, 'users', userDoc.id);
+    await updateDoc(userRef, {
+        emailVerified: true,
+        verificationToken: deleteDoc // This should be `deleteField()` but it's not available in web SDK v9 compat
+    });
+}
+
+export async function sendPasswordResetEmail(email: string) {
+    const q = query(collection(db, 'users'), where('email', '==', email));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        // Don't reveal if user exists for security reasons
+        console.log(`Password reset requested for non-existent user: ${email}. No email sent.`);
+        return;
+    }
+    const userDoc = snapshot.docs[0];
+    const userRef = doc(db, 'users', userDoc.id);
+    const token = Math.random().toString(36).substring(2);
+    const expires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    await updateDoc(userRef, {
+        resetPasswordToken: token,
+        resetPasswordExpires: expires
+    });
+
+    console.log(`SIMULATING EMAIL to ${email}: Reset your password by visiting /reset-password?token=${token}`);
+}
+
+export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
+    const q = query(
+        collection(db, 'users'), 
+        where('resetPasswordToken', '==', token),
+        where('resetPasswordExpires', '>', new Date())
+    );
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        throw new Error("Invalid or expired password reset token.");
+    }
+
+    const userDoc = snapshot.docs[0];
+    const userRef = doc(db, 'users', userDoc.id);
+    const hashedPassword = await hashPassword(newPassword);
+
+    await updateDoc(userRef, {
+        password: hashedPassword,
+        resetPasswordToken: deleteDoc,
+        resetPasswordExpires: deleteDoc,
+    });
+}
+    
 
     

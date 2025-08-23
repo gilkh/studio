@@ -25,10 +25,8 @@ export async function createNewUser(data: {
         throw new Error("Password is required to create a new user.");
     }
     
-    // Hash the password securely before storing it.
-    const hashedPassword = password ? await hashPassword(password) : undefined;
-
-    const userProfile: Omit<UserProfile, 'id'> = {
+    // Base user profile
+    const userProfile: Omit<UserProfile, 'id' | 'password'> & { password?: string } = {
         firstName,
         lastName,
         email,
@@ -36,10 +34,14 @@ export async function createNewUser(data: {
         createdAt: new Date(),
         savedItemIds: [],
         status: 'active',
-        password: hashedPassword,
         avatar: avatar || '',
         emailVerified: emailVerified,
     };
+
+    // Conditionally add hashed password if it exists
+    if (password) {
+        userProfile.password = await hashPassword(password);
+    }
 
     if (accountType === 'client') {
         await setDoc(doc(db, 'users', userId), userProfile);

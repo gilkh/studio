@@ -1,5 +1,3 @@
-
-
 export type ServiceType = 'service' | 'offer';
 export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
 export type Location = 'Beirut' | 'Mount Lebanon' | 'North Lebanon' | 'South Lebanon' | 'Nabatieh' | 'Beqaa' | 'Baalbek-Hermel' | 'Akkar';
@@ -153,9 +151,9 @@ export interface EventTask {
 export interface GenerateEventPlanInput {
   eventType: string;
   eventDate: string;
-  location: string;
   guestCount: number;
   budget: number;
+  answers: Record<string, string | boolean | string[]>;
 }
 
 export interface SavedTimeline {
@@ -177,6 +175,10 @@ export interface UserProfile {
     status: 'active' | 'disabled';
     password?: string;
     avatar?: string;
+    emailVerified: boolean;
+    verificationToken?: string;
+    resetPasswordToken?: string;
+    resetPasswordExpires?: Date;
 }
 
 export interface VendorProfile {

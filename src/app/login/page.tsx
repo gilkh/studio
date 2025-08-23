@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ import { logout } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { VendorInquiryDialog } from '@/components/vendor-inquiry-dialog';
+import { useLanguage } from '@/hooks/use-language';
 
 function setCookie(name: string, value: string, days: number) {
     let expires = "";
@@ -58,6 +58,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { translations } = useLanguage();
+  const t = translations.loginPage;
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,7 +74,7 @@ export default function LoginPage() {
     try {
         const result = await signInUser(email, password);
 
-        if (result) {
+        if (result.success) {
             // Save user info to localStorage to simulate a session
             localStorage.setItem('userId', result.userId);
             localStorage.setItem('role', result.role);
@@ -94,7 +96,7 @@ export default function LoginPage() {
         } else {
              toast({
                 title: 'Sign In Failed',
-                description: 'No account found with that email or password. Please check your credentials or sign up.',
+                description: result.message || 'No account found with that email or password. Please check your credentials or sign up.',
                 variant: 'destructive',
             });
         }
@@ -129,19 +131,19 @@ export default function LoginPage() {
             <div className="flex justify-center items-center gap-4 mb-6">
                 <Logo className="h-16 w-16" />
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter">
-                    Farhetkoun
+                    {t.mainTitle}
                 </h1>
             </div>
           <p className="max-w-3xl mx-auto mt-4 text-lg md:text-xl text-white/90">
-            Your all-in-one marketplace for discovering, booking, and managing elite services for your next unforgettable event.
+            {t.subtitle}
           </p>
           <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
             <Button size="lg" className="text-lg h-12 px-8 w-full sm:w-auto" onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                Plan Your Event
+                {t.planYourEvent}
             </Button>
             <VendorInquiryDialog>
                 <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-transparent border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto">
-                    Become a Vendor
+                    {t.becomeAVendor}
                 </Button>
             </VendorInquiryDialog>
           </div>
@@ -152,9 +154,9 @@ export default function LoginPage() {
         <section className="py-20 sm:py-24 bg-muted/50">
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold">Find Everything You Need</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold">{t.findEverything}</h2>
                     <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
-                        From grand venues to the smallest details, we've got you covered.
+                        {t.findEverythingSubtitle}
                     </p>
                 </div>
             </div>
@@ -202,41 +204,41 @@ export default function LoginPage() {
       <section id="features-section" className="py-20 sm:py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold">Why Choose Farhetkoun?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">{t.whyChoose}</h2>
             <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
-              We provide the tools and connections you need to create flawless events or grow your service business.
+              {t.whyChooseSubtitle}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard 
                 icon={<Sparkles className="w-8 h-8" />}
-                title="AI Event Planner"
-                description="Generate a complete, customized event timeline in seconds. Plan smarter, not harder."
+                title={t.features.aiPlanner.title}
+                description={t.features.aiPlanner.description}
             />
             <FeatureCard 
                 icon={<Search className="w-8 h-8" />}
-                title="Diverse Marketplace"
-                description="Discover a wide range of top-tier services, from catering and photography to entertainment and decor."
+                title={t.features.marketplace.title}
+                description={t.features.marketplace.description}
             />
              <FeatureCard 
                 icon={<Briefcase className="w-8 h-8" />}
-                title="Showcase Your Brand"
-                description="For vendors: create a stunning profile, upload your portfolio, and connect with a stream of new clients."
+                title={t.features.showcase.title}
+                description={t.features.showcase.description}
             />
             <FeatureCard 
                 icon={<FileText className="w-8 h-8" />}
-                title="Effortless Quoting"
-                description="Request custom quotes from vendors through an integrated messaging system to get the perfect fit for your needs."
+                title={t.features.quoting.title}
+                description={t.features.quoting.description}
             />
             <FeatureCard 
                 icon={<CalendarCheck className="w-8 h-8" />}
-                title="Seamless Booking"
-                description="Book fixed-price offers instantly and manage all your appointments in a centralized calendar."
+                title={t.features.booking.title}
+                description={t.features.booking.description}
             />
             <FeatureCard 
                 icon={<ShieldCheck className="w-8 h-8" />}
-                title="Verified & Trusted"
-                description="Work with professionals. Read authentic reviews and see vendor portfolios to make informed decisions."
+                title={t.features.verified.title}
+                description={t.features.verified.description}
             />
           </div>
         </div>
@@ -247,32 +249,39 @@ export default function LoginPage() {
         <div className="container mx-auto px-4">
            <Card className="w-full max-w-md mx-auto shadow-2xl">
                 <CardHeader className="text-center p-4 sm:p-6">
-                    <CardTitle className="text-2xl font-bold">Sign In or Sign Up</CardTitle>
-                    <CardDescription>Start planning your event or offering your services.</CardDescription>
+                    <CardTitle className="text-2xl font-bold">{t.signinTitle}</CardTitle>
+                    <CardDescription>{t.signinSubtitle}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
                     <form onSubmit={handleLogin}>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t.emailLabel}</Label>
                                 <Input id="email" name="email" type="email" placeholder="m@example.com" required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">{t.passwordLabel}</Label>
+                                    <Link href="/forgot-password" passHref>
+                                        <span className="text-sm text-primary hover:underline cursor-pointer">
+                                            Forgot password?
+                                        </span>
+                                    </Link>
+                                </div>
                                 <Input id="password" name="password" type="password" required />
                             </div>
                         </div>
                         <div className="mt-6">
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Sign In
+                                {t.signinButton}
                             </Button>
                         </div>
                     </form>
                     <div className="mt-6 text-center text-sm">
-                        Don&apos;t have an account?{' '}
+                        {t.noAccount}{' '}
                         <Link href="/signup" className="underline font-semibold text-primary hover:text-primary/80">
-                            Sign up now
+                            {t.signupNow}
                         </Link>
                     </div>
                 </CardContent>
@@ -283,7 +292,7 @@ export default function LoginPage() {
        {/* Footer */}
        <footer className="py-8 bg-background border-t">
             <div className="container mx-auto px-4 text-center text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} Farhetkoun. All Rights Reserved.</p>
+                <p>{t.footer.replace('{year}', new Date().getFullYear().toString())}</p>
             </div>
        </footer>
     </div>

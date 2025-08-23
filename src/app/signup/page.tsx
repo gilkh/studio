@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -93,19 +91,21 @@ export default function SignupPage() {
     try {
         const result = await createNewUser(values);
 
-        if (result) {
-            localStorage.setItem('userId', result.userId);
-            localStorage.setItem('role', result.role);
-
-            toast({
-                title: "Account Created!",
-                description: "Welcome to Farhetkoun. Redirecting you to your new dashboard.",
-            });
-
-            // Redirect to the appropriate dashboard
+        if (result.success) {
             if (result.role === 'client') {
-                router.push('/client/home');
-            } else {
+                toast({
+                    title: "Account Created! Please Verify Your Email",
+                    description: "We've sent a verification link to your email address. Please check your inbox to continue.",
+                    duration: 10000,
+                });
+                router.push('/login'); 
+            } else { // Vendor or other roles
+                 localStorage.setItem('userId', result.userId);
+                 localStorage.setItem('role', result.role);
+                toast({
+                    title: "Account Created!",
+                    description: "Welcome to Farhetkoun. Redirecting you to your new dashboard.",
+                });
                 router.push('/vendor/home');
             }
         }

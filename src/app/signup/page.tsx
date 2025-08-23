@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,18 +14,46 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { createNewUser } from '@/lib/services';
+import { createNewUser, signInWithGoogle, signInWithApple } from '@/lib/services';
 import { Camera, Loader2, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
 import { VendorInquiryDialog } from '@/components/vendor-inquiry-dialog';
-
+import { Separator } from '@/components/ui/separator';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
+            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.657-3.356-11.303-7.918l-6.573,4.817C9.656,39.663,16.318,44,24,44z" />
+            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,34.551,44,29.865,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+        </svg>
+    );
+}
+
+function AppleIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
+            <path d="M12.01,2.025c-2.42,0-4.79,1.24-6.13,3.19c-1.48,2.14-1.39,5.04,0.36,6.91c1.1,1.19,2.67,1.88,4.24,1.82 c0.33-0.01,0.65-0.02,0.98-0.02c1.6,0,3.13-0.65,4.25-1.85c0.88-0.96,1.4-2.14,1.52-3.39c-0.01-0.04-0.02-0.08-0.04-0.12 c-0.69-1.95-2.27-3.32-4.2-3.54C12.89,2.015,12.45,2.025,12.01,2.025z M13.19,15.225c-0.12,0.33-0.24,0.66-0.4,0.98 c-0.56,1.11-1.33,2.12-2.28,2.98c-0.59,0.53-1.25,0.98-1.99,1.32c-1.34,0.62-2.88,0.7-4.29,0.2c-0.01,0-0.02-0.01-0.03-0.01 c-0.14-0.06-0.28-0.12-0.41-0.19c-0.01,0-0.02,0-0.03-0.01c-1.63-0.8-2.61-2.43-2.73-4.21c-0.06-0.85,0.06-1.7,0.34-2.5 c0.87-2.43,2.97-4.14,5.43-4.52c0.32-0.05,0.64-0.08,0.96-0.08c0.41,0,0.82,0.04,1.22,0.11c-0.09,0.52-0.13,1.06-0.13,1.6 c0,1.55,0.51,3.01,1.42,4.19C12.56,15.235,12.87,15.225,13.19,15.225z" />
+        </svg>
+    )
+}
+
+function setCookie(name: string, value: string, days: number) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
 
 const signupFormSchema = z.object({
   accountType: z.enum(['client', 'vendor'], {
@@ -65,6 +94,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const avatarFileRef = useRef<HTMLInputElement>(null);
+  const [isSocialLoading, setIsSocialLoading] = useState<false | 'google' | 'apple'>(false);
   
   const form = useForm<z.infer<typeof signupFormSchema>>({
     resolver: zodResolver(signupFormSchema),
@@ -85,6 +115,40 @@ export default function SignupPage() {
   const firstName = form.watch('firstName');
   const lastName = form.watch('lastName');
   const businessName = form.watch('businessName');
+
+    const onSocialLoginSuccess = (role: 'client' | 'vendor' | 'admin') => {
+      toast({
+          title: 'Sign Up Successful!',
+          description: `Welcome! Redirecting to your dashboard...`,
+      });
+      if (role === 'client') {
+          router.push('/client/home');
+      } else if (role === 'vendor') {
+          router.push('/vendor/home');
+      }
+  };
+
+   const handleSocialLogin = async (provider: 'google' | 'apple') => {
+      setIsSocialLoading(provider);
+      try {
+          const result = provider === 'google' ? await signInWithGoogle() : await signInWithApple();
+          if (result.success) {
+            localStorage.setItem('userId', result.userId);
+            localStorage.setItem('role', result.role);
+            setCookie('role', result.role, 7);
+            setCookie('userId', result.userId, 7);
+            onSocialLoginSuccess(result.role);
+          } else {
+              toast({ title: 'Sign Up Failed', description: result.message, variant: 'destructive' });
+          }
+      } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign-up.';
+          toast({ title: 'Sign Up Failed', description: errorMessage, variant: 'destructive' });
+      } finally {
+          setIsSocialLoading(false);
+      }
+  }
+
 
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
     form.clearErrors();
@@ -208,6 +272,29 @@ export default function SignupPage() {
                     <CardDescription>Join our community to start planning or providing services.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button variant="outline" onClick={() => handleSocialLogin('google')} disabled={!!isSocialLoading}>
+                             {isSocialLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
+                            Google
+                        </Button>
+                        <Button variant="outline" onClick={() => handleSocialLogin('apple')} disabled={!!isSocialLoading}>
+                            {isSocialLoading === 'apple' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AppleIcon className="mr-2 h-5 w-5" />}
+                            Apple
+                        </Button>
+                    </div>
+
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                            Or continue with email
+                            </span>
+                        </div>
+                    </div>
+
+
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                              <FormField
@@ -370,7 +457,7 @@ export default function SignupPage() {
                                 )}
                                 />
 
-                            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !!isSocialLoading}>
                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                Create Account
                             </Button>
@@ -388,3 +475,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

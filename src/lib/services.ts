@@ -1,11 +1,12 @@
 
 
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
 import { hashPassword, verifyPassword } from './crypto';
 import { subMonths, format, startOfMonth } from 'date-fns';
+import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser } from 'firebase/auth';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -16,16 +17,16 @@ export async function createNewUser(data: {
     businessName?: string;
     vendorCode?: string;
     avatar?: string;
-}) {
+}, isSocialSignIn = false, id?: string, emailVerified = false) {
     const { accountType, firstName, lastName, email, password, businessName, vendorCode, avatar } = data;
-    const userId = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+    const userId = id || `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
-    if (!password) {
+    if (!isSocialSignIn && !password) {
         throw new Error("Password is required to create a new user.");
     }
     
     // Hash the password securely before storing it.
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = password ? await hashPassword(password) : undefined;
 
     const userProfile: Omit<UserProfile, 'id'> = {
         firstName,
@@ -37,11 +38,12 @@ export async function createNewUser(data: {
         status: 'active',
         password: hashedPassword,
         avatar: avatar || '',
+        emailVerified: emailVerified,
     };
 
     if (accountType === 'client') {
         await setDoc(doc(db, 'users', userId), userProfile);
-        return { userId, role: 'client' };
+        return { success: true, userId, role: 'client' };
     } else if (accountType === 'vendor') {
         if (!vendorCode) {
             throw new Error("A valid vendor code is required to register as a vendor.");
@@ -87,20 +89,20 @@ export async function createNewUser(data: {
 
         await batch.commit();
 
-        return { userId, role: 'vendor' };
+        return { success: true, userId, role: 'vendor' };
     } else {
         throw new Error("Invalid account type specified.");
     }
 }
 
 
-export async function signInUser(email: string, password?: string): Promise<{ role: 'client' | 'vendor' | 'admin'; userId: string } | null> {
+export async function signInUser(email: string, password?: string): Promise<{ success: boolean, role?: 'client' | 'vendor' | 'admin'; userId?: string; message?: string }> {
     
     if (email.toLowerCase() === 'admin@tradecraft.com') {
         if (password === 'admin@tradecraft.com') {
-            return { role: 'admin', userId: 'admin-user' };
+            return { success: true, role: 'admin', userId: 'admin-user' };
         } else {
-            return null; // Correct email, wrong password for admin
+            return { success: false, message: "Invalid admin credentials." }; // Correct email, wrong password for admin
         }
     }
     
@@ -110,7 +112,7 @@ export async function signInUser(email: string, password?: string): Promise<{ ro
         
         if (userSnapshot.empty) {
             console.log(`No user found with email: ${email}`);
-            return null; // No user found
+            return { success: false, message: 'No account found with this email.' }; // No user found
         }
         
         const userDoc = userSnapshot.docs[0];
@@ -118,19 +120,23 @@ export async function signInUser(email: string, password?: string): Promise<{ ro
         
         if (!password || !userData.password) {
             console.warn(`Login attempt without password for user: ${email}`);
-            return null;
+            return { success: false, message: 'Password not set for this account.'};
+        }
+        
+        if (!userData.emailVerified) {
+            return { success: false, message: 'Please verify your email before logging in. Check your inbox for a verification link.'};
         }
 
         const isPasswordCorrect = await verifyPassword(userData.password, password);
 
         if (!isPasswordCorrect) {
             console.warn(`Password mismatch for user: ${email}`);
-            return null; // Invalid password
+            return { success: false, message: 'Invalid password.' }; // Invalid password
         }
 
         if (userData.status === 'disabled') {
             console.warn(`Login attempt for disabled user: ${email}`);
-            throw new Error('Your account has been disabled. Please contact support.');
+            return { success: false, message: 'Your account has been disabled. Please contact support.'};
         }
 
         const userId = userDoc.id;
@@ -140,20 +146,71 @@ export async function signInUser(email: string, password?: string): Promise<{ ro
             const vendorData = vendorCheck.data() as VendorProfile;
             if (vendorData.status === 'disabled') {
                 console.warn(`Login attempt for disabled vendor: ${email}`);
-                throw new Error('Your account has been disabled. Please contact support.');
+                return { success: false, message: 'Your account has been disabled. Please contact support.'};
             }
-            return { role: 'vendor', userId };
+            return { success: true, role: 'vendor', userId };
         }
         
-        return { role: 'client', userId };
+        return { success: true, role: 'client', userId };
 
     } catch (e: any) {
         if (e.code === 'unavailable') {
             console.warn("Firestore is offline, cannot sign in.");
-            return null;
+            return { success: false, message: 'Network error. Please try again later.'};
         }
         console.error("Sign in error:", e.message);
         throw e; // Re-throw the error to be caught by the UI
+    }
+}
+
+async function handleSocialSignIn(firebaseUser: FirebaseUser) {
+    if (!firebaseUser.email || !firebaseUser.uid) {
+        throw new Error("Social sign-in failed to provide user details.");
+    }
+    const userRef = doc(db, 'users', firebaseUser.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+        // User exists, just sign them in
+        const vendorCheck = await getDoc(doc(db, 'vendors', firebaseUser.uid));
+        const role = vendorCheck.exists() ? 'vendor' : 'client';
+        return { success: true, userId: firebaseUser.uid, role };
+    } else {
+        // New user, create their profile
+        const [firstName, ...lastNameParts] = (firebaseUser.displayName || 'New User').split(' ');
+        const lastName = lastNameParts.join(' ');
+        const newUserPayload = {
+            accountType: 'client' as const,
+            firstName,
+            lastName,
+            email: firebaseUser.email,
+            avatar: firebaseUser.photoURL || '',
+        };
+        return await createNewUser(newUserPayload, true, firebaseUser.uid, true);
+    }
+}
+
+export async function signInWithGoogle(): Promise<{ success: boolean; role?: 'client' | 'vendor' | 'admin'; userId?: string; message?: string; }> {
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        return await handleSocialSignIn(result.user);
+    } catch (error: any) {
+        console.error("Google sign-in error:", error);
+        return { success: false, message: error.message };
+    }
+}
+
+export async function signInWithApple(): Promise<{ success: boolean; role?: 'client' | 'vendor' | 'admin'; userId?: string; message?: string; }> {
+    const provider = new OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
+    try {
+        const result = await signInWithPopup(auth, provider);
+        return await handleSocialSignIn(result.user);
+    } catch (error: any) {
+        console.error("Apple sign-in error:", error);
+        return { success: false, message: error.message };
     }
 }
 
@@ -1211,3 +1268,5 @@ export async function markChatAsRead(chatId: string, userId: string) {
         [`unreadCount.${userId}`]: 0
     });
 }
+
+    

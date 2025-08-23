@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,13 +10,14 @@ import { Logo } from '@/components/logo';
 import { Briefcase, CalendarCheck, FileText, Search, ShieldCheck, Sparkles, Loader2, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { signInUser } from '@/lib/services';
+import { signInUser, signInWithGoogle, signInWithApple } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
 import { logout } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { VendorInquiryDialog } from '@/components/vendor-inquiry-dialog';
 import { useLanguage } from '@/hooks/use-language';
+import { Separator } from '@/components/ui/separator';
 
 function setCookie(name: string, value: string, days: number) {
     let expires = "";
@@ -25,6 +27,25 @@ function setCookie(name: string, value: string, days: number) {
         expires = "; expires=" + date.toUTCString();
     }
     document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
+            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.657-3.356-11.303-7.918l-6.573,4.817C9.656,39.663,16.318,44,24,44z" />
+            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,34.551,44,29.865,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+        </svg>
+    );
+}
+
+function AppleIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
+            <path d="M12.01,2.025c-2.42,0-4.79,1.24-6.13,3.19c-1.48,2.14-1.39,5.04,0.36,6.91c1.1,1.19,2.67,1.88,4.24,1.82 c0.33-0.01,0.65-0.02,0.98-0.02c1.6,0,3.13-0.65,4.25-1.85c0.88-0.96,1.4-2.14,1.52-3.39c-0.01-0.04-0.02-0.08-0.04-0.12 c-0.69-1.95-2.27-3.32-4.2-3.54C12.89,2.015,12.45,2.025,12.01,2.025z M13.19,15.225c-0.12,0.33-0.24,0.66-0.4,0.98 c-0.56,1.11-1.33,2.12-2.28,2.98c-0.59,0.53-1.25,0.98-1.99,1.32c-1.34,0.62-2.88,0.7-4.29,0.2c-0.01,0-0.02-0.01-0.03-0.01 c-0.14-0.06-0.28-0.12-0.41-0.19c-0.01,0-0.02,0-0.03-0.01c-1.63-0.8-2.61-2.43-2.73-4.21c-0.06-0.85,0.06-1.7,0.34-2.5 c0.87-2.43,2.97-4.14,5.43-4.52c0.32-0.05,0.64-0.08,0.96-0.08c0.41,0,0.82,0.04,1.22,0.11c-0.09,0.52-0.13,1.06-0.13,1.6 c0,1.55,0.51,3.01,1.42,4.19C12.56,15.235,12.87,15.225,13.19,15.225z" />
+        </svg>
+    )
 }
 
 
@@ -57,9 +78,47 @@ const categories = [
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSocialLoading, setIsSocialLoading] = useState<false | 'google' | 'apple'>(false);
   const { toast } = useToast();
   const { translations } = useLanguage();
   const t = translations.loginPage;
+
+  const onSocialLoginSuccess = (role: 'client' | 'vendor' | 'admin') => {
+      toast({
+          title: 'Sign In Successful!',
+          description: `Welcome! Redirecting to your dashboard...`,
+      });
+      if (role === 'client') {
+          router.push('/client/home');
+      } else if (role === 'vendor') {
+          router.push('/vendor/home');
+      } else if (role === 'admin') {
+          router.push('/admin/home');
+      }
+  };
+
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+      setIsSocialLoading(provider);
+      logout();
+      try {
+          const result = provider === 'google' ? await signInWithGoogle() : await signInWithApple();
+          if (result.success) {
+            localStorage.setItem('userId', result.userId);
+            localStorage.setItem('role', result.role);
+            setCookie('role', result.role, 7);
+            setCookie('userId', result.userId, 7);
+            onSocialLoginSuccess(result.role);
+          } else {
+              toast({ title: 'Sign In Failed', description: result.message, variant: 'destructive' });
+          }
+      } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign-in.';
+          toast({ title: 'Sign In Failed', description: errorMessage, variant: 'destructive' });
+      } finally {
+          setIsSocialLoading(false);
+      }
+  }
+
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -81,18 +140,7 @@ export default function LoginPage() {
             // Set cookie for middleware
             setCookie('role', result.role, 7);
             setCookie('userId', result.userId, 7);
-
-            toast({
-                title: 'Sign In Successful!',
-                description: `Welcome back! Redirecting to your dashboard...`,
-            });
-            if (result.role === 'client') {
-                router.push('/client/home');
-            } else if (result.role === 'vendor') {
-                router.push('/vendor/home');
-            } else if (result.role === 'admin') {
-                router.push('/admin/home');
-            }
+            onSocialLoginSuccess(result.role);
         } else {
              toast({
                 title: 'Sign In Failed',
@@ -272,12 +320,35 @@ export default function LoginPage() {
                             </div>
                         </div>
                         <div className="mt-6">
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button type="submit" className="w-full" disabled={isLoading || !!isSocialLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {t.signinButton}
                             </Button>
                         </div>
                     </form>
+
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                            Or continue with
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button variant="outline" onClick={() => handleSocialLogin('google')} disabled={!!isSocialLoading}>
+                             {isSocialLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
+                            Google
+                        </Button>
+                        <Button variant="outline" onClick={() => handleSocialLogin('apple')} disabled={!!isSocialLoading}>
+                            {isSocialLoading === 'apple' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AppleIcon className="mr-2 h-5 w-5" />}
+                            Apple
+                        </Button>
+                    </div>
+
                     <div className="mt-6 text-center text-sm">
                         {t.noAccount}{' '}
                         <Link href="/signup" className="underline font-semibold text-primary hover:text-primary/80">
@@ -298,3 +369,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

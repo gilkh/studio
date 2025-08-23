@@ -279,7 +279,7 @@ export default function SignupPage() {
                              {isSocialLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                             Google
                         </Button>
-                        <Button variant="outline" onClick={() => handleSocialLogin('apple')} disabled={!!isSocialLoading}>
+                        <Button variant="outline" onClick={() => handleSocialLogin('apple')} disabled={true} title="Apple Sign-In requires setup">
                             {isSocialLoading === 'apple' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AppleIcon className="mr-2 h-5 w-5" />}
                             Apple
                         </Button>
@@ -492,4 +492,5 @@ export default function SignupPage() {
   );
 }
 
+    
     

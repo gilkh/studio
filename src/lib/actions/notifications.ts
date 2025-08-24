@@ -2,20 +2,20 @@
 'use server';
 
 import { collection, getDocs } from 'firebase/firestore';
-import { admin, db } from '@/lib/firebase';
+import { adminDb, adminMessaging } from '@/lib/firebase-admin';
 import type { UserProfile } from '@/lib/types';
 
 export async function sendPushNotification(target: 'all' | 'clients' | 'vendors', title: string, body: string) {
     try {
-        const usersSnapshot = await getDocs(collection(db, "users"));
+        const usersSnapshot = await getDocs(collection(adminDb, "users"));
         let targetUsers = usersSnapshot.docs;
 
         if (target === 'clients') {
-            const vendorsSnapshot = await getDocs(collection(db, "vendors"));
+            const vendorsSnapshot = await getDocs(collection(adminDb, "vendors"));
             const vendorIds = new Set(vendorsSnapshot.docs.map(doc => doc.id));
             targetUsers = usersSnapshot.docs.filter(doc => !vendorIds.has(doc.id));
         } else if (target === 'vendors') {
-            const vendorsSnapshot = await getDocs(collection(db, "vendors"));
+            const vendorsSnapshot = await getDocs(collection(adminDb, "vendors"));
             const vendorIds = new Set(vendorsSnapshot.docs.map(doc => doc.id));
             targetUsers = usersSnapshot.docs.filter(doc => vendorIds.has(doc.id));
         }
@@ -33,15 +33,12 @@ export async function sendPushNotification(target: 'all' | 'clients' | 'vendors'
             return { success: false, message: "No devices to send to." };
         }
         
-        // Ensure admin is initialized
-        const fcm = admin.messaging();
-
         const message = {
             notification: { title, body },
             tokens: [...new Set(tokens)], // Remove duplicate tokens
         };
 
-        const response = await fcm.sendEachForMulticast(message);
+        const response = await adminMessaging.sendEachForMulticast(message);
         console.log(`${response.successCount} messages were sent successfully`);
         
         if (response.failureCount > 0) {

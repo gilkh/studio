@@ -2,20 +2,10 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
-import admin from 'firebase-admin';
+// REMOVED: import admin from 'firebase-admin';
 
 // Check if admin is already initialized to prevent re-initialization errors
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      // In a real production environment, you would use service account credentials.
-      // For this environment, we can rely on Application Default Credentials.
-      // credential: admin.credential.cert(serviceAccount)
-    });
-  } catch (error) {
-    console.error('Firebase Admin Initialization Error:', error);
-  }
-}
+// REMOVED: Admin initialization is moved to a separate server-only file.
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -50,6 +40,4 @@ if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
 }
 
 
-export { app, db, auth, admin };
-
-    
+export { app, db, auth };

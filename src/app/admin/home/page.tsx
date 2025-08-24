@@ -154,7 +154,7 @@ export default function AdminHomePage() {
         await deleteUser(user.id, user.role);
         setUsers(prev => prev.filter(u => u.id !== user.id));
         toast({ title: "User Deleted", description: `The user ${user.email} has been permanently deleted.` });
-    } catch (error) => {
+    } catch (error) {
         toast({ title: "Error", description: "Failed to delete the user.", variant: "destructive" });
     }
   }

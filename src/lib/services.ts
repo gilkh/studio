@@ -401,20 +401,24 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
 
         const services = servicesSnapshot.docs.map(doc => {
             const data = doc.data() as Omit<Service, 'id'>;
+            const vendor = vendorsData.get(data.vendorId);
             return { 
                 id: doc.id, 
                 ...data, 
                 type: 'service',
-                vendorVerification: vendorsData.get(data.vendorId)?.verification || 'none'
+                vendorVerification: vendor?.verification || 'none',
+                vendorAvatar: vendor?.avatar || data.vendorAvatar
             } as Service;
         });
         const offers = offersSnapshot.docs.map(doc => {
             const data = doc.data() as Omit<Offer, 'id'>;
+            const vendor = vendorsData.get(data.vendorId);
             return { 
                 id: doc.id, 
                 ...data, 
                 type: 'offer',
-                vendorVerification: vendorsData.get(data.vendorId)?.verification || 'none'
+                vendorVerification: vendor?.verification || 'none',
+                vendorAvatar: vendor?.avatar || data.vendorAvatar
             } as Offer;
         });
         

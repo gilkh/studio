@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
 import { locations } from '@/lib/types';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB

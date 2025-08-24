@@ -39,23 +39,15 @@ export async function createNewUser(data: {
     // The full vendor profile will be created upon first login after verification.
     if (accountType === 'vendor') {
         if (!vendorCode) {
-            throw new Error("A valid vendor code is required to register as a vendor.");
+            // This is a server-side check, the form should enforce it too.
+             const codeQuery = query(collection(db, 'vendorCodes'), where('code', '==', vendorCode), where('isUsed', '==', false));
+             const codeSnapshot = await getDocs(codeQuery);
+            if (codeSnapshot.empty) {
+                throw new Error("Invalid or already used vendor code.");
+            }
+             const codeDoc = codeSnapshot.docs[0];
+            await updateDoc(codeDoc.ref, { isUsed: true, usedBy: firebaseUser.uid, usedAt: serverTimestamp() });
         }
-
-        const codeQuery = query(collection(db, 'vendorCodes'), where('code', '==', vendorCode), where('isUsed', '==', false));
-        const codeSnapshot = await getDocs(codeQuery);
-
-        if (codeSnapshot.empty) {
-            throw new Error("Invalid or already used vendor code.");
-        }
-        
-        const codeDoc = codeSnapshot.docs[0];
-        // Pre-claim the code for this user ID to prevent race conditions.
-        // The full profile creation on first login will finalize its use.
-        await updateDoc(codeDoc.ref, {
-             usedBy: firebaseUser.uid, 
-             usedAt: serverTimestamp() 
-        });
         
         // Store temporary vendor info needed for first login.
         const tempVendorData = {
@@ -64,6 +56,7 @@ export async function createNewUser(data: {
             isPendingVerification: true,
         };
         await setDoc(doc(db, 'pendingVendors', firebaseUser.uid), tempVendorData);
+
     } else {
         // Store temporary client info
         const tempClientData = {
@@ -140,11 +133,11 @@ export async function signInUser(email: string, password?: string): Promise<{ su
                     avatar: data.avatar || '',
                     portfolio: [],
                     verification: 'none',
+                    location: 'Beirut', // Default location
                 };
                 const batch = writeBatch(db);
                 batch.set(doc(db, 'users', user.uid), userProfile);
                 batch.set(doc(db, 'vendors', user.uid), vendorProfile);
-                batch.update(doc(db, 'vendorCodes', data.vendorCode), { isUsed: true }); // Finalize use
                 batch.delete(pendingVendorRef); // Clean up
                 await batch.commit();
 
@@ -236,6 +229,9 @@ export async function signInWithGoogle(): Promise<{ success: boolean; role?: 'cl
         return await handleSocialSignIn(result.user);
     } catch (error: any) {
         console.error("Google sign-in error:", error);
+        if (error.code === 'auth/operation-not-allowed') {
+            return { success: false, message: "Google sign-in is not enabled. Please enable it in the Firebase console." };
+        }
         return { success: false, message: error.message };
     }
 }

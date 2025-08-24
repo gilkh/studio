@@ -22,9 +22,18 @@ import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
 import { VendorInquiryDialog } from '@/components/vendor-inquiry-dialog';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+const countryCodes = [
+    { value: '+961', label: 'LB (+961)' },
+    { value: '+1', label: 'USA (+1)' },
+    { value: '+44', label: 'UK (+44)' },
+    { value: '+33', label: 'FR (+33)' },
+    { value: '+971', label: 'UAE (+971)' },
+];
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -53,7 +62,8 @@ const signupFormSchema = z.object({
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  phone: z.string().min(10, "Please enter a valid phone number"),
+  countryCode: z.string(),
+  phone: z.string().min(1, "Phone number is required"),
   businessName: z.string().optional(),
   vendorCode: z.string().optional(),
   email: z.string().email('Please enter a valid email address'),
@@ -95,6 +105,7 @@ export default function SignupPage() {
       accountType: 'client',
       firstName: '',
       lastName: '',
+      countryCode: '+961',
       phone: '',
       businessName: '',
       vendorCode: '',
@@ -146,26 +157,19 @@ export default function SignupPage() {
 
   async function onSubmit(values: z.infer<typeof signupFormSchema>) {
     form.clearErrors();
+    
+    const completePhoneNumber = `${values.countryCode}${values.phone}`;
+    
     try {
-        const result = await createNewUser(values);
+        const result = await createNewUser({...values, phone: completePhoneNumber});
 
         if (result.success) {
-            if (result.role === 'client') {
-                toast({
-                    title: "Account Created! Please Verify Your Email",
-                    description: "We've sent a verification link to your email address. Please check your inbox to continue.",
-                    duration: 10000,
-                });
-                router.push('/login'); 
-            } else { // Vendor or other roles
-                 localStorage.setItem('userId', result.userId);
-                 localStorage.setItem('role', result.role);
-                toast({
-                    title: "Account Created!",
-                    description: "Welcome to Farhetkoun. Redirecting you to your new dashboard.",
-                });
-                router.push('/vendor/home');
-            }
+            toast({
+                title: "Account Created! Please Verify Your Email",
+                description: "We've sent a verification link to your email address. Please check your inbox to continue.",
+                duration: 10000,
+            });
+            router.push('/login'); 
         }
 
     } catch(error) {
@@ -407,19 +411,42 @@ export default function SignupPage() {
                                 </>
                             )}
                             
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Phone Number</FormLabel>
-                                    <FormControl>
-                                        <Input type="tel" placeholder="(123) 456-7890" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div>
+                                <FormLabel>Phone Number</FormLabel>
+                                <div className="flex gap-2">
+                                    <FormField
+                                        control={form.control}
+                                        name="countryCode"
+                                        render={({ field }) => (
+                                            <FormItem className="w-1/3">
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Code" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {countryCodes.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="phone"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-grow">
+                                                <FormControl>
+                                                    <Input type="tel" placeholder="e.g. 12345678" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
 
                              <FormField
                                 control={form.control}

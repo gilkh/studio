@@ -24,6 +24,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { useLanguage } from '@/hooks/use-language';
+import { cn } from '@/lib/utils';
 
 
 interface OfferCardProps {
@@ -43,6 +44,11 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
   const approvedMedia = offer.media?.filter(m => m.status === 'approved') || [];
   const mediaItems = approvedMedia.length > 0 ? approvedMedia : [{ url: offer.image, type: 'image' as const, status: 'approved' as const, isThumbnail: true }];
 
+  const statusColors = {
+    pending: 'bg-amber-500',
+    approved: 'bg-green-500',
+    rejected: 'bg-red-500'
+  }
 
   useEffect(() => {
     async function checkSavedStatus() {
@@ -66,11 +72,11 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
     setIsSaving(true);
     try {
         await toggleSavedItem(userId, offer.id);
-        setIsSaved(!isSaved);
          toast({
             title: isSaved ? t.unsaved.title : t.saved.title,
             description: isSaved ? t.unsaved.description.replace('{title}', offer.title) : t.saved.description.replace('{title}', offer.title)
         });
+        setIsSaved(!isSaved);
     } catch (error) {
         console.error('Failed to toggle saved item', error);
         toast({ title: 'Error', description: 'Could not update saved items.', variant: 'destructive' });
@@ -138,9 +144,15 @@ export function OfferCard({ offer, role, onListingUpdate }: OfferCardProps) {
                 </Button>
               </div>
           )}
-          <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground z-10" variant="default">
-            {t.badge}
-          </Badge>
+           {role === 'vendor' ? (
+                <Badge className={cn("absolute top-3 left-3 z-10 capitalize", statusColors[offer.status])}>
+                    {offer.status}
+                </Badge>
+            ) : (
+                 <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground z-10" variant="default">
+                    {t.badge}
+                </Badge>
+            )}
         </CardHeader>
         <div className="p-4 flex-grow flex flex-col">
             <Link href={`/client/offer/${offer.id}`} className="flex-grow">

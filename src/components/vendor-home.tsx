@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ export function VendorHome() {
             // This avoids redundant fetches.
             const [profile, allListings, requests, bookings] = await Promise.all([
                 getVendorProfile(vendorId),
-                getServicesAndOffers(vendorId),
+                getServicesAndOffers(vendorId, { includePending: true }),
                 getVendorQuoteRequests(vendorId),
                 getBookingsForVendor(vendorId),
             ]);

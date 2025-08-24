@@ -73,7 +73,8 @@ export function ClientDashboard() {
     async function loadItems() {
         setIsLoading(true);
         try {
-            const items = await getServicesAndOffers();
+            // Only fetch approved items
+            const items = await getServicesAndOffers(undefined, { includePending: false });
             setAllItems(items);
         } catch (error) {
             console.error("Failed to load services and offers", error);

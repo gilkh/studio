@@ -23,6 +23,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { useLanguage } from '@/hooks/use-language';
+import { cn } from '@/lib/utils';
 
 
 interface ServiceCardProps {
@@ -42,6 +43,11 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
   const approvedMedia = service.media?.filter(m => m.status === 'approved') || [];
   const mediaItems = approvedMedia.length > 0 ? approvedMedia : [{ url: service.image, type: 'image' as const, status: 'approved' as const, isThumbnail: true }];
 
+  const statusColors = {
+    pending: 'bg-amber-500',
+    approved: 'bg-green-500',
+    rejected: 'bg-red-500'
+  }
 
   useEffect(() => {
     async function checkSavedStatus() {
@@ -65,11 +71,11 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
     setIsSaving(true);
     try {
         await toggleSavedItem(userId, service.id);
-        setIsSaved(!isSaved);
         toast({
             title: isSaved ? t.unsaved.title : t.saved.title,
             description: isSaved ? t.unsaved.description.replace('{title}', service.title) : t.saved.description.replace('{title}', service.title)
         });
+        setIsSaved(!isSaved);
     } catch (error) {
         console.error('Failed to toggle saved item', error);
         toast({ title: 'Error', description: 'Could not update saved items.', variant: 'destructive' });
@@ -123,7 +129,6 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
                     </>
                 )}
             </Carousel>
-
           {role === 'client' && (
               <div className="absolute top-3 right-3 flex gap-2 z-10">
                 <QuoteRequestDialog service={service}>
@@ -138,9 +143,16 @@ export function ServiceCard({ service, role, onListingUpdate }: ServiceCardProps
                 </Button>
               </div>
           )}
-          <Badge className="absolute top-3 left-3 z-10" variant="secondary">
-            {service.category}
-          </Badge>
+          {role === 'vendor' && (
+              <Badge className={cn("absolute top-3 left-3 z-10 capitalize", statusColors[service.status])}>
+                {service.status}
+              </Badge>
+          )}
+          {role === 'client' && (
+            <Badge className="absolute top-3 left-3 z-10" variant="secondary">
+                {service.category}
+            </Badge>
+          )}
         </CardHeader>
         <div className="p-4 flex-grow flex flex-col">
           <Link href={`/client/service/${service.id}`} className="flex-grow">

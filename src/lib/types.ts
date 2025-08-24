@@ -63,6 +63,7 @@ export interface BaseService {
   media?: MediaItem[];
   inclusions?: ServiceInclusions;
   location: Location;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface Service extends BaseService {

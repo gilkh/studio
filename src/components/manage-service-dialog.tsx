@@ -135,6 +135,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
             reviewCount: service?.reviewCount || 0,
             image: finalMedia.find(m => m.status === 'approved' && m.type === 'image')?.url || service?.image || 'https://placehold.co/600x400.png',
             media: finalMedia,
+            status: 'pending', // Always set to pending on create/update
         }
 
         if (type === 'offer') {
@@ -166,8 +167,8 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
         }
         
         toast({
-          title: `${type === 'service' ? 'Service' : 'Offer'} ${service ? 'Updated' : 'Created'}`,
-          description: `The ${type} "${title}" has been successfully saved. Media items are pending admin approval.`,
+          title: `${type === 'service' ? 'Service' : 'Offer'} Submitted for Review`,
+          description: `The ${type} "${title}" has been successfully saved and is now pending admin approval.`,
         });
         setOpen(false);
         onListingUpdate?.(); // Callback to refresh the list
@@ -249,7 +250,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
         <SheetHeader>
           <SheetTitle>{service ? 'Edit' : 'Create New'}</SheetTitle>
           <SheetDescription>
-            Fill in the details below to {service ? 'update your' : 'list a new'} service or offer.
+            Fill in the details below to {service ? 'update your' : 'list a new'} service or offer. All submissions require admin approval.
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto">

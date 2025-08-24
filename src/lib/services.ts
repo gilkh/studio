@@ -368,29 +368,31 @@ export const getOffers = (vendorId?: string, count?: number) => {
 }
 
 
-export const getServicesAndOffers = async (vendorId?: string, count?: number): Promise<ServiceOrOffer[]> => {
-    const servicesQuery = collection(db, 'services');
-    const offersQuery = collection(db, 'offers');
-
-    const queries = [];
+export const getServicesAndOffers = async (vendorId?: string, options?: { count?: number; includePending?: boolean }): Promise<ServiceOrOffer[]> => {
+    const { count, includePending } = options || {};
+    
+    let servicesQuery = query(collection(db, 'services'));
+    let offersQuery = query(collection(db, 'offers'));
 
     if (vendorId) {
-        queries.push(query(servicesQuery, where('vendorId', '==', vendorId)));
-        queries.push(query(offersQuery, where('vendorId', '==', vendorId)));
-    } else {
-        queries.push(query(servicesQuery));
-        queries.push(query(offersQuery));
+        servicesQuery = query(servicesQuery, where('vendorId', '==', vendorId));
+        offersQuery = query(offersQuery, where('vendorId', '==', vendorId));
+    }
+    
+    if (!includePending) {
+        servicesQuery = query(servicesQuery, where('status', '==', 'approved'));
+        offersQuery = query(offersQuery, where('status', '==', 'approved'));
     }
     
     if (count) {
-        queries[0] = query(queries[0], limit(count));
-        queries[1] = query(queries[1], limit(count));
+        servicesQuery = query(servicesQuery, limit(count));
+        offersQuery = query(offersQuery, limit(count));
     }
     
     try {
         const [servicesSnapshot, offersSnapshot, vendorsSnapshot] = await Promise.all([
-            getDocs(queries[0]),
-            getDocs(queries[1]),
+            getDocs(servicesQuery),
+            getDocs(offersQuery),
             getDocs(collection(db, 'vendors'))
         ]);
 
@@ -468,11 +470,13 @@ export async function createServiceOrOffer(item: Omit<Service, 'id'> | Omit<Offe
         ...item,
         rating: 0,
         reviewCount: 0,
+        status: 'pending',
     });
 }
 
 export async function updateServiceOrOffer(itemId: string, itemData: Partial<ServiceOrOffer>) {
-    const docRef = doc(db, itemData.type === 'service' ? 'services' : 'offers', itemId);
+    const collectionName = itemData.type === 'service' ? 'services' : 'offers';
+    const docRef = doc(db, collectionName, itemId);
     await updateDoc(docRef, itemData);
 }
 
@@ -1305,4 +1309,23 @@ export async function markNotificationsAsRead(userId: string) {
     await updateDoc(userRef, { hasUnreadNotifications: false });
 }
     
+export async function getPendingListings(): Promise<ServiceOrOffer[]> {
+    const servicesQuery = query(collection(db, 'services'), where('status', '==', 'pending'));
+    const offersQuery = query(collection(db, 'offers'), where('status', '==', 'pending'));
 
+    const [servicesSnapshot, offersSnapshot] = await Promise.all([
+        getDocs(servicesQuery),
+        getDocs(offersQuery)
+    ]);
+
+    const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+    const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+    
+    return [...services, ...offers];
+}
+
+export async function updateListingStatus(listingId: string, type: 'service' | 'offer', status: 'approved' | 'rejected') {
+    const collectionName = type === 'service' ? 'services' : 'offers';
+    const docRef = doc(db, collectionName, listingId);
+    await updateDoc(docRef, { status: status });
+}

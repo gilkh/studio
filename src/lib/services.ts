@@ -1,7 +1,8 @@
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer, deleteField } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
 import { subMonths, format, startOfMonth } from 'date-fns';
 import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
@@ -134,6 +135,7 @@ export async function signInUser(email: string, password?: string): Promise<{ su
                     portfolio: [],
                     verification: 'none',
                     location: 'Beirut', // Default location
+                    totalPhoneReveals: 0,
                 };
                 const batch = writeBatch(db);
                 batch.set(doc(db, 'users', user.uid), userProfile);
@@ -1296,5 +1298,32 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
 }
 
 
+// --- Vendor Analytics ---
+export async function logPhoneNumberReveal(vendorId: string, clientId?: string) {
+    if (!vendorId) return;
+    const vendorRef = doc(db, 'vendors', vendorId);
+    const revealRef = collection(db, `vendors/${vendorId}/phoneReveals`);
 
+    const batch = writeBatch(db);
+    batch.update(vendorRef, { totalPhoneReveals: increment(1) });
+    batch.set(doc(revealRef), { revealedAt: serverTimestamp(), clientId: clientId || 'anonymous' });
+
+    await batch.commit();
+}
+
+
+export async function getPhoneNumberReveals(vendorId: string, timePeriod: 'all' | '30days'): Promise<number> {
+    if (!vendorId) return 0;
+    
+    if (timePeriod === 'all') {
+        const vendor = await getVendorProfile(vendorId);
+        return vendor?.totalPhoneReveals || 0;
+    } else {
+        const thirtyDaysAgo = subMonths(new Date(), 1);
+        const revealsRef = collection(db, `vendors/${vendorId}/phoneReveals`);
+        const q = query(revealsRef, where('revealedAt', '>=', thirtyDaysAgo));
+        const snapshot = await getCountFromServer(q);
+        return snapshot.data().count;
+    }
+}
     

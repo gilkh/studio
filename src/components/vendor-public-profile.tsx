@@ -8,14 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Star, ShieldCheck, Mail, Phone } from 'lucide-react';
+import { Star, ShieldCheck, Mail, Phone, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { ServiceCard } from '@/components/service-card';
 import { OfferCard } from '@/components/offer-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getReviewsForVendor } from '@/lib/services';
+import { getReviewsForVendor, logPhoneNumberReveal } from '@/lib/services';
 import { Separator } from './ui/separator';
+import { useAuth } from '@/hooks/use-auth';
 
 interface VendorPublicProfileProps {
     vendor: VendorProfile | null;
@@ -27,6 +28,10 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
   const [listings] = useState<ServiceOrOffer[]>(initialListings);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [phoneVisible, setPhoneVisible] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const { userId } = useAuth();
+
 
   useEffect(() => {
     if (initialVendor) {
@@ -38,6 +43,19 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
         setIsLoading(false);
     }
   }, [initialVendor]);
+
+  const handleRevealPhone = async () => {
+      if (!vendor) return;
+      setIsRevealing(true);
+      try {
+          await logPhoneNumberReveal(vendor.id, userId || undefined);
+          setPhoneVisible(true);
+      } catch (error) {
+          console.error("Failed to log phone number reveal:", error);
+      } finally {
+          setIsRevealing(false);
+      }
+  }
 
 
   if (!vendor) {
@@ -90,9 +108,18 @@ export function VendorPublicProfile({ vendor: initialVendor, listings: initialLi
                     <Mail className="w-4 h-4 text-muted-foreground" />
                     <span>{vendor.email}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span>{vendor.phone}</span>
+                 <div className="flex items-center gap-1.5">
+                    {phoneVisible ? (
+                        <>
+                           <Phone className="w-4 h-4 text-muted-foreground" />
+                           <a href={`tel:${vendor.phone}`} className="font-semibold">{vendor.phone}</a>
+                        </>
+                    ) : (
+                        <Button variant="secondary" size="sm" onClick={handleRevealPhone} disabled={isRevealing}>
+                            {isRevealing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Phone className="mr-2 h-4 w-4" />}
+                            Reveal Phone Number
+                        </Button>
+                    )}
                 </div>
               </div>
             </div>

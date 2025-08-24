@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2, User, MapPin } from 'lucide-react';
+import { Camera, Star, Loader2, ShieldCheck, ImagePlus, Gem, Trash2, User, MapPin, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor, getUserProfile, createOrUpdateUserProfile } from '@/lib/services';
+import { getVendorProfile, createOrUpdateVendorProfile, getReviewsForVendor, getUserProfile, createOrUpdateUserProfile, getPhoneNumberReveals } from '@/lib/services';
 import type { VendorProfile, Review, UserProfile, ServiceCategory, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { RequestUpgradeDialog } from '@/components/request-upgrade-dialog';
 import { locations } from '@/lib/types';
+import { Switch } from '@/components/ui/switch';
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -46,6 +47,47 @@ const profileFormSchema = z.object({
 });
 
 const categories: ServiceCategory[] = ['Venues', 'Catering & Sweets', 'Entertainment', 'Lighting & Sound', 'Photography & Videography', 'Decoration', 'Beauty & Grooming', 'Transportation', 'Invitations & Printables', 'Rentals & Furniture', 'Security and Crowd Control'];
+
+function PhoneRevealsStat({ vendorId }: { vendorId: string }) {
+    const [count, setCount] = useState<number | null>(null);
+    const [timePeriod, setTimePeriod] = useState<'30days' | 'all'>('30days');
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        getPhoneNumberReveals(vendorId, timePeriod)
+            .then(setCount)
+            .finally(() => setIsLoading(false));
+    }, [vendorId, timePeriod]);
+
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Phone Number Reveals</CardTitle>
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="time-period-toggle" className="text-xs text-muted-foreground">Last 30 Days</Label>
+                    <Switch
+                        id="time-period-toggle"
+                        checked={timePeriod === 'all'}
+                        onCheckedChange={(checked) => setTimePeriod(checked ? 'all' : '30days')}
+                    />
+                     <Label htmlFor="time-period-toggle" className="text-xs text-muted-foreground">All Time</Label>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Skeleton className="h-8 w-12" /> : (
+                    <div className="text-2xl font-bold flex items-center gap-2">
+                         <Eye className="h-6 w-6 text-muted-foreground" />
+                        {count ?? 0}
+                    </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                   {timePeriod === '30days' ? 'Reveals in the last 30 days' : 'Total reveals of all time'}
+                </p>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function VendorProfilePage() {
     const { toast } = useToast();
@@ -371,6 +413,10 @@ export default function VendorProfilePage() {
                             )}
                         </div>
                     </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    <PhoneRevealsStat vendorId={vendorId} />
                 </div>
 
                 <Form {...form}>

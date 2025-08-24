@@ -201,7 +201,15 @@ export interface VendorProfile {
     avatar?: string;
     verification?: 'none' | 'verified' | 'trusted';
     location: Location;
+    totalPhoneReveals?: number;
 }
+
+export interface PhoneReveal {
+    id: string;
+    revealedAt: Date;
+    clientId?: string; // Optional: To track which client revealed it
+}
+
 
 export interface VendorCode {
     id: string;

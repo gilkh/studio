@@ -280,7 +280,7 @@ export interface PlatformAnalytics {
     totalUsers: number;
     totalVendors: number;
     totalBookings: number;
-    userSignups: { month: string; Clients: number; Vendors: number }[];
+    userSignups: { period: string; Clients: number; Vendors: number }[];
 }
 
 export interface Review {

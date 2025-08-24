@@ -75,6 +75,8 @@ export default function AdminHomePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isModerating, setIsModerating] = useState<string | null>(null);
+  const [analyticsTimePeriod, setAnalyticsTimePeriod] = useState<'monthly' | 'daily'>('monthly');
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const { toast } = useToast();
   
   // State for push notifications
@@ -88,14 +90,18 @@ export default function AdminHomePage() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (period: 'monthly' | 'daily' = 'monthly') => {
+    if (period !== analyticsTimePeriod) {
+        setIsAnalyticsLoading(true);
+    } else {
+        setIsLoading(true);
+    }
     try {
       const [vendorCodes, allUsers, requests, platformAnalytics, inquiries, listings] = await Promise.all([
         getVendorCodes(),
         getAllUsersAndVendors(),
         getUpgradeRequests(),
-        getPlatformAnalytics(),
+        getPlatformAnalytics(period),
         getVendorInquiries(),
         getPendingListings(),
       ]);
@@ -108,7 +114,12 @@ export default function AdminHomePage() {
     } catch (error) {
       toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
     } finally {
-      setIsLoading(false);
+       if (period !== analyticsTimePeriod) {
+            setIsAnalyticsLoading(false);
+            setAnalyticsTimePeriod(period);
+        } else {
+            setIsLoading(false);
+        }
     }
   };
 
@@ -298,7 +309,12 @@ export default function AdminHomePage() {
             <AdminStatCard title="Total Bookings" value={analytics?.totalBookings} icon={CalendarCheck} isLoading={isLoading} />
           </div>
           <div className="mt-4">
-            <AdminAnalyticsChart data={analytics?.userSignups} isLoading={isLoading} />
+            <AdminAnalyticsChart 
+                data={analytics?.userSignups} 
+                isLoading={isLoading || isAnalyticsLoading} 
+                onTimePeriodChange={fetchData}
+                timePeriod={analyticsTimePeriod}
+            />
           </div>
         </TabsContent>
 

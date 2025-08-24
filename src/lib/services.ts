@@ -4,7 +4,7 @@ import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, Docu
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal, AppNotification } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
-import { subMonths, format, startOfMonth } from 'date-fns';
+import { subMonths, format, startOfMonth, subDays, startOfDay } from 'date-fns';
 import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
 
 export async function createNewUser(data: {
@@ -65,7 +65,7 @@ export async function createNewUser(data: {
             id: firebaseUser.uid,
             isPendingVerification: true,
         };
-        await setDoc(doc(db, 'pendingClients', user.uid), tempClientData);
+        await setDoc(doc(db, 'pendingClients', firebaseUser.uid), tempClientData);
     }
     
     return { success: true, userId: firebaseUser.uid, role: accountType, verificationSent: accountType === 'client' };
@@ -481,7 +481,7 @@ export async function updateServiceOrOffer(itemId: string, itemData: Partial<Ser
 }
 
 export async function deleteServiceOrOffer(itemId: string, itemType: 'service' | 'offer') {
-    const docRef = doc(db, itemType, itemId);
+    const docRef = doc(db, itemType === 'service' ? 'services' : 'offers', itemId);
     await deleteDoc(docRef);
 }
 
@@ -998,52 +998,61 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
 }
 
 
-export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
-    const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
-
+export async function getPlatformAnalytics(timePeriod: 'daily' | 'monthly' = 'monthly'): Promise<PlatformAnalytics> {
     try {
-        const [usersSnapshot, vendorsSnapshot, bookingsSnapshot, recentUsersSnapshot, recentVendorsSnapshot] = await Promise.all([
+        const [usersSnapshot, vendorsSnapshot, bookingsSnapshot] = await Promise.all([
             getCountFromServer(collection(db, "users")),
             getCountFromServer(collection(db, "vendors")),
             getCountFromServer(collection(db, "bookings")),
-            getDocs(query(collection(db, "users"), where("createdAt", ">=", sixMonthsAgo))),
-            getDocs(query(collection(db, "vendors"), where("createdAt", ">=", sixMonthsAgo)))
         ]);
 
-        const monthlyData: { [key: string]: { Clients: number; Vendors: number } } = {};
+        let userSignups: { [key: string]: { Clients: number; Vendors: number } } = {};
+        let startDate: Date;
 
-        for (let i = 0; i < 6; i++) {
-            const monthDate = subMonths(new Date(), i);
-            const monthKey = format(monthDate, 'MMM');
-            monthlyData[monthKey] = { Clients: 0, Vendors: 0 };
+        if (timePeriod === 'daily') {
+            startDate = startOfDay(subDays(new Date(), 29));
+            for (let i = 0; i < 30; i++) {
+                const dayDate = addDays(startDate, i);
+                const dayKey = format(dayDate, 'MMM d');
+                userSignups[dayKey] = { Clients: 0, Vendors: 0 };
+            }
+        } else {
+            startDate = startOfMonth(subMonths(new Date(), 5));
+            for (let i = 0; i < 6; i++) {
+                const monthDate = addMonths(startDate, i);
+                const monthKey = format(monthDate, 'MMM');
+                userSignups[monthKey] = { Clients: 0, Vendors: 0 };
+            }
         }
 
-        const vendorIds = new Set(recentVendorsSnapshot.docs.map(d => d.id));
+        const recentUsersQuery = query(collection(db, "users"), where("createdAt", ">=", startDate));
+        const recentUsersSnapshot = await getDocs(recentUsersQuery);
+        
+        const allVendorIds = new Set((await getDocs(collection(db, "vendors"))).docs.map(d => d.id));
 
         recentUsersSnapshot.forEach(doc => {
             const data = doc.data() as UserProfile;
             if (data.createdAt) {
                 const createdAtDate = data.createdAt instanceof Date ? data.createdAt : data.createdAt.toDate();
-                const monthKey = format(createdAtDate, 'MMM');
-                if (monthlyData[monthKey]) {
-                    if (vendorIds.has(doc.id)) {
-                        monthlyData[monthKey].Vendors++;
+                const key = timePeriod === 'daily' ? format(createdAtDate, 'MMM d') : format(createdAtDate, 'MMM');
+                if (userSignups[key]) {
+                    if (allVendorIds.has(doc.id)) {
+                        userSignups[key].Vendors++;
                     } else {
-                        monthlyData[monthKey].Clients++;
+                        userSignups[key].Clients++;
                     }
                 }
             }
         });
 
-        const userSignups = Object.entries(monthlyData)
-            .map(([month, data]) => ({ month, ...data }))
-            .reverse();
+        const formattedSignups = Object.entries(userSignups)
+            .map(([period, data]) => ({ period, ...data }));
             
         return {
             totalUsers: usersSnapshot.data().count,
             totalVendors: vendorsSnapshot.data().count,
             totalBookings: bookingsSnapshot.data().count,
-            userSignups,
+            userSignups: formattedSignups,
         };
 
     } catch (e) {
@@ -1054,6 +1063,7 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
         throw e;
     }
 }
+
 
 export async function createVendorInquiry(inquiry: Omit<VendorInquiry, 'id' | 'createdAt' | 'status'>): Promise<string> {
     const docRef = await addDoc(collection(db, 'vendorInquiries'), {
@@ -1333,8 +1343,8 @@ export async function getPendingListings(): Promise<ServiceOrOffer[]> {
         getDocs(offersQuery)
     ]);
 
-    const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
-    const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+    const services = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'service' } as Service));
+    const offers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'offer' } as Offer));
     
     return [...services, ...offers];
 }
@@ -1342,5 +1352,19 @@ export async function getPendingListings(): Promise<ServiceOrOffer[]> {
 export async function updateListingStatus(listingId: string, type: 'service' | 'offer', status: 'approved' | 'rejected') {
     const collectionName = type === 'service' ? 'services' : 'offers';
     const docRef = doc(db, collectionName, listingId);
-    await updateDoc(docRef, { status: status });
+    
+    const batch = writeBatch(db);
+    batch.update(docRef, { status: status });
+
+    if (status === 'approved') {
+        const listingDoc = await getDoc(docRef);
+        if (listingDoc.exists()) {
+            const listingData = listingDoc.data() as ServiceOrOffer;
+            const media = listingData.media || [];
+            const updatedMedia = media.map(m => ({ ...m, status: 'approved' }));
+            batch.update(docRef, { media: updatedMedia });
+        }
+    }
+
+    await batch.commit();
 }

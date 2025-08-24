@@ -12,23 +12,10 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { changeUserPassword } from '@/lib/services';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
-const passwordFormSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters long'),
-  confirmPassword: z.string(),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "New passwords do not match",
-  path: ["confirmPassword"],
-});
+import { sendPasswordResetEmail } from '@/lib/services';
+import { useAuth } from '@/hooks/use-auth';
 
 
 interface ChangePasswordDialogProps {
@@ -38,32 +25,30 @@ interface ChangePasswordDialogProps {
 
 export function ChangePasswordDialog({ userId, children }: ChangePasswordDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
-  const form = useForm<z.infer<typeof passwordFormSchema>>({
-    resolver: zodResolver(passwordFormSchema),
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
-  });
-
-  const { isSubmitting } = form.formState;
-
-  const handleSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
+  const handleSendResetEmail = async () => {
+    if (!user?.email) {
+        toast({ title: "Error", description: "Could not find user's email address.", variant: "destructive" });
+        return;
+    }
+    setIsSending(true);
     try {
-      await changeUserPassword(userId, values.currentPassword, values.newPassword);
+      await sendPasswordResetEmail(user.email);
       toast({
-        title: 'Password Updated',
-        description: `Your password has been changed successfully.`,
+        title: 'Password Reset Email Sent',
+        description: `An email has been sent to ${user.email} with instructions to reset your password.`,
+        duration: 8000,
       });
       setOpen(false);
-      form.reset();
     } catch (error) {
-      console.error("Failed to update password:", error);
-      const errorMessage = error instanceof Error ? error.message : "Could not update the password.";
-      toast({ title: "Update Failed", description: errorMessage, variant: "destructive" });
+      console.error("Failed to send password reset email:", error);
+      const errorMessage = error instanceof Error ? error.message : "Could not send the password reset link.";
+      toast({ title: "Request Failed", description: errorMessage, variant: "destructive" });
+    } finally {
+        setIsSending(false);
     }
   };
 
@@ -74,59 +59,19 @@ export function ChangePasswordDialog({ userId, children }: ChangePasswordDialogP
         <DialogHeader>
           <DialogTitle>Change Password</DialogTitle>
           <DialogDescription>
-            Enter your current and new password below.
+            To change your password, we'll send a secure password reset link to your email address.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-            <form id="change-password-form" onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4">
-                <FormField
-                    control={form.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Current Password</FormLabel>
-                            <FormControl>
-                                <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>New Password</FormLabel>
-                            <FormControl>
-                                <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Confirm New Password</FormLabel>
-                            <FormControl>
-                                <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </form>
-        </Form>
+        <div className="py-4">
+            <p>A password reset link will be sent to <span className="font-semibold">{user?.email}</span>.</p>
+        </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit" form="change-password-form" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save New Password
+          <Button onClick={handleSendResetEmail} disabled={isSending}>
+            {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send Reset Link
           </Button>
         </DialogFooter>
       </DialogContent>

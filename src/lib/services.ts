@@ -1285,6 +1285,21 @@ export async function getPhoneNumberReveals(vendorId: string, timePeriod: 'all' 
 
 // --- Notification Services ---
 
+export async function createNotification(data: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) {
+    const { userId, ...rest } = data;
+    const notificationRef = collection(db, `users/${userId}/notifications`);
+    await addDoc(notificationRef, {
+        ...rest,
+        userId: userId,
+        read: false,
+        createdAt: serverTimestamp(),
+    });
+    
+    // Also set a flag on the user profile to show the red dot indicator
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { hasUnreadNotifications: true });
+}
+
 export function getNotifications(userId: string, callback: (notifications: AppNotification[]) => void): () => void {
     const q = query(collection(db, `users/${userId}/notifications`), orderBy('createdAt', 'desc'), limit(30));
 

@@ -182,6 +182,7 @@ export interface UserProfile {
     verificationToken?: string;
     resetPasswordToken?: string;
     resetPasswordExpires?: Date;
+    fcmTokens?: string[];
 }
 
 export interface VendorProfile {

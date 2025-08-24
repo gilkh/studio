@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMediaForModeration, moderateMedia } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMediaForModeration, moderateMedia, sendPushNotification } from '@/lib/services';
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, MediaItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand, ThumbsUp, ThumbsDown, Image as ImageIcon } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand, ThumbsUp, ThumbsDown, Image as ImageIcon, Send } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +38,10 @@ import { AdminStatCard } from '@/components/admin-stat-card';
 import { MessagingPanel } from '@/components/messaging-panel';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'] };
@@ -64,6 +68,7 @@ export default function AdminHomePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isModerating, setIsModerating] = useState<string | null>(null);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -206,6 +211,26 @@ export default function AdminHomePage() {
     }
   };
 
+  const handleSendNotification = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSendingNotification(true);
+    const formData = new FormData(event.currentTarget);
+    const title = formData.get('title') as string;
+    const body = formData.get('body') as string;
+    const target = formData.get('target') as 'all' | 'clients' | 'vendors';
+    
+    try {
+        await sendPushNotification({ title, body, target });
+        toast({ title: "Notification Sent", description: "Your push notification has been sent successfully." });
+        (event.target as HTMLFormElement).reset();
+    } catch (error) {
+        console.error("Notification send failed", error);
+        toast({ title: "Send Failed", description: "Could not send the notification.", variant: "destructive" });
+    } finally {
+        setIsSendingNotification(false);
+    }
+  }
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Code copied to clipboard." });
@@ -224,6 +249,7 @@ export default function AdminHomePage() {
         <TabsList className="grid w-full grid-cols-4 sm:flex sm:w-auto flex-wrap h-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="moderation">
                 Moderation
                 {pendingMedia.length > 0 && <Badge className="ml-2 bg-red-500">{pendingMedia.length}</Badge>}
@@ -406,6 +432,44 @@ export default function AdminHomePage() {
                             ))}
                         </TableBody>
                      </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Send Push Notification</CardTitle>
+                    <CardDescription>Compose and send a push notification to your users' mobile devices.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSendNotification} className="space-y-6 max-w-lg">
+                        <div>
+                            <Label htmlFor="target">Target Audience</Label>
+                            <Select name="target" defaultValue="all">
+                                <SelectTrigger id="target">
+                                    <SelectValue placeholder="Select an audience" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Users</SelectItem>
+                                    <SelectItem value="clients">Clients Only</SelectItem>
+                                    <SelectItem value="vendors">Vendors Only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div>
+                            <Label htmlFor="title">Notification Title</Label>
+                            <Input id="title" name="title" placeholder="e.g., New Special Offers!" required />
+                        </div>
+                         <div>
+                            <Label htmlFor="body">Notification Body</Label>
+                            <Textarea id="body" name="body" placeholder="Describe the announcement in a few words..." required />
+                        </div>
+                        <Button type="submit" disabled={isSendingNotification}>
+                            {isSendingNotification ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                            Send Notification
+                        </Button>
+                    </form>
                 </CardContent>
             </Card>
         </TabsContent>

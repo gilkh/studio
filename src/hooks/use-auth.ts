@@ -32,7 +32,8 @@ export function useAuth(): AuthInfo {
     useEffect(() => {
        const unsubscribe = onAuthStateChanged(auth, (user) => {
            if (user) {
-                const storedRole = getCookie('role') as 'client' | 'vendor' | 'admin' | null;
+                // Prioritize localStorage immediately after login, fallback to cookie
+                const storedRole = (localStorage.getItem('role') || getCookie('role')) as 'client' | 'vendor' | 'admin' | null;
                 setAuthInfo({
                    userId: user.uid,
                    role: storedRole,

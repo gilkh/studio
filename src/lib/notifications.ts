@@ -17,7 +17,7 @@ export async function initializeNotifications(userId: string) {
 
       // Get the token
       const currentToken = await getToken(messaging, {
-        vapidKey: 'YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE', // IMPORTANT: Replace this
+        vapidKey: 'BO2Tgi02oBTPlrFxYWDms6NVHEKqzy3Z7QtfCslG1GZda4hVpIu9eTx5C7tCrMwHqyY7NCFbw1LXr-d9P-GKctk', // IMPORTANT: Replace this
       });
 
       if (currentToken) {

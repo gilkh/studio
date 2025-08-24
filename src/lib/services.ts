@@ -32,11 +32,13 @@ export async function createNewUser(data: {
         throw new Error("Could not create user account in Firebase Authentication.");
     }
     
-    // Step 2: Send verification email
-    await sendEmailVerification(firebaseUser);
+    // Step 2: Send verification email ONLY for clients
+    if (accountType === 'client') {
+        await sendEmailVerification(firebaseUser);
+    }
     
     // Step 3: For vendors, validate the code and mark it as "reserved" for this user
-    // The full vendor profile will be created upon first login after verification.
+    // The full vendor profile will be created upon first login.
     if (accountType === 'vendor') {
         if (!vendorCode) {
              throw new Error("A registration code is required for vendors.");
@@ -53,7 +55,6 @@ export async function createNewUser(data: {
         const tempVendorData = {
             ...data,
             id: firebaseUser.uid,
-            isPendingVerification: true,
         };
         await setDoc(doc(db, 'pendingVendors', firebaseUser.uid), tempVendorData);
 
@@ -64,11 +65,10 @@ export async function createNewUser(data: {
             id: firebaseUser.uid,
             isPendingVerification: true,
         };
-        await setDoc(doc(db, 'pendingClients', firebaseUser.uid), tempClientData);
+        await setDoc(doc(db, 'pendingClients', user.uid), tempClientData);
     }
     
-    // Return success, but note that profile is not created in main DB yet.
-    return { success: true, userId: firebaseUser.uid, role: accountType, verificationSent: true };
+    return { success: true, userId: firebaseUser.uid, role: accountType, verificationSent: accountType === 'client' };
 }
 
 
@@ -78,7 +78,7 @@ export async function signInUser(email: string, password?: string): Promise<{ su
         if (password === 'admin@tradecraft.com') {
             return { success: true, role: 'admin', userId: 'admin-user' };
         } else {
-            return { success: false, message: "Invalid admin credentials." }; // Correct email, wrong password for admin
+            return { success: false, message: "Invalid admin credentials." };
         }
     }
     
@@ -86,24 +86,21 @@ export async function signInUser(email: string, password?: string): Promise<{ su
         const userCredential = await signInWithEmailAndPassword(auth, email, password!);
         const user = userCredential.user;
 
-        if (!user.emailVerified) {
+        // Check if user is a vendor before checking email verification
+        const pendingVendorSnap = await getDoc(doc(db, 'pendingVendors', user.uid));
+        const vendorProfileSnap = await getDoc(doc(db, 'vendors', user.uid));
+        const isVendor = pendingVendorSnap.exists() || vendorProfileSnap.exists();
+        
+        // Only enforce email verification for clients
+        if (!isVendor && !user.emailVerified) {
             return { success: false, message: 'Please verify your email before logging in. Check your inbox for a verification link.'};
         }
         
-        // Check if user profile already exists.
         let userProfileDoc = await getDoc(doc(db, 'users', user.uid));
         
         if (!userProfileDoc.exists()) {
-            // First time login for a verified user, let's create their profile.
-            console.log(`First verified login for ${user.uid}. Creating profile...`);
+            console.log(`First login for ${user.uid}. Creating profile...`);
 
-            // Check if they are a pending vendor or client
-            const pendingVendorRef = doc(db, 'pendingVendors', user.uid);
-            const pendingVendorSnap = await getDoc(pendingVendorRef);
-            
-            const pendingClientRef = doc(db, 'pendingClients', user.uid);
-            const pendingClientSnap = await getDoc(pendingClientRef);
-            
             if (pendingVendorSnap.exists()) {
                 const data = pendingVendorSnap.data() as any;
                 const userProfile: Omit<UserProfile, 'id'> = {
@@ -115,8 +112,8 @@ export async function signInUser(email: string, password?: string): Promise<{ su
                     savedItemIds: [],
                     status: 'active',
                     avatar: data.avatar || user?.photoURL || '',
-                    emailVerified: user.emailVerified,
-                    provider: 'password', // Explicitly set provider
+                    emailVerified: true, // Vendors don't need verification
+                    provider: 'password',
                 };
                 const vendorProfile: Omit<VendorProfile, 'id'> = {
                     businessName: data.businessName || `${data.firstName}'s Business`,
@@ -134,48 +131,47 @@ export async function signInUser(email: string, password?: string): Promise<{ su
                     avatar: data.avatar || '',
                     portfolio: [],
                     verification: 'none',
-                    location: 'Beirut', // Default location
+                    location: 'Beirut',
                     totalPhoneReveals: 0,
                 };
                 const batch = writeBatch(db);
                 batch.set(doc(db, 'users', user.uid), userProfile);
                 batch.set(doc(db, 'vendors', user.uid), vendorProfile);
-                batch.delete(pendingVendorRef); // Clean up
+                batch.delete(pendingVendorSnap.ref);
                 await batch.commit();
 
-            } else if (pendingClientSnap.exists()) {
-                 const data = pendingClientSnap.data() as any;
-                 const userProfile: Omit<UserProfile, 'id'> = {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    email: data.email,
-                    phone: data.phone || '',
-                    createdAt: new Date(),
-                    savedItemIds: [],
-                    status: 'active',
-                    avatar: data.avatar || user?.photoURL || '',
-                    emailVerified: user.emailVerified,
-                    provider: 'password', // Explicitly set provider
-                };
-                await setDoc(doc(db, 'users', user.uid), userProfile);
-                await deleteDoc(pendingClientRef); // Clean up
             } else {
-                 return { success: false, message: 'Your account is verified, but we could not find your initial registration data. Please contact support.' };
+                const pendingClientSnap = await getDoc(doc(db, 'pendingClients', user.uid));
+                 if (pendingClientSnap.exists()) {
+                     const data = pendingClientSnap.data() as any;
+                     const userProfile: Omit<UserProfile, 'id'> = {
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        email: data.email,
+                        phone: data.phone || '',
+                        createdAt: new Date(),
+                        savedItemIds: [],
+                        status: 'active',
+                        avatar: data.avatar || user?.photoURL || '',
+                        emailVerified: user.emailVerified,
+                        provider: 'password',
+                    };
+                    await setDoc(doc(db, 'users', user.uid), userProfile);
+                    await deleteDoc(pendingClientSnap.ref);
+                } else {
+                     return { success: false, message: 'Your account is verified, but we could not find your initial registration data. Please contact support.' };
+                }
             }
-            // Re-fetch the doc to continue
             userProfileDoc = await getDoc(doc(db, 'users', user.uid));
         }
-
 
         if (userProfileDoc.data()?.status === 'disabled') {
             return { success: false, message: 'Your account has been disabled. Please contact support.'};
         }
 
-        const vendorCheck = await getDoc(doc(db, 'vendors', user.uid));
-        if (vendorCheck.exists()) {
-            const vendorData = vendorCheck.data() as VendorProfile;
-            if (vendorData.status === 'disabled') {
-                return { success: false, message: 'Your account has been disabled. Please contact support.'};
+        if (isVendor) {
+            if (vendorProfileSnap.exists() && vendorProfileSnap.data().status === 'disabled') {
+                 return { success: false, message: 'Your account has been disabled. Please contact support.'};
             }
             return { success: true, role: 'vendor', userId: user.uid };
         }
@@ -395,7 +391,7 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
         const [servicesSnapshot, offersSnapshot, vendorsSnapshot] = await Promise.all([
             getDocs(queries[0]),
             getDocs(queries[1]),
-            getDocs(collection(db, 'vendors')) // Fetch all vendors to map verification status and avatar
+            getDocs(collection(db, 'vendors'))
         ]);
 
         const vendorsData = new Map(vendorsSnapshot.docs.map(doc => [doc.id, doc.data() as Omit<VendorProfile, 'id'>]));
@@ -425,7 +421,6 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
         
         let combined = [...services, ...offers];
         if (count) {
-            // This sort is arbitrary for now, can be improved with timestamps
             combined = combined.slice(0, count);
         }
         return combined;
@@ -441,7 +436,6 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
 export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer | null> {
     if (!id) return null;
     try {
-        // Check services collection first
         let docRef = doc(db, 'services', id);
         let docSnap = await getDoc(docRef);
 
@@ -449,7 +443,6 @@ export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer 
             return { id: docSnap.id, ...docSnap.data(), type: 'service' } as Service;
         }
 
-        // If not found in services, check offers collection
         docRef = doc(db, 'offers', id);
         docSnap = await getDoc(docRef);
 
@@ -457,7 +450,6 @@ export async function getServiceOrOfferById(id: string): Promise<ServiceOrOffer 
             return { id: docSnap.id, ...docSnap.data(), type: 'offer' } as Offer;
         }
         
-        // If not found in either
         return null;
 
     } catch (e) {
@@ -529,7 +521,6 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id'| 'stat
                 });
             }
 
-            // Add the formatted message to the chat
             const messagesRef = collection(db, `chats/${chatId}/messages`);
             const newMessage: Omit<ChatMessage, 'id'> = {
                 senderId: request.clientId,
@@ -538,12 +529,11 @@ export async function createQuoteRequest(request: Omit<QuoteRequest, 'id'| 'stat
             };
             transaction.set(doc(messagesRef), newMessage);
 
-            // Create the quote request document
             const quoteRef = collection(db, 'quoteRequests');
             const newQuoteRequest: Omit<QuoteRequest, 'id'> = {
                 ...restOfRequest,
                 serviceTitle: item.title,
-                message: message, // Save the original, unformatted message here
+                message: message,
                 status: 'pending',
                 createdAt: serverTimestamp()
             }
@@ -592,7 +582,6 @@ export async function respondToQuote(requestId: string, vendorId: string, client
 
         const responseMessage = formatQuoteResponseMessage(requestId, quoteData.serviceTitle, quoteData.serviceTitle, lineItems, total, response);
 
-        // 1. Update the quote request itself
         transaction.update(quoteRef, {
             status: 'responded',
             quotePrice: total,
@@ -600,7 +589,6 @@ export async function respondToQuote(requestId: string, vendorId: string, client
             lineItems: lineItems
         });
         
-        // 2. Send a message to the chat
         const messagesRef = collection(db, `chats/${chatId}/messages`);
         const newMessage: Omit<ChatMessage, 'id'> = {
             senderId: vendorId,
@@ -609,7 +597,6 @@ export async function respondToQuote(requestId: string, vendorId: string, client
         };
         transaction.set(doc(messagesRef), newMessage);
         
-        // 3. Update the chat's last message info
         transaction.update(chatRef, {
             lastMessage: responseMessage,
             lastMessageTimestamp: newMessage.timestamp,
@@ -631,10 +618,8 @@ export async function approveQuote(quoteRequestId: string) {
         
         if (quote.status !== 'responded') throw new Error("This quote has already been actioned.");
 
-        // Update quote status
         transaction.update(quoteRef, { status: 'approved' });
 
-        // Create booking
         const service = await getServiceOrOfferById(quote.serviceId);
         if (!service) throw new Error("Original service/offer not found");
 
@@ -644,7 +629,7 @@ export async function approveQuote(quoteRequestId: string) {
             clientId: quote.clientId,
             vendorId: quote.vendorId,
             date: new Date(quote.eventDate),
-            time: 'N/A', // Time not captured in quote, can be updated later
+            time: 'N/A',
             serviceId: quote.serviceId,
             serviceType: service.type,
         };
@@ -762,7 +747,6 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
     const reviewRef = collection(db, 'reviews');
     const vendorRef = doc(db, 'vendors', vendorId);
     
-    // The serviceId could be for a service OR an offer, we need to check both
     const serviceDocRef = doc(db, 'services', serviceId);
     const offerDocRef = doc(db, 'offers', serviceId);
 
@@ -781,11 +765,9 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
             const vendorData = vendorDoc.data() as VendorProfile;
             const listingData = listingDoc.data() as ServiceOrOffer;
 
-            // Add the new review
             const newReview = { ...reviewData, createdAt: serverTimestamp() };
             transaction.set(doc(reviewRef), newReview);
 
-            // Update vendor's aggregate rating
             const newVendorReviewCount = (vendorData.reviewCount || 0) + 1;
             const newVendorRating = ((vendorData.rating || 0) * (vendorData.reviewCount || 0) + rating) / newVendorReviewCount;
             transaction.update(vendorRef, { 
@@ -793,7 +775,6 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
                 rating: newVendorRating 
             });
 
-            // Update service's/offer's aggregate rating
             const newListingReviewCount = (listingData.reviewCount || 0) + 1;
             const newListingRating = ((listingData.rating || 0) * (listingData.reviewCount || 0) + rating) / newListingReviewCount;
             transaction.update(listingDoc.ref, { 
@@ -809,8 +790,6 @@ export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>)
 
 export async function getReviewsForVendor(vendorId: string): Promise<Review[]> {
     if (!vendorId) return [];
-    // Firestore does not allow filtering by one field and ordering by another without a composite index.
-    // So we fetch all reviews for the vendor and sort them in the client.
     const q = query(collection(db, 'reviews'), where('vendorId', '==', vendorId));
     const reviews = await fetchCollection<Review>('reviews', q, (data: DocumentData) => ({
         id: data.id,
@@ -917,8 +896,6 @@ export async function deleteUser(userId: string, role: 'client' | 'vendor') {
         const vendorRef = doc(db, 'vendors', userId);
         batch.delete(vendorRef);
     }
-    // Note: In a real app, you would also need to delete associated data
-    // like bookings, messages, timelines etc. This is a simplified version.
     await batch.commit();
 }
 
@@ -981,7 +958,6 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
 
     const monthlyData: { [key: string]: { quotes: number; bookings: number } } = {};
 
-    // Initialize last 6 months
     for (let i = 0; i < 6; i++) {
       const monthDate = subMonths(new Date(), i);
       const monthKey = format(monthDate, 'MMM');
@@ -1006,7 +982,7 @@ export async function getVendorAnalytics(vendorId: string): Promise<VendorAnalyt
 
     return Object.entries(monthlyData)
       .map(([month, data]) => ({ month, ...data }))
-      .reverse(); // To have the current month last
+      .reverse();
 
   } catch (e) {
     console.warn("Firebase error getting vendor analytics:", e);
@@ -1032,7 +1008,6 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
 
         const monthlyData: { [key: string]: { Clients: number; Vendors: number } } = {};
 
-        // Initialize last 6 months
         for (let i = 0; i < 6; i++) {
             const monthDate = subMonths(new Date(), i);
             const monthKey = format(monthDate, 'MMM');
@@ -1043,7 +1018,7 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
 
         recentUsersSnapshot.forEach(doc => {
             const data = doc.data() as UserProfile;
-            if (data.createdAt) { // Defensive check
+            if (data.createdAt) {
                 const createdAtDate = data.createdAt instanceof Date ? data.createdAt : data.createdAt.toDate();
                 const monthKey = format(createdAtDate, 'MMM');
                 if (monthlyData[monthKey]) {
@@ -1104,20 +1079,6 @@ export async function updateVendorInquiryStatus(inquiryId: string, status: Vendo
 export async function getPendingMediaForModeration(): Promise<any[]> {
     const allItems: any[] = [];
 
-    // Fetch from vendors (profile pictures)
-    const vendorsQuery = query(collection(db, 'vendors'));
-    const vendorsSnapshot = await getDocs(vendorsQuery);
-    vendorsSnapshot.forEach(doc => {
-        const vendor = doc.data() as VendorProfile;
-        if (vendor.avatar && !vendor.avatar.startsWith('http')) { // Assuming data URIs need moderation
-            // This part is tricky as we need to know if it's pending.
-            // A real system would have a status field on the avatar itself.
-            // For now, let's assume any non-URL avatar on a non-admin could be pending.
-            // This is a simplification.
-        }
-    });
-
-    // Fetch from services and offers (portfolio media)
     const servicesSnapshot = await getDocs(collection(db, 'services'));
     servicesSnapshot.forEach(doc => {
         const service = { id: doc.id, ...doc.data() } as Service;
@@ -1146,9 +1107,6 @@ export async function moderateMedia(ownerId: string, listingType: 'service' | 'o
     
     if (listingType === 'profile') {
         const vendorRef = doc(db, 'vendors', ownerId);
-        // This is simplified. A real app would store avatar status separately.
-        // We'll just assume we're updating the main avatar URL and it's now "approved".
-        // No real status change is possible with current structure.
         console.log(`Moderating profile picture for ${ownerId} - ${decision}`);
 
     } else {
@@ -1181,10 +1139,8 @@ export async function moderateMedia(ownerId: string, listingType: 'service' | 'o
 export function getChatsForUser(userId: string | undefined, callback: (chats: Chat[]) => void): () => void {
     let q;
     if (userId) {
-        // The query that requires an index has been modified to remove the orderBy clause.
         q = query(collection(db, 'chats'), where('participantIds', 'array-contains', userId));
     } else {
-        // For admin, get all chats, sorted
         q = query(collection(db, 'chats'), orderBy('lastMessageTimestamp', 'desc'));
     }
     
@@ -1195,12 +1151,10 @@ export function getChatsForUser(userId: string | undefined, callback: (chats: Ch
                 id: doc.id,
                 ...data,
                 lastMessageTimestamp: data.lastMessageTimestamp.toDate(),
-                // Ensure participants have a verification status
                 participants: data.participants.map((p: any) => ({ ...p, verification: p.verification || 'none' })),
             } as Chat;
         });
 
-        // Sort the chats manually in the code
         chats.sort((a, b) => b.lastMessageTimestamp.getTime() - a.lastMessageTimestamp.getTime());
 
         callback(chats);
@@ -1261,10 +1215,8 @@ export async function sendMessage(chatId: string, senderId: string, text: string
                  lastMessageText = "You forwarded an item."
             }
 
-            // Add new message
             transaction.set(doc(messagesRef), newMessage);
 
-            // Update chat document
             transaction.update(chatRef, {
                 lastMessage: lastMessageText,
                 lastMessageTimestamp: newMessage.timestamp,
@@ -1350,7 +1302,7 @@ export function getNotifications(userId: string, callback: (notifications: AppNo
 export async function markNotificationsAsRead(userId: string) {
     if (!userId) return;
     const userRef = doc(db, 'users', userId);
-    // This is a simple flag. For more granular control, we would iterate and update individual notifications.
     await updateDoc(userRef, { hasUnreadNotifications: false });
 }
     
+

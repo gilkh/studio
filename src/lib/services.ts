@@ -1,4 +1,5 @@
 
+
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer, deleteField } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
@@ -16,45 +17,27 @@ export async function createNewUser(data: {
     businessName?: string;
     vendorCode?: string;
     avatar?: string;
-}, isSocialSignIn = false, id?: string, emailVerified = false) {
-    const { accountType, firstName, lastName, email, password, businessName, vendorCode, avatar, phone } = data;
+}) {
+    const { accountType, email, password, vendorCode, businessName } = data;
     
-    if (!isSocialSignIn && !password) {
+    if (!password) {
         throw new Error("Password is required to create a new user.");
     }
     
-    const userCredential = isSocialSignIn ? null : await createUserWithEmailAndPassword(auth, email, password!);
-    const firebaseUser = userCredential ? userCredential.user : auth.currentUser;
-    const userId = firebaseUser?.uid || id;
+    // Step 1: Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
 
-    if (!userId) {
-        throw new Error("Could not create user account.");
-    }
-
-    if (firebaseUser && !isSocialSignIn) {
-      try {
-        await sendEmailVerification(firebaseUser);
-      } catch (error) {
-        console.warn("Could not send verification email on signup.", error);
-      }
+    if (!firebaseUser) {
+        throw new Error("Could not create user account in Firebase Authentication.");
     }
     
-    const userProfile: Omit<UserProfile, 'id'> = {
-        firstName,
-        lastName,
-        email,
-        phone: phone || '',
-        createdAt: new Date(),
-        savedItemIds: [],
-        status: 'active',
-        avatar: avatar || firebaseUser?.photoURL || '',
-        emailVerified: firebaseUser?.emailVerified ?? emailVerified,
-    };
-
-    if (accountType === 'client') {
-        await setDoc(doc(db, 'users', userId), userProfile);
-        return { success: true, userId, role: 'client' };
-    } else if (accountType === 'vendor') {
+    // Step 2: Send verification email
+    await sendEmailVerification(firebaseUser);
+    
+    // Step 3: For vendors, validate the code and mark it as "reserved" for this user
+    // The full vendor profile will be created upon first login after verification.
+    if (accountType === 'vendor') {
         if (!vendorCode) {
             throw new Error("A valid vendor code is required to register as a vendor.");
         }
@@ -67,42 +50,32 @@ export async function createNewUser(data: {
         }
         
         const codeDoc = codeSnapshot.docs[0];
-
-        const vendorProfile: Omit<VendorProfile, 'id'> = {
-            businessName: businessName || `${firstName}'s Business`,
-            email,
-            ownerId: userId,
-            category: 'Venues', // Default category
-            tagline: '',
-            description: '',
-            phone: phone || '',
-            accountTier: 'free',
-            createdAt: new Date(),
-            status: 'active',
-            rating: 0,
-            reviewCount: 0,
-            avatar: avatar || '',
-            portfolio: [],
-            verification: 'none',
-        };
-
-        const batch = writeBatch(db);
+        // Pre-claim the code for this user ID to prevent race conditions.
+        // The full profile creation on first login will finalize its use.
+        await updateDoc(codeDoc.ref, {
+             usedBy: firebaseUser.uid, 
+             usedAt: serverTimestamp() 
+        });
         
-        const userDocRef = doc(db, 'users', userId);
-        batch.set(userDocRef, userProfile);
-
-        const vendorDocRef = doc(db, 'vendors', userId);
-        batch.set(vendorDocRef, vendorProfile);
-
-        const codeDocRef = doc(db, 'vendorCodes', codeDoc.id);
-        batch.update(codeDocRef, { isUsed: true, usedBy: userId, usedAt: new Date() });
-
-        await batch.commit();
-
-        return { success: true, userId, role: 'vendor' };
+        // Store temporary vendor info needed for first login.
+        const tempVendorData = {
+            ...data,
+            id: firebaseUser.uid,
+            isPendingVerification: true,
+        };
+        await setDoc(doc(db, 'pendingVendors', firebaseUser.uid), tempVendorData);
     } else {
-        throw new Error("Invalid account type specified.");
+        // Store temporary client info
+        const tempClientData = {
+             ...data,
+            id: firebaseUser.uid,
+            isPendingVerification: true,
+        };
+        await setDoc(doc(db, 'pendingClients', firebaseUser.uid), tempClientData);
     }
+    
+    // Return success, but note that profile is not created in main DB yet.
+    return { success: true, userId: firebaseUser.uid, role: accountType, verificationSent: true };
 }
 
 
@@ -123,9 +96,82 @@ export async function signInUser(email: string, password?: string): Promise<{ su
         if (!user.emailVerified) {
             return { success: false, message: 'Please verify your email before logging in. Check your inbox for a verification link.'};
         }
+        
+        // Check if user profile already exists.
+        let userProfileDoc = await getDoc(doc(db, 'users', user.uid));
+        
+        if (!userProfileDoc.exists()) {
+            // First time login for a verified user, let's create their profile.
+            console.log(`First verified login for ${user.uid}. Creating profile...`);
 
-        const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
-        if (!userProfileDoc.exists() || userProfileDoc.data().status === 'disabled') {
+            // Check if they are a pending vendor or client
+            const pendingVendorRef = doc(db, 'pendingVendors', user.uid);
+            const pendingVendorSnap = await getDoc(pendingVendorRef);
+            
+            const pendingClientRef = doc(db, 'pendingClients', user.uid);
+            const pendingClientSnap = await getDoc(pendingClientRef);
+            
+            if (pendingVendorSnap.exists()) {
+                const data = pendingVendorSnap.data() as any;
+                const userProfile: Omit<UserProfile, 'id'> = {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    email: data.email,
+                    phone: data.phone || '',
+                    createdAt: new Date(),
+                    savedItemIds: [],
+                    status: 'active',
+                    avatar: data.avatar || user?.photoURL || '',
+                    emailVerified: user.emailVerified,
+                };
+                const vendorProfile: Omit<VendorProfile, 'id'> = {
+                    businessName: data.businessName || `${data.firstName}'s Business`,
+                    email: data.email,
+                    ownerId: user.uid,
+                    category: 'Venues',
+                    tagline: '',
+                    description: '',
+                    phone: data.phone || '',
+                    accountTier: 'free',
+                    createdAt: new Date(),
+                    status: 'active',
+                    rating: 0,
+                    reviewCount: 0,
+                    avatar: data.avatar || '',
+                    portfolio: [],
+                    verification: 'none',
+                };
+                const batch = writeBatch(db);
+                batch.set(doc(db, 'users', user.uid), userProfile);
+                batch.set(doc(db, 'vendors', user.uid), vendorProfile);
+                batch.update(doc(db, 'vendorCodes', data.vendorCode), { isUsed: true }); // Finalize use
+                batch.delete(pendingVendorRef); // Clean up
+                await batch.commit();
+
+            } else if (pendingClientSnap.exists()) {
+                 const data = pendingClientSnap.data() as any;
+                 const userProfile: Omit<UserProfile, 'id'> = {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    email: data.email,
+                    phone: data.phone || '',
+                    createdAt: new Date(),
+                    savedItemIds: [],
+                    status: 'active',
+                    avatar: data.avatar || user?.photoURL || '',
+                    emailVerified: user.emailVerified,
+                };
+                await setDoc(doc(db, 'users', user.uid), userProfile);
+                await deleteDoc(pendingClientRef); // Clean up
+            } else {
+                 return { success: false, message: 'Your account is verified, but we could not find your initial registration data. Please contact support.' };
+            }
+            // Re-fetch the doc to continue
+            userProfileDoc = await getDoc(doc(db, 'users', user.uid));
+        }
+
+
+        if (userProfileDoc.data()?.status === 'disabled') {
             return { success: false, message: 'Your account has been disabled. Please contact support.'};
         }
 
@@ -166,15 +212,20 @@ async function handleSocialSignIn(firebaseUser: FirebaseUser) {
     } else {
         const [firstName, ...lastNameParts] = (firebaseUser.displayName || 'New User').split(' ');
         const lastName = lastNameParts.join(' ');
-        const newUserPayload = {
-            accountType: 'client' as const,
+        
+        const userProfile: Omit<UserProfile, 'id'> = {
             firstName,
             lastName,
             email: firebaseUser.email,
             phone: firebaseUser.phoneNumber || '',
+            createdAt: new Date(),
+            savedItemIds: [],
+            status: 'active',
             avatar: firebaseUser.photoURL || '',
+            emailVerified: true, // Social provider handles verification
         };
-        return await createNewUser(newUserPayload, true, firebaseUser.uid, true);
+        await setDoc(userRef, userProfile);
+        return { success: true, userId: firebaseUser.uid, role: 'client' };
     }
 }
 

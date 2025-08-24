@@ -1,4 +1,5 @@
 
+
 export type ServiceType = 'service' | 'offer';
 export type ServiceCategory = 'Venues' | 'Catering & Sweets' | 'Entertainment' | 'Lighting & Sound' | 'Photography & Videography' | 'Decoration' | 'Beauty & Grooming' | 'Transportation' | 'Invitations & Printables' | 'Rentals & Furniture' | 'Security and Crowd Control';
 export type Location = 'Beirut' | 'Mount Lebanon' | 'North Lebanon' | 'South Lebanon' | 'Nabatieh' | 'Beqaa' | 'Baalbek-Hermel' | 'Akkar';
@@ -92,7 +93,7 @@ export interface QuoteRequest {
   guestCount: number;
   phone: string;
   status: 'pending' | 'responded' | 'approved' | 'declined';
-  createdAt: Date;
+  createdAt: any; // Allow for server timestamp
   quotePrice?: number;
   quoteResponse?: string;
   lineItems?: LineItem[];
@@ -176,6 +177,7 @@ export interface UserProfile {
     createdAt: Date;
     savedItemIds?: string[];
     status: 'active' | 'disabled';
+    avatar?: string;
     emailVerified: boolean;
     fcmTokens?: string[];
 }

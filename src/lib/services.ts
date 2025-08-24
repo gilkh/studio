@@ -1,5 +1,4 @@
 
-
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer, deleteField } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
@@ -407,7 +406,7 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
                 ...data, 
                 type: 'service',
                 vendorVerification: vendor?.verification || 'none',
-                vendorAvatar: vendor?.avatar || data.vendorAvatar
+                vendorAvatar: vendor?.avatar || ''
             } as Service;
         });
         const offers = offersSnapshot.docs.map(doc => {
@@ -418,7 +417,7 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
                 ...data, 
                 type: 'offer',
                 vendorVerification: vendor?.verification || 'none',
-                vendorAvatar: vendor?.avatar || data.vendorAvatar
+                vendorAvatar: vendor?.avatar || ''
             } as Offer;
         });
         
@@ -1296,3 +1295,6 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
    await confirmPasswordReset(auth, token, newPassword);
 }
 
+
+
+    

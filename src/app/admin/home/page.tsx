@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMediaForModeration, moderateMedia, getPendingListings, updateListingStatus } from '@/lib/services';
+import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingListings, updateListingStatus, createNotification } from '@/lib/services';
 import { sendPushNotification } from '@/lib/actions/notifications';
-import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, MediaItem, ServiceOrOffer } from '@/lib/types';
+import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, ServiceOrOffer } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand, ThumbsUp, ThumbsDown, Image as ImageIcon, Send, Mail, Link as LinkIcon, ListChecks } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, ThumbsUp, ThumbsDown, Send, Mail, Link as LinkIcon, ListChecks } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,6 @@ import { AdminAnalyticsChart } from '@/components/admin-analytics-chart';
 import { AdminStatCard } from '@/components/admin-stat-card';
 import { MessagingPanel } from '@/components/messaging-panel';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,16 +46,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'], provider?: string };
-
-interface PendingMediaItem extends MediaItem {
-    context: {
-        ownerId: string;
-        ownerName: string;
-        listingId?: string;
-        listingTitle?: string;
-        listingType?: 'service' | 'offer' | 'profile';
-    };
-}
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -80,7 +69,6 @@ export default function AdminHomePage() {
   const [users, setUsers] = useState<DisplayUser[]>([]);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [vendorInquiries, setVendorInquiries] = useState<VendorInquiry[]>([]);
-  const [pendingMedia, setPendingMedia] = useState<PendingMediaItem[]>([]);
   const [pendingListings, setPendingListings] = useState<ServiceOrOffer[]>([]);
   const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,20 +91,18 @@ export default function AdminHomePage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [vendorCodes, allUsers, requests, platformAnalytics, inquiries, media, listings] = await Promise.all([
+      const [vendorCodes, allUsers, requests, platformAnalytics, inquiries, listings] = await Promise.all([
         getVendorCodes(),
         getAllUsersAndVendors(),
         getUpgradeRequests(),
         getPlatformAnalytics(),
         getVendorInquiries(),
-        getPendingMediaForModeration(),
         getPendingListings(),
       ]);
       setCodes(vendorCodes);
       setUsers(allUsers as DisplayUser[]);
       setUpgradeRequests(requests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
       setVendorInquiries(inquiries.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime()));
-      setPendingMedia(media as PendingMediaItem[]);
       setPendingListings(listings);
       setAnalytics(platformAnalytics);
     } catch (error) {
@@ -220,29 +206,20 @@ export default function AdminHomePage() {
     }
   };
 
- const handleModerateMedia = async (item: PendingMediaItem, decision: 'approved' | 'rejected') => {
-    const uniqueId = `${item.context.listingType}-${item.context.listingId || item.context.ownerId}-${item.url.slice(-10)}`;
-    setIsModerating(uniqueId);
-    try {
-        await moderateMedia(item.context.ownerId, item.context.listingType, item.url, decision, item.context.listingId);
-        setPendingMedia(prev => prev.filter(media => media.url !== item.url));
-        toast({
-            title: `Media ${decision}`,
-            description: 'The content moderation status has been updated.'
-        });
-    } catch (error) {
-        console.error("Moderation failed", error);
-        toast({ title: "Moderation Failed", description: "Could not update media status.", variant: "destructive" });
-    } finally {
-        setIsModerating(null);
-    }
-  };
-  
   const handleListingStatusChange = async (listing: ServiceOrOffer, decision: 'approved' | 'rejected') => {
     setIsModerating(listing.id);
     try {
       await updateListingStatus(listing.id, listing.type, decision);
       setPendingListings(prev => prev.filter(l => l.id !== listing.id));
+      
+      if (decision === 'approved') {
+          await createNotification({
+              userId: listing.vendorId,
+              message: `Congratulations! Your listing "${listing.title}" has been approved.`,
+              link: `/vendor/manage-services`,
+          })
+      }
+
       toast({
         title: `Listing ${decision}`,
         description: `The listing "${listing.title}" has been ${decision}.`
@@ -281,7 +258,7 @@ export default function AdminHomePage() {
     toast({ title: "Copied!", description: "Code copied to clipboard." });
   }
 
-  const totalPendingModeration = pendingMedia.length + pendingListings.length;
+  const totalPendingModeration = pendingListings.length;
 
   return (
     <div className="space-y-8">
@@ -498,134 +475,60 @@ export default function AdminHomePage() {
         </TabsContent>
 
         <TabsContent value="moderation" className="mt-4">
-            <Tabs defaultValue="listings" className="w-full">
-                <TabsList>
-                    <TabsTrigger value="listings">
-                        Listings
-                        {pendingListings.length > 0 && <Badge className="ml-2">{pendingListings.length}</Badge>}
-                    </TabsTrigger>
-                    <TabsTrigger value="media">
-                        Media
-                        {pendingMedia.length > 0 && <Badge className="ml-2">{pendingMedia.length}</Badge>}
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent value="listings" className="mt-4">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Listing Approval Queue</CardTitle>
-                            <CardDescription>Review and approve or reject new vendor listings.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Listing</TableHead>
-                                        <TableHead>Vendor</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Category</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? (
-                                        [...Array(2)].map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-6 w-40" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-28" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
-                                        </TableRow>
-                                        ))
-                                    ) : pendingListings.length > 0 ? pendingListings.map(item => (
-                                        <TableRow key={item.id}>
-                                            <TableCell className="font-medium">{item.title}</TableCell>
-                                            <TableCell>{item.vendorName}</TableCell>
-                                            <TableCell><Badge variant="secondary" className="capitalize">{item.type}</Badge></TableCell>
-                                            <TableCell>{item.category}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleListingStatusChange(item, 'approved')} disabled={isModerating === item.id}>
-                                                        {isModerating === item.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsUp className="h-4 w-4"/>}
-                                                    </Button>
-                                                    <Button size="sm" variant="destructive" onClick={() => handleListingStatusChange(item, 'rejected')} disabled={isModerating === item.id}>
-                                                        {isModerating === item.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsDown className="h-4 w-4"/>}
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center text-muted-foreground h-24">No listings pending review.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="media" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Media Moderation Queue</CardTitle>
-                            <CardDescription>Review and approve or reject vendor-uploaded media.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Media</TableHead>
-                                        <TableHead>Uploader</TableHead>
-                                        <TableHead>Context</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? (
-                                        [...Array(3)].map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-24 w-24 rounded-md" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-40" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
-                                        </TableRow>
-                                        ))
-                                    ) : pendingMedia.length > 0 ? pendingMedia.map(item => {
-                                        const uniqueId = `${item.context.listingType}-${item.context.listingId || item.context.ownerId}-${item.url.slice(-10)}`;
-                                        return (
-                                        <TableRow key={uniqueId}>
-                                            <TableCell>
-                                                <Image src={item.url} alt="Pending media" width={100} height={100} className="rounded-md object-cover aspect-square" />
-                                            </TableCell>
-                                            <TableCell className="font-medium">{item.context.ownerName}</TableCell>
-                                            <TableCell>
-                                                <p className="font-semibold capitalize">{item.context.listingType} Image</p>
-                                                <p className="text-sm text-muted-foreground">{item.context.listingTitle || item.context.ownerName}</p>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleModerateMedia(item, 'approved')} disabled={isModerating === uniqueId}>
-                                                        {isModerating === uniqueId ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsUp className="h-4 w-4"/>}
-                                                    </Button>
-                                                    <Button size="sm" variant="destructive" onClick={() => handleModerateMedia(item, 'rejected')} disabled={isModerating === uniqueId}>
-                                                        {isModerating === uniqueId ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsDown className="h-4 w-4"/>}
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground h-24">No media pending review.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Listing Approval Queue</CardTitle>
+                    <CardDescription>Review and approve or reject new vendor listings. Approving a listing also approves all its pending media.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Listing</TableHead>
+                                <TableHead>Vendor</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(2)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
+                                </TableRow>
+                                ))
+                            ) : pendingListings.length > 0 ? pendingListings.map(item => (
+                                <TableRow key={item.id}>
+                                    <TableCell className="font-medium">{item.title}</TableCell>
+                                    <TableCell>{item.vendorName}</TableCell>
+                                    <TableCell><Badge variant="secondary" className="capitalize">{item.type}</Badge></TableCell>
+                                    <TableCell>{item.category}</TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex gap-2 justify-end">
+                                            <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleListingStatusChange(item, 'approved')} disabled={isModerating === item.id}>
+                                                {isModerating === item.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsUp className="h-4 w-4"/>}
+                                            </Button>
+                                            <Button size="sm" variant="destructive" onClick={() => handleListingStatusChange(item, 'rejected')} disabled={isModerating === item.id}>
+                                                {isModerating === item.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsDown className="h-4 w-4"/>}
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">No listings pending review.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </TabsContent>
-
         
         <TabsContent value="messages" className="mt-4 h-[calc(100vh-20rem)]">
             <Card className="h-full">

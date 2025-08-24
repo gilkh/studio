@@ -66,7 +66,7 @@ const compressImage = (file: File): Promise<string> => {
                 if (!ctx) return reject('Could not get canvas context');
 
                 ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+                resolve(canvas.toDataURL('image/jpeg', 0.9)); // 90% quality JPEG
             };
         };
         reader.onerror = (error) => reject(error);
@@ -133,7 +133,7 @@ export function ManageServiceDialog({ children, service, onListingUpdate }: Mana
             vendorAvatar: vendorProfile.avatar,
             rating: service?.rating || 0,
             reviewCount: service?.reviewCount || 0,
-            image: finalMedia.find(m => m.status === 'approved' && m.type === 'image')?.url || service?.image || 'https://placehold.co/600x400.png',
+            image: finalMedia.find(m => m.status !== 'rejected' && m.type === 'image')?.url || service?.image || 'https://placehold.co/600x400.png',
             media: finalMedia,
             status: 'pending', // Always set to pending on create/update
         }

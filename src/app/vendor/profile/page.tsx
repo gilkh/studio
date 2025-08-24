@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -233,7 +234,7 @@ export default function VendorProfilePage() {
                     if (!ctx) return reject('Could not get canvas context');
     
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', isAvatar ? 0.9 : 0.8));
+                    resolve(canvas.toDataURL('image/jpeg', isAvatar ? 0.95 : 0.9));
                 };
             };
             reader.onerror = (error) => reject(error);

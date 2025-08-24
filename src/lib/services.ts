@@ -39,15 +39,15 @@ export async function createNewUser(data: {
     // The full vendor profile will be created upon first login after verification.
     if (accountType === 'vendor') {
         if (!vendorCode) {
-            // This is a server-side check, the form should enforce it too.
-             const codeQuery = query(collection(db, 'vendorCodes'), where('code', '==', vendorCode), where('isUsed', '==', false));
-             const codeSnapshot = await getDocs(codeQuery);
-            if (codeSnapshot.empty) {
-                throw new Error("Invalid or already used vendor code.");
-            }
-             const codeDoc = codeSnapshot.docs[0];
-            await updateDoc(codeDoc.ref, { isUsed: true, usedBy: firebaseUser.uid, usedAt: serverTimestamp() });
+             throw new Error("A registration code is required for vendors.");
         }
+        const codeQuery = query(collection(db, 'vendorCodes'), where('code', '==', vendorCode), where('isUsed', '==', false));
+        const codeSnapshot = await getDocs(codeQuery);
+        if (codeSnapshot.empty) {
+            throw new Error("Invalid or already used vendor code.");
+        }
+        const codeDoc = codeSnapshot.docs[0];
+        await updateDoc(codeDoc.ref, { isUsed: true, usedBy: firebaseUser.uid, usedAt: serverTimestamp() });
         
         // Store temporary vendor info needed for first login.
         const tempVendorData = {
@@ -116,6 +116,7 @@ export async function signInUser(email: string, password?: string): Promise<{ su
                     status: 'active',
                     avatar: data.avatar || user?.photoURL || '',
                     emailVerified: user.emailVerified,
+                    provider: 'password', // Explicitly set provider
                 };
                 const vendorProfile: Omit<VendorProfile, 'id'> = {
                     businessName: data.businessName || `${data.firstName}'s Business`,
@@ -153,6 +154,7 @@ export async function signInUser(email: string, password?: string): Promise<{ su
                     status: 'active',
                     avatar: data.avatar || user?.photoURL || '',
                     emailVerified: user.emailVerified,
+                    provider: 'password', // Explicitly set provider
                 };
                 await setDoc(doc(db, 'users', user.uid), userProfile);
                 await deleteDoc(pendingClientRef); // Clean up
@@ -197,10 +199,16 @@ async function handleSocialSignIn(firebaseUser: FirebaseUser) {
     }
     const userRef = doc(db, 'users', firebaseUser.uid);
     const userDoc = await getDoc(userRef);
+    const providerId = firebaseUser.providerData?.[0]?.providerId || 'unknown';
+
 
     if (userDoc.exists()) {
         const vendorCheck = await getDoc(doc(db, 'vendors', firebaseUser.uid));
         const role = vendorCheck.exists() ? 'vendor' : 'client';
+        // Update provider if user exists but provider is not set
+        if (!userDoc.data().provider) {
+            await updateDoc(userRef, { provider: providerId });
+        }
         return { success: true, userId: firebaseUser.uid, role };
     } else {
         const [firstName, ...lastNameParts] = (firebaseUser.displayName || 'New User').split(' ');
@@ -216,6 +224,7 @@ async function handleSocialSignIn(firebaseUser: FirebaseUser) {
             status: 'active',
             avatar: firebaseUser.photoURL || '',
             emailVerified: true, // Social provider handles verification
+            provider: providerId,
         };
         await setDoc(userRef, userProfile);
         return { success: true, userId: firebaseUser.uid, role: 'client' };
@@ -231,6 +240,9 @@ export async function signInWithGoogle(): Promise<{ success: boolean; role?: 'cl
         console.error("Google sign-in error:", error);
         if (error.code === 'auth/operation-not-allowed') {
             return { success: false, message: "Google sign-in is not enabled. Please enable it in the Firebase console." };
+        }
+        if (error.code === 'auth/account-exists-with-different-credential') {
+             return { success: false, message: "An account already exists with this email address. Please sign in with your original method." };
         }
         return { success: false, message: error.message };
     }
@@ -860,6 +872,7 @@ export async function getAllUsersAndVendors() {
             rating: vendorData?.rating,
             reviewCount: vendorData?.reviewCount,
             verification: vendorData?.verification,
+            provider: userData.provider || 'password'
         }
     });
 
@@ -908,20 +921,6 @@ export async function deleteUser(userId: string, role: 'client' | 'vendor') {
 export async function resetAllPasswords() {
     console.log("Simulating password reset for all users.");
     return { success: true, message: "Password reset simulation complete. In a real app, emails would be sent." };
-}
-
-export async function updateUserPassword(userId: string, newPassword: string): Promise<void> {
-    // This function will now be a server-side action using the Admin SDK.
-    // It is not available on the client.
-    throw new Error("This function is not available on the client.");
-}
-
-export async function changeUserPassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
-    if (!auth.currentUser) {
-         throw new Error("You must be logged in to change your password.");
-    }
-    // Re-authentication is handled by Firebase automatically if needed.
-    await firebaseUpdatePassword(auth.currentUser, newPassword);
 }
 
 export async function createUpgradeRequest(request: Omit<UpgradeRequest, 'id'| 'requestedAt' | 'status'>) {

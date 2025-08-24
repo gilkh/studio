@@ -180,6 +180,7 @@ export interface UserProfile {
     avatar?: string;
     emailVerified: boolean;
     fcmTokens?: string[];
+    provider?: string;
 }
 
 export interface VendorProfile {

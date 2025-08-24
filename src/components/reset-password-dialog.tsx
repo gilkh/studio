@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState } from 'react';
 import {
@@ -36,9 +37,10 @@ const passwordFormSchema = z.object({
 interface ResetPasswordDialogProps {
   user: UserProfile & { role: 'client' | 'vendor' };
   children: React.ReactNode;
+  disabled?: boolean;
 }
 
-export function ResetPasswordDialog({ user, children }: ResetPasswordDialogProps) {
+export function ResetPasswordDialog({ user, children, disabled = false }: ResetPasswordDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
@@ -69,7 +71,7 @@ export function ResetPasswordDialog({ user, children }: ResetPasswordDialogProps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger asChild disabled={disabled}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Reset Password</DialogTitle>

@@ -13,7 +13,7 @@ import { sendPushNotification } from '@/lib/actions/notifications';
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, MediaItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand, ThumbsUp, ThumbsDown, Image as ImageIcon, Send } from 'lucide-react';
+import { KeyRound, RefreshCcw, Copy, Loader2, User, Building, UserCog, Trash2, MoreVertical, Ban, CheckCircle, UserX, ShieldCheck, ShieldOff, Gem, Phone, CalendarCheck, Star, MessageSquare, PhoneOff, Hand, ThumbsUp, ThumbsDown, Image as ImageIcon, Send, Mail, Link as LinkIcon } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,9 +43,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
-type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'] };
+type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'], provider?: string };
 
 interface PendingMediaItem extends MediaItem {
     context: {
@@ -56,6 +57,22 @@ interface PendingMediaItem extends MediaItem {
         listingType?: 'service' | 'offer' | 'profile';
     };
 }
+
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
+            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.657-3.356-11.303-7.918l-6.573,4.817C9.656,39.663,16.318,44,24,44z" />
+            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,34.551,44,29.865,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+        </svg>
+    );
+}
+
+const providerIcons: Record<string, React.ElementType> = {
+  'password': Mail,
+  'google.com': GoogleIcon
+};
 
 
 export default function AdminHomePage() {
@@ -319,7 +336,9 @@ export default function AdminHomePage() {
                                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                                 </TableRow>
                                 ))
-                            ) : users.map(user => (
+                            ) : users.map(user => {
+                                const ProviderIcon = providerIcons[user.provider || 'password'] || LinkIcon;
+                                return (
                                 <TableRow key={user.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -328,7 +347,19 @@ export default function AdminHomePage() {
                                                 <Link href={`/admin/user/${user.id}`} className="font-medium hover:underline">
                                                     {user.role === 'vendor' ? user.businessName : `${user.firstName} ${user.lastName}`}
                                                 </Link>
-                                                 <span className="text-sm text-muted-foreground">{user.email}</span>
+                                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                                     <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <ProviderIcon className="h-4 w-4" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>Provider: {user.provider}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    <span>{user.email}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -394,8 +425,8 @@ export default function AdminHomePage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <ResetPasswordDialog user={user}>
-                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                <ResetPasswordDialog user={user} disabled={user.provider !== 'password'}>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={user.provider !== 'password'}>
                                                         <UserCog className="mr-2 h-4 w-4" />
                                                         Reset Password
                                                     </DropdownMenuItem>
@@ -436,7 +467,7 @@ export default function AdminHomePage() {
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )})}
                         </TableBody>
                      </Table>
                 </CardContent>

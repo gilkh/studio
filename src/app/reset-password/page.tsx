@@ -20,11 +20,11 @@ function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const token = searchParams.get('token');
+  const oobCode = searchParams.get('oobCode');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) {
+    if (!oobCode) {
       toast({ title: 'Error', description: 'Missing or invalid reset token.', variant: 'destructive' });
       return;
     }
@@ -38,7 +38,7 @@ function ResetPasswordForm() {
     }
     setIsLoading(true);
     try {
-      await resetPasswordWithToken(token, password);
+      await resetPasswordWithToken(oobCode, password);
       setIsSuccess(true);
       toast({ title: 'Success', description: 'Your password has been reset successfully. You can now log in.' });
     } catch (error) {
@@ -49,10 +49,15 @@ function ResetPasswordForm() {
     }
   };
   
-   if (!token) {
+   if (!oobCode) {
     return (
         <div className="text-center text-destructive">
             <p>Invalid password reset link. The token is missing or has expired.</p>
+             <Button asChild className="mt-4" variant="link">
+                <Link href="/login">
+                    Back to Login
+                </Link>
+            </Button>
         </div>
     )
    }

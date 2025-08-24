@@ -2,7 +2,7 @@
 'use server';
 
 import { collection, getDocs } from 'firebase/firestore';
-import { adminDb, adminMessaging } from '@/lib/firebase-admin';
+import { adminDb, adminAuth, adminMessaging } from '@/lib/firebase-admin';
 import type { UserProfile } from '@/lib/types';
 
 export async function sendPushNotification(target: 'all' | 'clients' | 'vendors', title: string, body: string) {
@@ -50,5 +50,17 @@ export async function sendPushNotification(target: 'all' | 'clients' | 'vendors'
     } catch (error) {
         console.error('Error sending push notification:', error);
         throw error;
+    }
+}
+
+
+export async function adminUpdateUserPassword(userId: string, newPassword: string): Promise<void> {
+    try {
+        await adminAuth.updateUser(userId, {
+            password: newPassword,
+        });
+    } catch(error) {
+        console.error(`Failed to update password for user ${userId}`, error);
+        throw new Error("Could not update the user's password via Admin SDK.");
     }
 }

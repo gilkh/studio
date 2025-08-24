@@ -3,7 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { verifyUserEmail } from '@/lib/services';
+import { applyActionCode } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -15,10 +16,10 @@ function VerifyEmailStatus() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your email...');
 
-  const token = searchParams.get('token');
+  const oobCode = searchParams.get('oobCode');
 
   useEffect(() => {
-    if (!token) {
+    if (!oobCode) {
       setStatus('error');
       setMessage('No verification token provided. The link may be invalid.');
       return;
@@ -26,16 +27,19 @@ function VerifyEmailStatus() {
 
     async function verify() {
       try {
-        await verifyUserEmail(token as string);
+        await applyActionCode(auth, oobCode as string);
         setStatus('success');
         setMessage('Your email has been successfully verified. You can now log in.');
         toast({
           title: 'Email Verified!',
           description: 'You can now log in to your account.',
         });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      } catch (error: any) {
         setStatus('error');
+        let errorMessage = 'An unknown error occurred during verification.';
+        if (error.code === 'auth/invalid-action-code') {
+            errorMessage = 'The verification link is invalid or has expired. Please try signing up again or request a new link.';
+        }
         setMessage(errorMessage);
         toast({
           title: 'Verification Failed',
@@ -45,7 +49,7 @@ function VerifyEmailStatus() {
       }
     }
     verify();
-  }, [token, toast]);
+  }, [oobCode, toast]);
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4">

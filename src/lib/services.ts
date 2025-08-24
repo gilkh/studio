@@ -3,9 +3,8 @@ import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, Docu
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
-import { hashPassword, verifyPassword } from './crypto';
 import { subMonths, format, startOfMonth } from 'date-fns';
-import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
 
 export async function createNewUser(data: {
     accountType: 'client' | 'vendor';
@@ -19,14 +18,28 @@ export async function createNewUser(data: {
     avatar?: string;
 }, isSocialSignIn = false, id?: string, emailVerified = false) {
     const { accountType, firstName, lastName, email, password, businessName, vendorCode, avatar, phone } = data;
-    const userId = id || `${firstName.toLowerCase()}-${lastName.toLowerCase()}`.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
-
+    
     if (!isSocialSignIn && !password) {
         throw new Error("Password is required to create a new user.");
     }
     
-    // Base user profile
-    const userProfile: Omit<UserProfile, 'id' | 'password'> & { password?: string } = {
+    const userCredential = isSocialSignIn ? null : await createUserWithEmailAndPassword(auth, email, password!);
+    const firebaseUser = userCredential ? userCredential.user : auth.currentUser;
+    const userId = firebaseUser?.uid || id;
+
+    if (!userId) {
+        throw new Error("Could not create user account.");
+    }
+
+    if (firebaseUser && !isSocialSignIn) {
+      try {
+        await sendEmailVerification(firebaseUser);
+      } catch (error) {
+        console.warn("Could not send verification email on signup.", error);
+      }
+    }
+    
+    const userProfile: Omit<UserProfile, 'id'> = {
         firstName,
         lastName,
         email,
@@ -34,20 +47,12 @@ export async function createNewUser(data: {
         createdAt: new Date(),
         savedItemIds: [],
         status: 'active',
-        avatar: avatar || '',
-        emailVerified: emailVerified,
+        avatar: avatar || firebaseUser?.photoURL || '',
+        emailVerified: firebaseUser?.emailVerified ?? emailVerified,
     };
-
-    // Conditionally add hashed password if it exists
-    if (password) {
-        userProfile.password = await hashPassword(password);
-    }
 
     if (accountType === 'client') {
         await setDoc(doc(db, 'users', userId), userProfile);
-        if (!isSocialSignIn) {
-            await sendVerificationEmail(userId, email);
-        }
         return { success: true, userId, role: 'client' };
     } else if (accountType === 'vendor') {
         if (!vendorCode) {
@@ -112,59 +117,38 @@ export async function signInUser(email: string, password?: string): Promise<{ su
     }
     
     try {
-        const userQuery = query(collection(db, 'users'), where('email', '==', email));
-        const userSnapshot = await getDocs(userQuery);
-        
-        if (userSnapshot.empty) {
-            console.log(`No user found with email: ${email}`);
-            return { success: false, message: 'No account found with this email.' }; // No user found
-        }
-        
-        const userDoc = userSnapshot.docs[0];
-        const userData = userDoc.data() as UserProfile;
-        
-        if (!password || !userData.password) {
-            console.warn(`Login attempt without password for user: ${email}`);
-            return { success: false, message: 'Password not set for this account.'};
-        }
-        
-        if (!userData.emailVerified) {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password!);
+        const user = userCredential.user;
+
+        if (!user.emailVerified) {
             return { success: false, message: 'Please verify your email before logging in. Check your inbox for a verification link.'};
         }
 
-        const isPasswordCorrect = await verifyPassword(userData.password, password);
-
-        if (!isPasswordCorrect) {
-            console.warn(`Password mismatch for user: ${email}`);
-            return { success: false, message: 'Invalid password.' }; // Invalid password
-        }
-
-        if (userData.status === 'disabled') {
-            console.warn(`Login attempt for disabled user: ${email}`);
+        const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userProfileDoc.exists() || userProfileDoc.data().status === 'disabled') {
             return { success: false, message: 'Your account has been disabled. Please contact support.'};
         }
 
-        const userId = userDoc.id;
-        const vendorCheck = await getDoc(doc(db, 'vendors', userId));
-
+        const vendorCheck = await getDoc(doc(db, 'vendors', user.uid));
         if (vendorCheck.exists()) {
             const vendorData = vendorCheck.data() as VendorProfile;
             if (vendorData.status === 'disabled') {
-                console.warn(`Login attempt for disabled vendor: ${email}`);
                 return { success: false, message: 'Your account has been disabled. Please contact support.'};
             }
-            return { success: true, role: 'vendor', userId };
+            return { success: true, role: 'vendor', userId: user.uid };
         }
         
-        return { success: true, role: 'client', userId };
+        return { success: true, role: 'client', userId: user.uid };
 
     } catch (e: any) {
-        if (e.code === 'unavailable') {
-            console.warn("Firestore is offline, cannot sign in.");
-            return { success: false, message: 'Network error. Please try again later.'};
+        console.error("Firebase Auth sign in error:", e);
+        if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+             return { success: false, message: 'Invalid email or password.' };
         }
-        console.error("Sign in error:", e.message);
-        throw e; // Re-throw the error to be caught by the UI
+         if (e.code === 'auth/too-many-requests') {
+             return { success: false, message: 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or you can try again later.' };
+        }
+        return { success: false, message: 'An unknown error occurred during sign-in.'};
     }
 }
 
@@ -176,12 +160,10 @@ async function handleSocialSignIn(firebaseUser: FirebaseUser) {
     const userDoc = await getDoc(userRef);
 
     if (userDoc.exists()) {
-        // User exists, just sign them in
         const vendorCheck = await getDoc(doc(db, 'vendors', firebaseUser.uid));
         const role = vendorCheck.exists() ? 'vendor' : 'client';
         return { success: true, userId: firebaseUser.uid, role };
     } else {
-        // New user, create their profile
         const [firstName, ...lastNameParts] = (firebaseUser.displayName || 'New User').split(' ');
         const lastName = lastNameParts.join(' ');
         const newUserPayload = {
@@ -207,20 +189,6 @@ export async function signInWithGoogle(): Promise<{ success: boolean; role?: 'cl
     }
 }
 
-export async function signInWithApple(): Promise<{ success: boolean; role?: 'client' | 'vendor' | 'admin'; userId?: string; message?: string; }> {
-    const provider = new OAuthProvider('apple.com');
-    provider.addScope('email');
-    provider.addScope('name');
-    try {
-        const result = await signInWithPopup(auth, provider);
-        return await handleSocialSignIn(result.user);
-    } catch (error: any) {
-        console.error("Apple sign-in error:", error);
-        return { success: false, message: error.message };
-    }
-}
-
-
 // User Profile Services
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
     if (!userId) return null;
@@ -244,7 +212,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     return null;
 }
 
-export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'createdAt'>>) {
+export async function createOrUpdateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'createdAt' | 'password'>>) {
     if (!userId) return;
     const docRef = doc(db, 'users', userId);
     await setDoc(docRef, { ...data, lastModified: serverTimestamp() }, { merge: true });
@@ -896,24 +864,17 @@ export async function resetAllPasswords() {
 }
 
 export async function updateUserPassword(userId: string, newPassword: string): Promise<void> {
-    const hashedPassword = await hashPassword(newPassword);
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { password: hashedPassword });
+    // This function will now be a server-side action using the Admin SDK.
+    // It is not available on the client.
+    throw new Error("This function is not available on the client.");
 }
 
 export async function changeUserPassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
-    const userProfile = await getUserProfile(userId);
-    if (!userProfile || !userProfile.password) {
-        throw new Error("User not found or password not set.");
+    if (!auth.currentUser) {
+         throw new Error("You must be logged in to change your password.");
     }
-
-    const isOldPasswordCorrect = await verifyPassword(userProfile.password, oldPassword);
-
-    if (!isOldPasswordCorrect) {
-        throw new Error("The current password you entered is incorrect.");
-    }
-
-    await updateUserPassword(userId, newPassword);
+    // Re-authentication is handled by Firebase automatically if needed.
+    await firebaseUpdatePassword(auth.currentUser, newPassword);
 }
 
 export async function createUpgradeRequest(request: Omit<UpgradeRequest, 'id'| 'requestedAt' | 'status'>) {
@@ -1277,70 +1238,10 @@ export async function markChatAsRead(chatId: string, userId: string) {
 
 // --- Email Verification and Password Reset ---
 
-// In a real app, you would use Firebase Auth to send emails.
-// For this simulation, we'll generate tokens and store them on the user document.
-
-export async function sendVerificationEmail(userId: string, email: string) {
-    const token = Math.random().toString(36).substring(2);
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { verificationToken: token });
-    console.log(`SIMULATING EMAIL to ${email}: Verify your email by visiting /verify-email?token=${token}`);
-}
-
-export async function verifyUserEmail(token: string): Promise<void> {
-    const q = query(collection(db, 'users'), where('verificationToken', '==', token));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        throw new Error("Invalid or expired verification token.");
-    }
-    const userDoc = snapshot.docs[0];
-    const userRef = doc(db, 'users', userDoc.id);
-    await updateDoc(userRef, {
-        emailVerified: true,
-        verificationToken: deleteField()
-    });
-}
-
 export async function sendPasswordResetEmail(email: string) {
-    const q = query(collection(db, 'users'), where('email', '==', email));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        // Don't reveal if user exists for security reasons
-        console.log(`Password reset requested for non-existent user: ${email}. No email sent.`);
-        return;
-    }
-    const userDoc = snapshot.docs[0];
-    const userRef = doc(db, 'users', userDoc.id);
-    const token = Math.random().toString(36).substring(2);
-    const expires = new Date(Date.now() + 3600000); // 1 hour from now
-
-    await updateDoc(userRef, {
-        resetPasswordToken: token,
-        resetPasswordExpires: expires
-    });
-
-    console.log(`SIMULATING EMAIL to ${email}: Reset your password by visiting /reset-password?token=${token}`);
+    await firebaseSendPasswordResetEmail(auth, email);
 }
 
 export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
-    const q = query(
-        collection(db, 'users'), 
-        where('resetPasswordToken', '==', token),
-        where('resetPasswordExpires', '>', new Date())
-    );
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-        throw new Error("Invalid or expired password reset token.");
-    }
-
-    const userDoc = snapshot.docs[0];
-    const userRef = doc(db, 'users', userDoc.id);
-    const hashedPassword = await hashPassword(newPassword);
-
-    await updateDoc(userRef, {
-        password: hashedPassword,
-        resetPasswordToken: deleteField(),
-        resetPasswordExpires: deleteField(),
-    });
+   await confirmPasswordReset(auth, token, newPassword);
 }

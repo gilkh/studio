@@ -16,12 +16,13 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { updateUserPassword } from '@/lib/services';
-import type { UserProfile } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { adminUpdateUserPassword } from '@/lib/actions/notifications';
+import type { UserProfile } from '@/lib/types';
+
 
 const passwordFormSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters long'),
@@ -53,7 +54,7 @@ export function ResetPasswordDialog({ user, children }: ResetPasswordDialogProps
 
   const handleSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
     try {
-      await updateUserPassword(user.id, values.newPassword);
+      await adminUpdateUserPassword(user.id, values.newPassword);
       toast({
         title: 'Password Updated',
         description: `The password for ${user.email} has been changed successfully.`,

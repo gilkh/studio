@@ -176,12 +176,7 @@ export interface UserProfile {
     createdAt: Date;
     savedItemIds?: string[];
     status: 'active' | 'disabled';
-    password?: string;
-    avatar?: string;
     emailVerified: boolean;
-    verificationToken?: string;
-    resetPasswordToken?: string;
-    resetPasswordExpires?: Date;
     fcmTokens?: string[];
 }
 

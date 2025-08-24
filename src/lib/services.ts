@@ -4,7 +4,7 @@ import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, Docu
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal, AppNotification } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
-import { subMonths, format, startOfMonth, subDays, startOfDay } from 'date-fns';
+import { subMonths, format, startOfMonth, subDays, startOfDay, addDays, addMonths } from 'date-fns';
 import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
 
 export async function createNewUser(data: {

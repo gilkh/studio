@@ -11,24 +11,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MessageSquare, User, LogOut, Menu, Home, Compass, Calendar, PenTool, Briefcase, Users, Settings } from 'lucide-react';
+import { MessageSquare, User, LogOut, Menu, Home, Compass, Calendar, PenTool, Briefcase, Users, Settings, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { useEffect, useState } from 'react';
-import { getVendorQuoteRequests, getUserProfile, getVendorProfile, getChatsForUser } from '@/lib/services';
+import { getVendorQuoteRequests, getUserProfile, getVendorProfile, getChatsForUser, getNotifications, markNotificationsAsRead } from '@/lib/services';
 import { useAuth, logout } from '@/hooks/use-auth';
-import type { UserProfile, VendorProfile, Chat } from '@/lib/types';
+import type { UserProfile, VendorProfile, Chat, AppNotification } from '@/lib/types';
 import { useLanguage } from '@/hooks/use-language';
-
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { NotificationsPanel } from './notifications-panel';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 export function AppHeader() {
   const { userId, role, isLoading } = useAuth();
   const { translations } = useLanguage();
   const t = translations.nav;
+  const isMobile = useIsMobile();
   
     const clientLinks = [
         { href: '/client/home', label: t.home, icon: Home },
@@ -48,6 +51,7 @@ export function AppHeader() {
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const [pendingRequests, setPendingRequests] = useState(0);
@@ -83,6 +87,15 @@ export function AppHeader() {
     return () => unsubscribe();
   }, [userId]);
 
+  useEffect(() => {
+      if(!userId) return;
+      const unsubscribe = getNotifications(userId, (notifications) => {
+          const anyUnread = notifications.some(n => !n.read);
+          setHasUnreadNotifications(anyUnread);
+      });
+      return () => unsubscribe();
+  }, [userId]);
+
 
   const handleLogout = () => {
     logout();
@@ -103,6 +116,24 @@ export function AppHeader() {
       if(isVendor) return vendorProfile?.avatar;
       return userProfile?.avatar;
   }
+
+  const handleMarkNotificationsRead = () => {
+      if(userId) {
+          markNotificationsAsRead(userId);
+      }
+  }
+  
+  const BellButton = () => (
+    <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+      <Bell className="h-6 w-6" />
+      {hasUnreadNotifications && (
+        <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+        </span>
+      )}
+    </Button>
+  );
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -135,14 +166,29 @@ export function AppHeader() {
         </nav>
       </div>
 
-      <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
+      <div className="flex w-full items-center justify-end gap-1 md:gap-2 lg:gap-4">
         {!isLoading && userId ? (
         <>
+            {isMobile ? (
+              <Link href="/notifications" onClick={handleMarkNotificationsRead}>
+                <BellButton />
+              </Link>
+            ) : (
+              <Popover onOpenChange={(open) => open && handleMarkNotificationsRead()}>
+                <PopoverTrigger asChild>
+                  <BellButton />
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <NotificationsPanel />
+                </PopoverContent>
+              </Popover>
+            )}
+
             <Link href={isVendor ? "/vendor/messages" : "/client/messages"}>
                 <Button variant="ghost" size="icon" aria-label="Messages" className="relative">
                     <MessageSquare className="h-6 w-6" />
                     {hasUnreadMessages && (
-                      <span className="absolute top-0 right-0 flex h-2 w-2">
+                      <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                       </span>

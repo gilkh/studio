@@ -2,7 +2,7 @@
 
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer, deleteField } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal } from './types';
+import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal, AppNotification } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
 import { subMonths, format, startOfMonth } from 'date-fns';
 import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
@@ -1325,5 +1325,32 @@ export async function getPhoneNumberReveals(vendorId: string, timePeriod: 'all' 
         const snapshot = await getCountFromServer(q);
         return snapshot.data().count;
     }
+}
+
+// --- Notification Services ---
+
+export function getNotifications(userId: string, callback: (notifications: AppNotification[]) => void): () => void {
+    const q = query(collection(db, `users/${userId}/notifications`), orderBy('createdAt', 'desc'), limit(30));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const notifications = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt.toDate(),
+            } as AppNotification;
+        });
+        callback(notifications);
+    });
+
+    return unsubscribe;
+}
+
+export async function markNotificationsAsRead(userId: string) {
+    if (!userId) return;
+    const userRef = doc(db, 'users', userId);
+    // This is a simple flag. For more granular control, we would iterate and update individual notifications.
+    await updateDoc(userRef, { hasUnreadNotifications: false });
 }
     

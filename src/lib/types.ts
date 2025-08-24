@@ -181,6 +181,7 @@ export interface UserProfile {
     emailVerified: boolean;
     fcmTokens?: string[];
     provider?: string;
+    hasUnreadNotifications?: boolean;
 }
 
 export interface VendorProfile {
@@ -291,5 +292,14 @@ export interface Review {
     serviceId: string;
     rating: number;
     comment: string;
+    createdAt: Date;
+}
+
+export interface AppNotification {
+    id: string;
+    userId: string;
+    message: string;
+    link?: string;
+    read: boolean;
     createdAt: Date;
 }

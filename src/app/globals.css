@@ -14,7 +14,7 @@ body {
     --card-foreground: 20 14% 4%;
     --popover: 30 50% 100%;
     --popover-foreground: 20 14% 4%;
-    --primary: 6 61% 35%; /* #8e2c22 */
+    --primary: 4 55% 49%; /* #C1443C */
     --primary-foreground: 0 0% 100%;
     --secondary: 180 85% 96%; /* Light Teal */
     --secondary-foreground: 180 40% 10%;
@@ -41,7 +41,7 @@ body {
     --card-foreground: 30 50% 98%;
     --popover: 20 14% 4%;
     --popover-foreground: 30 50% 98%;
-    --primary: 6 61% 45%; /* #8e2c22, slightly lighter for dark mode */
+    --primary: 4 55% 55%; /* #C1443C, slightly lighter for dark mode */
     --primary-foreground: 0 0% 100%;
     --secondary: 180 20% 15%; /* Dark Teal */
     --secondary-foreground: 30 50% 98%;

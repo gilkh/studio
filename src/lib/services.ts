@@ -394,7 +394,7 @@ export const getServicesAndOffers = async (vendorId?: string, count?: number): P
         const [servicesSnapshot, offersSnapshot, vendorsSnapshot] = await Promise.all([
             getDocs(queries[0]),
             getDocs(queries[1]),
-            getDocs(collection(db, 'vendors')) // Fetch all vendors to map verification status
+            getDocs(collection(db, 'vendors')) // Fetch all vendors to map verification status and avatar
         ]);
 
         const vendorsData = new Map(vendorsSnapshot.docs.map(doc => [doc.id, doc.data() as Omit<VendorProfile, 'id'>]));
@@ -1295,3 +1295,4 @@ export async function sendPasswordResetEmail(email: string) {
 export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
    await confirmPasswordReset(auth, token, newPassword);
 }
+

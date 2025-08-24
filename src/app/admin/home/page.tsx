@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { generateVendorCode, getVendorCodes, resetAllPasswords, getAllUsersAndVendors, updateVendorTier, deleteVendorCode, updateUserStatus, deleteUser, getUpgradeRequests, getPlatformAnalytics, updateUpgradeRequestStatus, updateVendorVerification, getVendorInquiries, updateVendorInquiryStatus, getPendingMediaForModeration, moderateMedia } from '@/lib/services';
+import { sendPushNotification } from '@/lib/actions/notifications';
 import type { VendorCode, UserProfile, VendorProfile, UpgradeRequest, PlatformAnalytics, VendorInquiry, MediaItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -69,6 +70,13 @@ export default function AdminHomePage() {
   const [isResetting, setIsResetting] = useState(false);
   const [isModerating, setIsModerating] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // State for push notifications
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationBody, setNotificationBody] = useState('');
+  const [notificationTarget, setNotificationTarget] = useState<'all' | 'clients' | 'vendors'>('all');
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+
 
   useEffect(() => {
     fetchData();
@@ -146,7 +154,7 @@ export default function AdminHomePage() {
         await deleteUser(user.id, user.role);
         setUsers(prev => prev.filter(u => u.id !== user.id));
         toast({ title: "User Deleted", description: `The user ${user.email} has been permanently deleted.` });
-    } catch (error) {
+    } catch (error) => {
         toast({ title: "Error", description: "Failed to delete the user.", variant: "destructive" });
     }
   }
@@ -210,6 +218,26 @@ export default function AdminHomePage() {
     }
   };
 
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notificationTitle || !notificationBody) {
+        toast({ title: "Missing fields", description: "Please provide a title and body for the notification.", variant: 'destructive' });
+        return;
+    }
+    setIsSendingNotification(true);
+    try {
+        await sendPushNotification(notificationTarget, notificationTitle, notificationBody);
+        toast({ title: "Notifications Sent", description: "Your message has been sent to the target audience." });
+        setNotificationTitle('');
+        setNotificationBody('');
+    } catch(error) {
+        console.error("Failed to send notifications", error);
+        toast({ title: "Send Failed", description: "Could not send notifications. See console for details.", variant: 'destructive' });
+    } finally {
+        setIsSendingNotification(false);
+    }
+  }
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Code copied to clipboard." });
@@ -241,6 +269,7 @@ export default function AdminHomePage() {
                 Upgrades
                 {upgradeRequests.filter(r => r.status === 'pending').length > 0 && <Badge className="ml-2">{upgradeRequests.filter(r => r.status === 'pending').length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="notifications">Push Notifications</TabsTrigger>
             <TabsTrigger value="codes">Codes</TabsTrigger>
             <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
@@ -628,6 +657,56 @@ export default function AdminHomePage() {
                     </Table>
                 </CardContent>
              </Card>
+        </TabsContent>
+        
+        <TabsContent value="notifications" className="mt-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Send Push Notification</CardTitle>
+                    <CardDescription>Broadcast a message to your users' devices.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSendNotification} className="space-y-6 max-w-lg">
+                        <div>
+                            <Label htmlFor="notification-title">Title</Label>
+                            <Input 
+                                id="notification-title" 
+                                value={notificationTitle}
+                                onChange={(e) => setNotificationTitle(e.target.value)}
+                                placeholder="e.g., New Feature!"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="notification-body">Message</Label>
+                            <Textarea 
+                                id="notification-body"
+                                value={notificationBody}
+                                onChange={(e) => setNotificationBody(e.target.value)}
+                                placeholder="Describe the announcement or update..."
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="notification-target">Target Audience</Label>
+                            <Select value={notificationTarget} onValueChange={(value: any) => setNotificationTarget(value)}>
+                                <SelectTrigger id="notification-target">
+                                    <SelectValue placeholder="Select audience" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Users</SelectItem>
+                                    <SelectItem value="clients">Clients Only</SelectItem>
+                                    <SelectItem value="vendors">Vendors Only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button type="submit" disabled={isSendingNotification}>
+                            {isSendingNotification ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Send Notification
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         </TabsContent>
 
         <TabsContent value="codes" className="mt-4">

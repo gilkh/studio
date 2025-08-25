@@ -1,10 +1,9 @@
 
-
 import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, DocumentData, deleteDoc, addDoc, serverTimestamp, orderBy, onSnapshot, limit, increment, writeBatch, runTransaction, arrayUnion, arrayRemove,getCountFromServer, deleteField } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal, AppNotification } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
-import { subMonths, format, startOfMonth, addDays, addMonths, startOfDay } from 'date-fns';
+import { subMonths, format, startOfMonth, addDays, addMonths, startOfDay, subDays } from 'date-fns';
 import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
 
 export async function createNewUser(data: {
@@ -369,7 +368,7 @@ export const getOffers = (vendorId?: string, count?: number) => {
 
 
 export const getServicesAndOffers = async (vendorId?: string, options?: { count?: number; includePending?: boolean }): Promise<ServiceOrOffer[]> => {
-    const { count, includePending } = options || {};
+    const { count, includePending = false } = options || {};
     
     let servicesQuery = query(collection(db, 'services'));
     let offersQuery = query(collection(db, 'offers'));
@@ -1285,7 +1284,7 @@ export async function getPhoneNumberReveals(vendorId: string, timePeriod: 'all' 
         const vendor = await getVendorProfile(vendorId);
         return vendor?.totalPhoneReveals || 0;
     } else {
-        const thirtyDaysAgo = subMonths(new Date(), 1);
+        const thirtyDaysAgo = subDays(new Date(), 30);
         const revealsRef = collection(db, `vendors/${vendorId}/phoneReveals`);
         const q = query(revealsRef, where('revealedAt', '>=', thirtyDaysAgo));
         const snapshot = await getCountFromServer(q);

@@ -4,7 +4,7 @@ import { collection, doc, getDoc, setDoc, updateDoc, getDocs, query, where, Docu
 import { db, auth } from './firebase';
 import type { UserProfile, VendorProfile, Service, Offer, QuoteRequest, Booking, SavedTimeline, ServiceOrOffer, VendorCode, Chat, ChatMessage, ForwardedItem, MediaItem, UpgradeRequest, VendorAnalyticsData, PlatformAnalytics, Review, LineItem, VendorInquiry, PhoneReveal, AppNotification } from './types';
 import { formatItemForMessage, formatQuoteResponseMessage, parseForwardedMessage } from './utils';
-import { subMonths, format, startOfMonth, subDays, startOfDay, addDays, addMonths } from 'date-fns';
+import { subMonths, format, startOfMonth, addDays, addMonths, startOfDay } from 'date-fns';
 import { GoogleAuthProvider, signInWithPopup, OAuthProvider, User as FirebaseUser, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, applyActionCode, confirmPasswordReset, verifyPasswordResetCode, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
 
 export async function createNewUser(data: {
@@ -1349,12 +1349,21 @@ export async function getPendingListings(): Promise<ServiceOrOffer[]> {
     return [...services, ...offers];
 }
 
-export async function updateListingStatus(listingId: string, type: 'service' | 'offer', status: 'approved' | 'rejected') {
+export async function updateListingStatus(listingId: string, type: 'service' | 'offer', status: 'approved' | 'rejected', rejectionReason?: string) {
     const collectionName = type === 'service' ? 'services' : 'offers';
     const docRef = doc(db, collectionName, listingId);
     
     const batch = writeBatch(db);
-    batch.update(docRef, { status: status });
+
+    const updateData: { status: 'approved' | 'rejected', rejectionReason?: any } = { status: status };
+    
+    if (status === 'rejected') {
+        updateData.rejectionReason = rejectionReason;
+    } else {
+        updateData.rejectionReason = deleteField();
+    }
+    
+    batch.update(docRef, updateData);
 
     if (status === 'approved') {
         const listingDoc = await getDoc(docRef);

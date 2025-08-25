@@ -64,6 +64,7 @@ export interface BaseService {
   inclusions?: ServiceInclusions;
   location: Location;
   status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
 }
 
 export interface Service extends BaseService {

@@ -43,6 +43,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 
 type DisplayUser = UserProfile & { role: 'client' | 'vendor', businessName?: string, accountTier?: VendorProfile['accountTier'], rating?: number, reviewCount?: number, verification?: VendorProfile['verification'], provider?: string };
@@ -62,6 +63,47 @@ const providerIcons: Record<string, React.ElementType> = {
   'password': Mail,
   'google.com': GoogleIcon
 };
+
+function RejectListingDialog({ listing, onReject, isLoading }: { listing: ServiceOrOffer, onReject: (reason: string) => void, isLoading: boolean }) {
+    const [reason, setReason] = useState('');
+    const [open, setOpen] = useState(false);
+
+    const handleSubmit = () => {
+        onReject(reason);
+        setOpen(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="destructive" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsDown className="h-4 w-4"/>}
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Reject Listing: {listing.title}</DialogTitle>
+                    <DialogDescription>
+                        Please provide a reason for rejecting this listing. This will be sent to the vendor.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="rejection-reason">Rejection Reason</Label>
+                    <Textarea 
+                        id="rejection-reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="e.g., The portfolio images are low quality..."
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button variant="destructive" onClick={handleSubmit} disabled={!reason}>Submit Rejection</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 
 export default function AdminHomePage() {
@@ -217,19 +259,21 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleListingStatusChange = async (listing: ServiceOrOffer, decision: 'approved' | 'rejected') => {
+  const handleListingStatusChange = async (listing: ServiceOrOffer, decision: 'approved' | 'rejected', reason?: string) => {
     setIsModerating(listing.id);
     try {
-      await updateListingStatus(listing.id, listing.type, decision);
+      await updateListingStatus(listing.id, listing.type, decision, reason);
       setPendingListings(prev => prev.filter(l => l.id !== listing.id));
       
-      if (decision === 'approved') {
-          await createNotification({
-              userId: listing.vendorId,
-              message: `Congratulations! Your listing "${listing.title}" has been approved.`,
-              link: `/vendor/manage-services`,
-          })
-      }
+      const message = decision === 'approved' 
+          ? `Congratulations! Your listing "${listing.title}" has been approved.`
+          : `Your listing "${listing.title}" was rejected. Reason: ${reason}`;
+
+      await createNotification({
+          userId: listing.vendorId,
+          message: message,
+          link: `/vendor/manage-services`,
+      });
 
       toast({
         title: `Listing ${decision}`,
@@ -529,9 +573,11 @@ export default function AdminHomePage() {
                                             <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleListingStatusChange(item, 'approved')} disabled={isModerating === item.id}>
                                                 {isModerating === item.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsUp className="h-4 w-4"/>}
                                             </Button>
-                                            <Button size="sm" variant="destructive" onClick={() => handleListingStatusChange(item, 'rejected')} disabled={isModerating === item.id}>
-                                                {isModerating === item.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <ThumbsDown className="h-4 w-4"/>}
-                                            </Button>
+                                            <RejectListingDialog
+                                                listing={item}
+                                                isLoading={isModerating === item.id}
+                                                onReject={(reason) => handleListingStatusChange(item, 'rejected', reason)}
+                                            />
                                         </div>
                                     </TableCell>
                                 </TableRow>
